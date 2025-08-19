@@ -1,0 +1,34 @@
+<!-- posts/templates/posts/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MySocial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home' %}">MySocial</a>
+            <div class="d-flex">
+                {% if user.is_authenticated %}
+                    <span class="navbar-text me-3">
+                        Chào, {{ user.username }}!
+                    </span>
+                    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-outline-success me-2">Đăng nhập</a>
+                    <a href="{% url 'register' %}" class="btn btn-primary">Đăng ký</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        {% block content %}
+        {% endblock content %}
+    </main>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
