@@ -13,6 +13,15 @@
             <a class="navbar-brand" href="{% url 'home' %}">MySocial</a>
             <div class="d-flex">
                 {% if user.is_authenticated %}
+                    <!-- NÚT LỜI MỜI KẾT BẠN -->
+                    <a href="{% url 'accounts:friend_requests' %}" class="btn btn-outline-secondary position-relative me-3">
+                        Lời mời
+                        {% if unread_notifications_count > 0 %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ unread_notifications_count }}
+                        </span>
+                        {% endif %}
+                    </a>
                     <!-- SỬA Ở ĐÂY -->
                     <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-primary me-3">Tìm bạn</a>
 

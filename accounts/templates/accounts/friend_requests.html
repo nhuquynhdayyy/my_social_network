@@ -1,0 +1,29 @@
+<!-- accounts/templates/accounts/friend_requests.html -->
+{% extends "posts/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Lời mời kết bạn</h2>
+    
+    {% if friend_requests %}
+        <ul class="list-group">
+            {% for req in friend_requests %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <img src="{{ req.from_user.avatar.url }}" class="rounded-circle me-3" width="50" height="50" alt="{{ req.from_user.username }}">
+                    <a href="{% url 'accounts:profile' username=req.from_user.username %}" class="text-decoration-none fw-bold">
+                        {{ req.from_user.first_name }} {{ req.from_user.last_name }}
+                    </a>
+                </div>
+                <div>
+                    <a href="{% url 'accounts:accept_request' request_id=req.id %}" class="btn btn-primary btn-sm">Chấp nhận</a>
+                    <a href="{% url 'accounts:decline_request' request_id=req.id %}" class="btn btn-danger btn-sm">Xóa</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Bạn không có lời mời kết bạn nào.</p>
+    {% endif %}
+</div>
+{% endblock content %}

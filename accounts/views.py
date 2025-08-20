@@ -110,4 +110,34 @@ def add_friend(request, username):
     Friendship.objects.get_or_create(from_user=from_user, to_user=to_user)
     
     # Chuyển hướng người dùng quay lại trang danh sách
-    return redirect('user_list')
+    return redirect('accounts:user_list')
+
+# View để xem danh sách lời mời kết bạn
+class FriendRequestListView(LoginRequiredMixin, ListView):
+    model = Friendship
+    template_name = 'accounts/friend_requests.html'
+    context_object_name = 'friend_requests'
+
+    def get_queryset(self):
+        # Lấy tất cả các lời mời gửi đến user hiện tại và đang ở trạng thái PENDING
+        return Friendship.objects.filter(to_user=self.request.user, status='PENDING')
+
+# View để chấp nhận lời mời
+@login_required
+def accept_friend_request(request, request_id):
+    friend_request = get_object_or_404(Friendship, id=request_id)
+    # Kiểm tra bảo mật: chỉ người nhận mới có quyền chấp nhận
+    if friend_request.to_user == request.user:
+        friend_request.status = 'ACCEPTED'
+        friend_request.save()
+        # (Tùy chọn) Có thể tạo thông báo "đã chấp nhận" gửi ngược lại
+    return redirect('accounts:friend_requests')
+
+# View để từ chối/xóa lời mời
+@login_required
+def decline_friend_request(request, request_id):
+    friend_request = get_object_or_404(Friendship, id=request_id)
+    # Kiểm tra bảo mật: chỉ người nhận mới có quyền xóa
+    if friend_request.to_user == request.user:
+        friend_request.delete()
+    return redirect('accounts:friend_requests')
