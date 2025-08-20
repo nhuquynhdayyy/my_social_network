@@ -4,7 +4,9 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 from .views import (
     SignUpView, ProfileView, ProfileUpdateView, ProfileDeleteView,
-    UserListView, add_friend, FriendRequestListView, accept_friend_request, decline_friend_request
+    UserListView, add_friend, 
+    FriendRequestListView, accept_friend_request, decline_friend_request,
+    SentRequestListView, cancel_friend_request
 )
 
 # Đặt tên cho app namespace để tránh xung đột
@@ -20,11 +22,17 @@ urlpatterns = [
     # URL cho trang xem danh sách lời mời
     path('requests/', FriendRequestListView.as_view(), name='friend_requests'),
     
+    # URL cho trang xem danh sách lời mời đã gửi
+    path('requests/sent/', SentRequestListView.as_view(), name='sent_requests'),
+
     # URL để xử lý chấp nhận
     path('requests/accept/<int:request_id>/', accept_friend_request, name='accept_request'),
 
     # URL để xử lý từ chối
     path('requests/decline/<int:request_id>/', decline_friend_request, name='decline_request'),
+
+    # URL để xử lý hủy lời mời đã gửi
+    path('requests/cancel/<int:request_id>/', cancel_friend_request, name='cancel_request'),
     
     # CÁC URL ĐỘNG PHẢI ĐẶT BÊN DƯỚI
     # Chúng sẽ được kiểm tra sau khi các URL cụ thể ở trên không khớp

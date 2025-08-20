@@ -141,3 +141,22 @@ def decline_friend_request(request, request_id):
     if friend_request.to_user == request.user:
         friend_request.delete()
     return redirect('accounts:friend_requests')
+
+# View để xem danh sách lời mời đã gửi
+class SentRequestListView(LoginRequiredMixin, ListView):
+    model = Friendship
+    template_name = 'accounts/sent_requests.html'
+    context_object_name = 'sent_requests'
+
+    def get_queryset(self):
+        # Lấy tất cả các lời mời do user hiện tại gửi đi và đang ở trạng thái PENDING
+        return Friendship.objects.filter(from_user=self.request.user, status='PENDING')
+
+# View để hủy lời mời đã gửi
+@login_required
+def cancel_friend_request(request, request_id):
+    friend_request = get_object_or_404(Friendship, id=request_id)
+    # Kiểm tra bảo mật: chỉ người gửi mới có quyền hủy
+    if friend_request.from_user == request.user:
+        friend_request.delete()
+    return redirect('accounts:sent_requests') # Chuyển hướng về trang danh sách đã gửi
