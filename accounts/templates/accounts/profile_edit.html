@@ -1,0 +1,37 @@
+<!-- accounts/templates/accounts/profile_edit.html -->
+{% extends "posts/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Chỉnh sửa hồ sơ</h2>
+                </div>
+                <div class="card-body">
+                    <!-- Quan trọng: enctype để cho phép upload file (ảnh) -->
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        
+                        <!-- === KHỐI NÚT BẤM ĐÃ CẬP NHẬT === -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+                            <!-- Nút Huỷ: Đây là một thẻ link trỏ về trang profile -->
+                            <a href="{% url 'accounts:profile' username=user.username %}" class="btn btn-secondary">Huỷ</a>
+                            
+                            <!-- Nút Lưu thay đổi -->
+                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                        </div>
+
+                    </form>
+                    <hr>
+                    <div class="text-end">
+                        <a href="{% url 'accounts:profile_delete' username=user.username %}" class="btn btn-danger">Xóa tài khoản</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,55 @@
+<!-- accounts/templates/accounts/profile.html -->
+{% extends "posts/base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <!-- Cover Photo -->
+            <div class="card shadow-sm">
+                <img src="{{ profile_user.cover_photo.url }}" class="card-img-top" style="width: 100%; height: 300px; object-fit: cover;" alt="Cover Photo">
+                
+                <!-- Avatar and User Info -->
+                <div class="card-body">
+                    <div class="d-flex align-items-end" style="margin-top: -80px; padding-left: 20px;">
+                        <img src="{{ profile_user.avatar.url }}" class="rounded-circle border border-5 border-white" width="150" height="150" alt="Avatar">
+                        <div class="ms-3">
+                            <!-- SỬA Ở ĐÂY: Hiển thị First Name và Last Name -->
+                            <h2 class="mb-0">{{ profile_user.first_name }} {{ profile_user.last_name }}</h2>
+                            <p class="text-muted">@{{ profile_user.username }}</p>
+                        </div>
+                        
+                        <!-- Nút chỉnh sửa chỉ hiện ra nếu bạn là chủ profile -->
+                        {% if user.is_authenticated and user == profile_user %}
+                        <div class="ms-auto p-2">
+                            <a href="{% url 'accounts:profile_edit' username=user.username %}" class="btn btn-secondary">Chỉnh sửa hồ sơ</a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+                    
+                    <!-- THÊM Ở ĐÂY: Hiển thị thông tin chi tiết -->
+                    <h5>Giới thiệu</h5>
+                    <p>{{ profile_user.bio|default:"Chưa có thông tin." }}</p>
+                    
+                    <ul class="list-group list-group-flush">
+                        {% if profile_user.email %}
+                        <li class="list-group-item">
+                            <strong>Email:</strong> {{ profile_user.email }}
+                        </li>
+                        {% endif %}
+
+                        {% if profile_user.birth_date %}
+                        <li class="list-group-item">
+                            <!-- Dùng filter 'date' để định dạng ngày tháng cho đẹp -->
+                            <strong>Ngày sinh:</strong> {{ profile_user.birth_date|date:"d/m/Y" }}
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

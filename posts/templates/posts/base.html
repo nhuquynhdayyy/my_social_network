@@ -9,16 +9,26 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
+            <!-- URL 'home' không có namespace vì nó nằm trong URL gốc -->
             <a class="navbar-brand" href="{% url 'home' %}">MySocial</a>
             <div class="d-flex">
                 {% if user.is_authenticated %}
+                    <!-- SỬA Ở ĐÂY -->
+                    <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-primary me-3">Tìm bạn</a>
+
                     <span class="navbar-text me-3">
-                        Chào, {{ user.username }}!
+                        <!-- SỬA Ở ĐÂY -->
+                        <a href="{% url 'accounts:profile' username=user.username %}" class="text-dark text-decoration-none">
+                            Chào, {{ user.username }}!
+                        </a>
                     </span>
-                    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
+                    <!-- SỬA Ở ĐÂY -->
+                    <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
                 {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-outline-success me-2">Đăng nhập</a>
-                    <a href="{% url 'register' %}" class="btn btn-primary">Đăng ký</a>
+                    <!-- SỬA Ở ĐÂY -->
+                    <a href="{% url 'accounts:login' %}" class="btn btn-outline-success me-2">Đăng nhập</a>
+                    <!-- SỬA Ở ĐÂY -->
+                    <a href="{% url 'accounts:register' %}" class="btn btn-primary">Đăng ký</a>
                 {% endif %}
             </div>
         </div>

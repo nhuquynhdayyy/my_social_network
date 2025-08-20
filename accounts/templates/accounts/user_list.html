@@ -1,0 +1,39 @@
+<!-- accounts/templates/accounts/user_list.html -->
+{% extends "posts/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Tìm kiếm bạn bè</h2>
+    <div class="row">
+        {% for u in users %}
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body d-flex align-items-center">
+                    <img src="{{ u.avatar.url }}" class="rounded-circle me-3" width="60" height="60" alt="{{ u.username }}">
+                    <div>
+                        <h5 class="card-title">
+                            <!-- SỬA Ở ĐÂY: Thêm 'accounts:' -->
+                            <a href="{% url 'accounts:profile' username=u.username %}" class="text-decoration-none">{{ u.first_name }} {{ u.last_name }}</a>
+                        </h5>
+                        <h6 class="card-subtitle mb-2 text-muted">@{{ u.username }}</h6>
+                        
+                        <!-- Logic hiển thị nút -->
+                        {% if u.id in friend_ids %}
+                            <span class="badge bg-success">Bạn bè</span>
+                        {% elif u.id in sent_request_ids %}
+                            <button class="btn btn-secondary btn-sm" disabled>Đã gửi yêu cầu</button>
+                        {% elif u.id in received_request_ids %}
+                            <!-- Sau này sẽ làm nút Chấp nhận/Từ chối ở đây -->
+                            <a href="#" class="btn btn-info btn-sm">Phản hồi yêu cầu</a>
+                        {% else %}
+                            <!-- SỬA Ở ĐÂY: Thêm 'accounts:' -->
+                            <a href="{% url 'accounts:add_friend' username=u.username %}" class="btn btn-primary btn-sm">Thêm bạn bè</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}
