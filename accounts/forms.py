@@ -5,6 +5,10 @@ from django.contrib.auth.forms import UserCreationForm
 from .models import User
 
 class CustomUserCreationForm(UserCreationForm):
+    # Ghi đè các trường first_name và last_name
+    first_name = forms.CharField(max_length=150, required=True, label="First Name")
+    last_name = forms.CharField(max_length=150, required=True, label="Last Name")
+    
     class Meta(UserCreationForm.Meta):
         model = User
         fields = ('username', 'email', 'first_name', 'last_name')
