@@ -18,13 +18,14 @@
                             <h2 class="mb-0">{{ profile_user.first_name }} {{ profile_user.last_name }}</h2>
                             <p class="text-muted">@{{ profile_user.username }}</p>
                         </div>
-                        
-                        <!-- Nút chỉnh sửa chỉ hiện ra nếu bạn là chủ profile -->
-                        {% if user.is_authenticated and user == profile_user %}
-                        <div class="ms-auto p-2">
-                            <a href="{% url 'accounts:profile_edit' username=user.username %}" class="btn btn-secondary">Chỉnh sửa hồ sơ</a>
+                        <div class="ms-auto p-2 d-flex">
+                            <!-- THÊM NÚT NÀY -->
+                            <a href="{% url 'accounts:friend_list' username=profile_user.username %}" class="btn btn-outline-primary me-2">Xem bạn bè</a>
+                            
+                            {% if user.is_authenticated and user == profile_user %}
+                                <a href="{% url 'accounts:profile_edit' username=user.username %}" class="btn btn-secondary">Chỉnh sửa hồ sơ</a>
+                            {% endif %}
                         </div>
-                        {% endif %}
                     </div>
 
                     <hr>

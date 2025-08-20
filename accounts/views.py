@@ -160,3 +160,57 @@ def cancel_friend_request(request, request_id):
     if friend_request.from_user == request.user:
         friend_request.delete()
     return redirect('accounts:sent_requests') # Chuyển hướng về trang danh sách đã gửi
+
+# View để xem danh sách bạn bè
+class FriendListView(LoginRequiredMixin, ListView):
+    model = User
+    template_name = 'accounts/friend_list.html'
+    context_object_name = 'friends'
+
+    def get_queryset(self):
+        # Lấy user có username từ URL
+        profile_user = get_object_or_404(User, username=self.kwargs['username'])
+        
+        # Tìm tất cả các mối quan hệ 'ACCEPTED' mà user này tham gia
+        friendships = Friendship.objects.filter(
+            (Q(from_user=profile_user) | Q(to_user=profile_user)) & Q(status='ACCEPTED')
+        )
+        
+        # Trích xuất ID của tất cả bạn bè
+        friend_ids = []
+        for friendship in friendships:
+            if friendship.from_user == profile_user:
+                friend_ids.append(friendship.to_user.id)
+            else:
+                friend_ids.append(friendship.from_user.id)
+        
+        # Trả về queryset chứa các object User là bạn bè
+        return User.objects.filter(id__in=friend_ids)
+
+    def get_context_data(self, **kwargs):
+        # Truyền thêm profile_user vào context để biết đây là danh sách bạn của ai
+        context = super().get_context_data(**kwargs)
+        context['profile_user'] = get_object_or_404(User, username=self.kwargs['username'])
+        return context
+
+
+# View để xử lý hủy kết bạn
+@login_required
+def unfriend(request, username):
+    # Người bạn muốn hủy kết bạn
+    friend_to_remove = get_object_or_404(User, username=username)
+    # Người dùng hiện tại
+    current_user = request.user
+    
+    # Tìm mối quan hệ bạn bè giữa hai người
+    friendship = get_object_or_404(
+        Friendship,
+        (Q(from_user=current_user, to_user=friend_to_remove) | Q(from_user=friend_to_remove, to_user=current_user))
+        & Q(status='ACCEPTED')
+    )
+    
+    # Xóa mối quan hệ
+    friendship.delete()
+    
+    # Chuyển hướng về trang danh sách bạn bè của người dùng hiện tại
+    return redirect('accounts:friend_list', username=current_user.username)

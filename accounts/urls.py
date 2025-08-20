@@ -6,7 +6,8 @@ from .views import (
     SignUpView, ProfileView, ProfileUpdateView, ProfileDeleteView,
     UserListView, add_friend, 
     FriendRequestListView, accept_friend_request, decline_friend_request,
-    SentRequestListView, cancel_friend_request
+    SentRequestListView, cancel_friend_request,
+    FriendListView, unfriend
 )
 
 # Đặt tên cho app namespace để tránh xung đột
@@ -33,11 +34,15 @@ urlpatterns = [
 
     # URL để xử lý hủy lời mời đã gửi
     path('requests/cancel/<int:request_id>/', cancel_friend_request, name='cancel_request'),
-    
+
+    # URL để xử lý hủy kết bạn
+    path('unfriend/<str:username>/', unfriend, name='unfriend'),
+
     # CÁC URL ĐỘNG PHẢI ĐẶT BÊN DƯỚI
     # Chúng sẽ được kiểm tra sau khi các URL cụ thể ở trên không khớp
     path('add-friend/<str:username>/', add_friend, name='add_friend'),
     path('<str:username>/', ProfileView.as_view(), name='profile'),
     path('<str:username>/edit/', ProfileUpdateView.as_view(), name='profile_edit'),
     path('<str:username>/delete/', ProfileDeleteView.as_view(), name='profile_delete'),
+    path('<str:username>/friends/', FriendListView.as_view(), name='friend_list'),
 ]
