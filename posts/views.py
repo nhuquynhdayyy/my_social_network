@@ -1,20 +1,53 @@
 # posts/views.py
+from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render
 from django.views.generic import ListView, CreateView
+from django.db.models import Q
 from .models import Post, PostMedia
-from .forms import PostCreateForm 
+from .forms import PostCreateForm
+from accounts.models import Friendship, User
 
 class HomePageView(ListView):
-    model = Post  # Model mà View này sẽ làm việc cùng
-    template_name = 'posts/home.html'  # Đường dẫn tới file template sẽ được sử dụng
-    context_object_name = 'posts'  # Tên của biến chứa danh sách bài đăng trong template
+    model = Post
+    template_name = 'posts/home.html'
+    context_object_name = 'posts'
+    # Phân trang: hiển thị 10 bài viết mỗi trang
+    paginate_by = 10 
 
     def get_queryset(self):
-        # Tạm thời, chúng ta sẽ hiển thị tất cả bài đăng công khai
-        # Sau này, bạn sẽ thay đổi logic này để chỉ hiển thị bài của bạn bè
-        return Post.objects.filter(privacy='PUBLIC').order_by('-created_at')
+        # Lấy người dùng đang đăng nhập
+        current_user = self.request.user
+
+        # Queryset cơ sở: các bài viết công khai
+        queryset = Post.objects.filter(privacy='PUBLIC')
+
+        # Nếu người dùng đã đăng nhập, mở rộng queryset
+        if current_user.is_authenticated:
+            # 1. Lấy ID của tất cả bạn bè
+            friends_q = Friendship.objects.filter(
+                (Q(from_user=current_user) | Q(to_user=current_user)) & Q(status='ACCEPTED')
+            )
+            friend_ids = []
+            for friendship in friends_q:
+                friend_ids.append(friendship.from_user_id if friendship.to_user_id == current_user.id else friendship.to_user_id)
+
+            # 2. Xây dựng các điều kiện lọc
+            
+            # Điều kiện 1: Bài viết của chính mình (bất kể privacy)
+            my_posts = Q(author=current_user)
+            
+            # Điều kiện 2: Bài viết của bạn bè (với privacy là 'FRIENDS')
+            friends_posts = Q(author_id__in=friend_ids, privacy='FRIENDS')
+            
+            # Điều kiện 3: Bài viết công khai (đã có trong queryset ban đầu)
+            public_posts = Q(privacy='PUBLIC')
+            
+            # Kết hợp các điều kiện bằng phép toán OR (|)
+            # Dùng distinct() để loại bỏ các bài viết bị trùng lặp (nếu có)
+            queryset = Post.objects.filter(my_posts | friends_posts | public_posts).distinct().order_by('-created_at')
+
+        return queryset
 
 # View để tạo bài viết mới
 class PostCreateView(LoginRequiredMixin, CreateView):
