@@ -1,24 +1,104 @@
-{% extends "posts/base.html" %}
-
-{% block content %}
-    <!-- Phần nội dung cũ của trang home.html -->
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            {% for post in posts %}
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <!-- Hiển thị avatar và username của tác giả -->
-                                <img src="{{ post.author.avatar.url }}" alt="{{ post.author.username }}" class="rounded-circle" width="40" height="40">
-                                {{ post.author.username }}
-                            </h5>
-                            <p class="card-text">{{ post.content }}</p>
-                            <p class="card-text"><small class="text-muted">{{ post.created_at|timesince }} trước</small></p>
-                        </div>
-                    </div>
-                {% empty %}
-                    <p>Chưa có bài đăng nào để hiển thị.</p>
-                {% endfor %}
-        </div>
+<!-- posts/templates/posts/home.html -->
+{% extends "posts/base.html" %} {% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    {% if user.is_authenticated %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Tạo bài viết</h5>
+        <p class="card-text">Chào {{ user.first_name }}, bạn đang nghĩ gì?</p>
+        <a href="{% url 'post_create' %}" class="btn btn-primary"
+          >Viết bài mới</a
+        >
+      </div>
     </div>
+    {% endif %}
+
+    <h1 class="mb-4">Dòng thời gian</h1>
+
+    <!-- ======================= VÒNG LẶP ĐÃ NÂNG CẤP ======================= -->
+    {% for post in posts %}
+    <div class="card mb-3">
+      <!-- Phần media (ảnh/video) -->
+      {% if post.media.all %}
+      <div
+        id="carouselPost{{ post.id }}"
+        class="carousel slide"
+        data-bs-ride="carousel"
+      >
+        <div class="carousel-inner">
+          {% for media_item in post.media.all %}
+          <div class="carousel-item {% if forloop.first %}active{% endif %}">
+            {% if media_item.media_type == 'IMAGE' %}
+            <img
+              src="{{ media_item.file.url }}"
+              class="d-block w-100"
+              style="max-height: 500px; object-fit: cover"
+              alt="Post image"
+            />
+            {% elif media_item.media_type == 'VIDEO' %}
+            <video
+              src="{{ media_item.file.url }}"
+              class="d-block w-100"
+              controls
+            ></video>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% if post.media.all|length > 1 %}
+        <button
+          class="carousel-control-prev"
+          type="button"
+          data-bs-target="#carouselPost{{ post.id }}"
+          data-bs-slide="prev"
+        >
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button
+          class="carousel-control-next"
+          type="button"
+          data-bs-target="#carouselPost{{ post.id }}"
+          data-bs-slide="next"
+        >
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Phần nội dung bài viết -->
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-2">
+          <img
+            src="{{ post.author.avatar.url }}"
+            alt="{{ post.author.username }}"
+            class="rounded-circle"
+            width="40"
+            height="40"
+          />
+          <div class="ms-2">
+            <a
+              href="{% url 'accounts:profile' username=post.author.username %}"
+              class="fw-bold text-decoration-none text-dark"
+              >{{ post.author.username }}</a
+            >
+          </div>
+        </div>
+        <p class="card-text">{{ post.content|linebreaksbr }}</p>
+        <p class="card-text">
+          <small class="text-muted"
+            >{{ post.created_at|timesince }} trước</small
+          >
+        </p>
+      </div>
+    </div>
+    {% empty %}
+    <p>Chưa có bài đăng nào để hiển thị.</p>
+    {% endfor %}
+    <!-- ======================= KẾT THÚC VÒNG LẶP ======================= -->
+  </div>
+</div>
 {% endblock content %}
