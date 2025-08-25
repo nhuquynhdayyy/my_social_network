@@ -130,6 +130,11 @@
           <div class="d-flex justify-content-end mb-2">
             {% if user.is_authenticated and user == post.author %}
             <a
+              href="{% url 'post_edit' pk=post.pk %}"
+              class="btn btn-sm btn-outline-secondary me-1"
+              >Sửa</a
+            >
+            <a
               href="{% url 'post_delete' pk=post.pk %}"
               class="btn btn-sm btn-outline-danger"
               >Xóa</a

@@ -2,7 +2,7 @@
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import ListView, CreateView, DeleteView
+from django.views.generic import ListView, CreateView, DeleteView, UpdateView
 from django.db.models import Q
 from .models import Post, PostMedia
 from .forms import PostCreateForm
@@ -83,3 +83,18 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     def test_func(self):
         post = self.get_object()
         return self.request.user == post.author
+    
+# View để chỉnh sửa bài viết
+class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Post
+    form_class = PostCreateForm # Tái sử dụng form tạo bài viết
+    template_name = 'posts/post_form_edit.html' # Dùng template mới để tùy chỉnh tiêu đề
+    
+    # Hàm kiểm tra quyền: user đang đăng nhập có phải là tác giả của bài viết không
+    def test_func(self):
+        post = self.get_object()
+        return self.request.user == post.author
+
+    # Chuyển hướng về trang chủ sau khi chỉnh sửa thành công
+    def get_success_url(self):
+        return reverse_lazy('home')

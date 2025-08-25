@@ -1,0 +1,50 @@
+<!-- posts/templates/posts/post_form_edit.html -->
+{% extends "posts/base.html" %} {% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-header">
+          <!-- Thay đổi tiêu đề -->
+          <h3>Chỉnh sửa bài viết</h3>
+        </div>
+        <div class="card-body">
+          <!-- Hiển thị media đã có (phần nâng cao, sẽ làm sau) -->
+          <p><strong>Media hiện tại:</strong></p>
+          {% for media in object.media.all %}
+          <img
+            src="{{ media.file.url }}"
+            width="100"
+            class="img-thumbnail mb-2"
+            alt=""
+          />
+          {% empty %}
+          <p class="text-muted">Không có media.</p>
+          {% endfor %}
+          <hr />
+          <p>
+            <small class="text-muted"
+              >Lưu ý: Việc tải lên media mới sẽ thay thế toàn bộ media
+              cũ.</small
+            >
+          </p>
+
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %} {{ form.as_p }}
+            <div class="d-flex justify-content-end mt-3">
+              <a
+                href="{{ request.META.HTTP_REFERER|default:'/' }}"
+                class="btn btn-secondary me-2"
+                >Hủy</a
+              >
+              <button type="submit" class="btn btn-primary">
+                Lưu thay đổi
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
