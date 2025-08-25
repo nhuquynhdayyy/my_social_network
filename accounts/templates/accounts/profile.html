@@ -1,56 +1,148 @@
 <!-- accounts/templates/accounts/profile.html -->
-{% extends "posts/base.html" %}
-
-{% block content %}
+{% extends "posts/base.html" %} {% block content %}
 <div class="container">
-    <div class="row">
-        <div class="col-md-10 offset-md-1">
-            <!-- Cover Photo -->
-            <div class="card shadow-sm">
-                <img src="{{ profile_user.cover_photo.url }}" class="card-img-top" style="width: 100%; height: 300px; object-fit: cover;" alt="Cover Photo">
-                
-                <!-- Avatar and User Info -->
-                <div class="card-body">
-                    <div class="d-flex align-items-end" style="margin-top: -80px; padding-left: 20px;">
-                        <img src="{{ profile_user.avatar.url }}" class="rounded-circle border border-5 border-white" width="150" height="150" alt="Avatar">
-                        <div class="ms-3">
-                            <!-- SỬA Ở ĐÂY: Hiển thị First Name và Last Name -->
-                            <h2 class="mb-0">{{ profile_user.first_name }} {{ profile_user.last_name }}</h2>
-                            <p class="text-muted">@{{ profile_user.username }}</p>
-                        </div>
-                        <div class="ms-auto p-2 d-flex">
-                            <!-- THÊM NÚT NÀY -->
-                            <a href="{% url 'accounts:friend_list' username=profile_user.username %}" class="btn btn-outline-primary me-2">Xem bạn bè</a>
-                            
-                            {% if user.is_authenticated and user == profile_user %}
-                                <a href="{% url 'accounts:profile_edit' username=user.username %}" class="btn btn-secondary">Chỉnh sửa hồ sơ</a>
-                            {% endif %}
-                        </div>
-                    </div>
+  <div class="row">
+    <div class="col-md-10 offset-md-1">
+      <!-- Cover Photo -->
+      <div class="card shadow-sm">
+        <img
+          src="{{ profile_user.cover_photo.url }}"
+          class="card-img-top"
+          style="width: 100%; height: 300px; object-fit: cover"
+          alt="Cover Photo"
+        />
 
-                    <hr>
-                    
-                    <!-- THÊM Ở ĐÂY: Hiển thị thông tin chi tiết -->
-                    <h5>Giới thiệu</h5>
-                    <p>{{ profile_user.bio|default:"Chưa có thông tin." }}</p>
-                    
-                    <ul class="list-group list-group-flush">
-                        {% if profile_user.email %}
-                        <li class="list-group-item">
-                            <strong>Email:</strong> {{ profile_user.email }}
-                        </li>
-                        {% endif %}
-
-                        {% if profile_user.birth_date %}
-                        <li class="list-group-item">
-                            <!-- Dùng filter 'date' để định dạng ngày tháng cho đẹp -->
-                            <strong>Ngày sinh:</strong> {{ profile_user.birth_date|date:"d/m/Y" }}
-                        </li>
-                        {% endif %}
-                    </ul>
-                </div>
+        <!-- Avatar and User Info -->
+        <div class="card-body">
+          <div
+            class="d-flex align-items-end"
+            style="margin-top: -80px; padding-left: 20px"
+          >
+            <img
+              src="{{ profile_user.avatar.url }}"
+              class="rounded-circle border border-5 border-white"
+              width="150"
+              height="150"
+              alt="Avatar"
+            />
+            <div class="ms-3">
+              <!-- SỬA Ở ĐÂY: Hiển thị First Name và Last Name -->
+              <h2 class="mb-0">
+                {{ profile_user.first_name }} {{ profile_user.last_name }}
+              </h2>
+              <p class="text-muted">@{{ profile_user.username }}</p>
             </div>
+            <div class="ms-auto p-2 d-flex">
+              <!-- THÊM NÚT NÀY -->
+              <a
+                href="{% url 'accounts:friend_list' username=profile_user.username %}"
+                class="btn btn-outline-primary me-2"
+                >Xem bạn bè</a
+              >
+
+              {% if user.is_authenticated and user == profile_user %}
+              <a
+                href="{% url 'accounts:profile_edit' username=user.username %}"
+                class="btn btn-secondary"
+                >Chỉnh sửa hồ sơ</a
+              >
+              {% endif %}
+            </div>
+          </div>
+
+          <hr />
+
+          <!-- THÊM Ở ĐÂY: Hiển thị thông tin chi tiết -->
+          <h5>Giới thiệu</h5>
+          <p>{{ profile_user.bio|default:"Chưa có thông tin." }}</p>
+
+          <ul class="list-group list-group-flush">
+            {% if profile_user.email %}
+            <li class="list-group-item">
+              <strong>Email:</strong> {{ profile_user.email }}
+            </li>
+            {% endif %} {% if profile_user.birth_date %}
+            <li class="list-group-item">
+              <!-- Dùng filter 'date' để định dạng ngày tháng cho đẹp -->
+              <strong>Ngày sinh:</strong> {{
+              profile_user.birth_date|date:"d/m/Y" }}
+            </li>
+            {% endif %}
+          </ul>
         </div>
+      </div>
+      <!-- === THÊM PHẦN HIỂN THỊ BÀI VIẾT === -->
+      <h3 class="mb-3">Bài viết</h3>
+
+      {% for post in posts %}
+      <div class="card mb-3">
+        {% if post.media.all %}
+        <div
+          id="carouselPost{{ post.id }}"
+          class="carousel slide"
+          data-bs-ride="carousel"
+        >
+          <div class="carousel-inner">
+            {% for media_item in post.media.all %}
+            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+              {% if media_item.media_type == 'IMAGE' %}
+              <img
+                src="{{ media_item.file.url }}"
+                class="d-block w-100"
+                style="max-height: 500px; object-fit: cover"
+                alt="Post image"
+              />
+              {% elif media_item.media_type == 'VIDEO' %}
+              <video
+                src="{{ media_item.file.url }}"
+                class="d-block w-100"
+                controls
+              ></video>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% if post.media.all|length > 1 %}
+          <button
+            class="carousel-control-prev"
+            type="button"
+            data-bs-target="#carouselPost{{ post.id }}"
+            data-bs-slide="prev"
+          >
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+          </button>
+          <button
+            class="carousel-control-next"
+            type="button"
+            data-bs-target="#carouselPost{{ post.id }}"
+            data-bs-slide="next"
+          >
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+          </button>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="card-body">
+          <p class="card-text">{{ post.content|linebreaksbr }}</p>
+          <p class="card-text">
+            <small class="text-muted"
+              >{{ post.created_at|timesince }} trước</small
+            >
+          </p>
+        </div>
+      </div>
+      {% empty %}
+      <div class="card">
+        <div class="card-body">
+          <p class="text-muted">Không có bài viết nào để hiển thị.</p>
+        </div>
+      </div>
+      {% endfor %}
+      <!-- === KẾT THÚC PHẦN HIỂN THỊ BÀI VIẾT === -->
     </div>
+  </div>
 </div>
 {% endblock content %}

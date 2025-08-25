@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q # Dùng Q object cho truy vấn phức tạp
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from .models import User, Friendship # Import User model
+from posts.models import Post # Quan trọng: Import model Post
 
 class SignUpView(CreateView):
     form_class = CustomUserCreationForm
@@ -15,16 +16,56 @@ class SignUpView(CreateView):
     success_url = reverse_lazy('accounts:login') # Chuyển hướng đến trang đăng nhập sau khi đăng ký thành công
     template_name = 'accounts/register.html'
 
-# View để xem Profile
+# View để xem Profile - ĐÃ NÂNG CẤP
 class ProfileView(DetailView):
     model = User
     template_name = 'accounts/profile.html'
-    context_object_name = 'profile_user' # Đặt tên biến trong template cho dễ hiểu
+    context_object_name = 'profile_user'
 
-    # Lấy user object dựa trên username trong URL
     def get_object(self, queryset=None):
-        return User.objects.get(username=self.kwargs.get('username'))
+        # Giữ nguyên logic lấy user từ username trên URL
+        return get_object_or_404(User, username=self.kwargs.get('username'))
 
+    def get_context_data(self, **kwargs):
+        # Hàm này được gọi để chuẩn bị dữ liệu gửi sang template
+        context = super().get_context_data(**kwargs)
+        
+        # Lấy các đối tượng chính: chủ profile và người xem
+        profile_user = self.get_object()
+        visitor = self.request.user
+
+        # === BẮT ĐẦU LOGIC LỌC BÀI VIẾT ===
+
+        # 1. Kiểm tra xem người xem có phải là chủ nhân profile không
+        if visitor.is_authenticated and visitor == profile_user:
+            # Trường hợp 1: TÔI xem trang của TÔI
+            # -> Lấy tất cả bài viết của tôi
+            queryset = Post.objects.filter(author=profile_user)
+        else:
+            # Trường hợp 2 & 3: Người khác xem trang của tôi
+            
+            # Mặc định, người lạ chỉ thấy bài PUBLIC
+            queryset = Post.objects.filter(author=profile_user, privacy='PUBLIC')
+
+            # Kiểm tra xem người xem có phải là BẠN BÈ không
+            if visitor.is_authenticated:
+                are_friends = Friendship.objects.filter(
+                    (Q(from_user=profile_user, to_user=visitor) | Q(from_user=visitor, to_user=profile_user)),
+                    status='ACCEPTED'
+                ).exists()
+
+                if are_friends:
+                    # Trường hợp 3: BẠN BÈ xem trang của TÔI
+                    # -> Lấy bài viết PUBLIC và FRIENDS
+                    queryset = Post.objects.filter(
+                        author=profile_user, 
+                        privacy__in=['PUBLIC', 'FRIENDS']
+                    )
+
+        # Thêm danh sách bài viết đã lọc vào context để template có thể sử dụng
+        context['posts'] = queryset.order_by('-created_at')
+        
+        return context
 # View để chỉnh sửa Profile
 class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = User
