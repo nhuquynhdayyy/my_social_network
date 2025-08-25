@@ -1,0 +1,41 @@
+<!-- posts/templates/posts/post_confirm_delete.html -->
+{% extends "posts/base.html" %} {% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+          <h2>Xác nhận xóa bài viết</h2>
+        </div>
+        <div class="card-body">
+          <p>
+            Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không
+            thể hoàn tác.
+          </p>
+
+          <!-- Hiển thị lại nội dung bài viết để người dùng biết họ đang xóa cái gì -->
+          <div class="card bg-light mb-3">
+            <div class="card-body">
+              <p class="card-text">
+                <em>{{ object.content|truncatewords:30 }}</em>
+              </p>
+            </div>
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-end">
+              <a
+                href="{{ request.META.HTTP_REFERER|default:'/' }}"
+                class="btn btn-secondary me-2"
+                >Hủy</a
+              >
+              <button type="submit" class="btn btn-danger">Xóa</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

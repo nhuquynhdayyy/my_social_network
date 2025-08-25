@@ -1,8 +1,8 @@
 # posts/views.py
 from django.shortcuts import render
 from django.urls import reverse_lazy
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, CreateView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.views.generic import ListView, CreateView, DeleteView
 from django.db.models import Q
 from .models import Post, PostMedia
 from .forms import PostCreateForm
@@ -71,3 +71,15 @@ class PostCreateView(LoginRequiredMixin, CreateView):
             PostMedia.objects.create(post=self.object, file=file, media_type=media_type)
         
         return response
+    
+# View để xóa bài viết
+class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Post
+    template_name = 'posts/post_confirm_delete.html'
+    # Chuyển hướng về trang chủ sau khi xóa thành công
+    success_url = reverse_lazy('home')
+
+    # Hàm kiểm tra quyền: user đang đăng nhập có phải là tác giả của bài viết không
+    def test_func(self):
+        post = self.get_object()
+        return self.request.user == post.author

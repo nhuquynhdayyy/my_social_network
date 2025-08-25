@@ -86,6 +86,17 @@
               >{{ post.author.username }}</a
             >
           </div>
+          <!-- === THÊM PHẦN NÀY === -->
+          {% if user.is_authenticated and user == post.author %}
+          <div class="ms-auto">
+            <a
+              href="{% url 'post_delete' pk=post.pk %}"
+              class="btn btn-sm btn-outline-danger"
+              >Xóa</a
+            >
+          </div>
+          {% endif %}
+          <!-- === KẾT THÚC PHẦN THÊM === -->
         </div>
         <p class="card-text">{{ post.content|linebreaksbr }}</p>
         <p class="card-text">
