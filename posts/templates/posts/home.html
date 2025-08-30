@@ -139,13 +139,44 @@
           </div>
 
           <!-- Tổng số reaction -->
+          {% comment %}
           <span id="reactions-count-{{ post.id }}"
             >{{ post.reactions.count }}</span
           >
+          {% endcomment %}
+          <span
+            class="reaction-count"
+            data-post-id="{{ post.id }}"
+            style="cursor: pointer"
+          >
+            {{ post.reactions.count }}
+          </span>
           {% else %}
           <span id="reactions-count-{{ post.id }}" class="text-muted"
             >Chưa có cảm xúc</span
           >
+          <div
+            class="modal fade"
+            id="reactionModal"
+            tabindex="-1"
+            aria-labelledby="reactionModalLabel"
+            aria-hidden="true"
+          >
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Chi tiết cảm xúc</h5>
+                  <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                  ></button>
+                </div>
+                <div class="modal-body" id="reactionDetailBox">Đang tải...</div>
+              </div>
+            </div>
+          </div>
           {% endif %} {% endwith %}
         </div>
       </div>

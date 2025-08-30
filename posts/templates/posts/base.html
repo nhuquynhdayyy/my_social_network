@@ -163,5 +163,29 @@
         });
       });
     </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".reaction-count").forEach(function (elem) {
+          elem.addEventListener("click", function () {
+            let postId = this.dataset.postId;
+
+            fetch(`/post/${postId}/reactions/detail/`)
+              .then((response) => response.json())
+              .then((data) => {
+                let html = "";
+                for (let type in data) {
+                  html += `<strong>${type}</strong>: ${data[type].join(
+                    ", "
+                  )}<br>`;
+                }
+                document.getElementById("reactionDetailBox").innerHTML = html;
+                new bootstrap.Modal(
+                  document.getElementById("reactionModal")
+                ).show();
+              });
+          });
+        });
+      });
+    </script>
   </body>
 </html>

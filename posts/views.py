@@ -176,3 +176,18 @@ def react_to_post(request, post_id):
 
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+def reaction_detail(request, pk):
+    post = Post.objects.get(pk=pk)
+    post_type = ContentType.objects.get_for_model(Post)
+
+    reactions = Reaction.objects.filter(
+        content_type=post_type,
+        object_id=post.id
+    )
+
+    data = {}
+    for reaction in reactions:
+        data.setdefault(reaction.reaction_type, []).append(reaction.user.username)
+
+    return JsonResponse(data)

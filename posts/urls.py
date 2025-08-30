@@ -2,6 +2,7 @@
 
 from django.urls import path
 from .views import HomePageView, PostCreateView, PostDeleteView, PostUpdateView, react_to_post
+from . import views
 
 urlpatterns = [
     # Khi người dùng truy cập vào URL gốc của app này (''),
@@ -15,4 +16,5 @@ urlpatterns = [
     path('post/<int:pk>/edit/', PostUpdateView.as_view(), name='post_edit'),
     # URL cho hành động thả cảm xúc
     path('post/<int:post_id>/react/', react_to_post, name='react_to_post'),
+    path("post/<int:pk>/reactions/detail/", views.reaction_detail, name="reaction_detail")
 ]
