@@ -1,12 +1,17 @@
 # posts/views.py
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView
-from django.db.models import Q
-from .models import Post, PostMedia
+from django.db.models import Q, Count # Import Count để thống kê
+from .models import Post, PostMedia, Reaction
 from .forms import PostCreateForm
 from accounts.models import Friendship, User
+import json
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.contrib.contenttypes.models import ContentType
 
 class HomePageView(ListView):
     model = Post
@@ -98,3 +103,76 @@ class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     # Chuyển hướng về trang chủ sau khi chỉnh sửa thành công
     def get_success_url(self):
         return reverse_lazy('home')
+    
+# View xử lý logic thả cảm xúc
+@login_required
+@require_POST
+def react_to_post(request, post_id):
+    try:
+        post = get_object_or_404(Post, id=post_id)
+        data = json.loads(request.body)
+        reaction_type = data.get('reaction_type')
+        
+        # ... (Phần kiểm tra reaction_type và kiểm tra quyền giữ nguyên như cũ) ...
+        # === KIỂM TRA QUYỀN (PERMISSION CHECKING) ===
+        viewer = request.user
+        author = post.author
+        can_react = False
+
+        if viewer == author: 
+            can_react = True
+        elif post.privacy == 'PUBLIC':
+            can_react = True
+        elif post.privacy == 'FRIENDS':
+            are_friends = Friendship.objects.filter(
+                (Q(from_user=author, to_user=viewer) | Q(from_user=viewer, to_user=author)),
+                status='ACCEPTED'
+            ).exists()
+            if are_friends:
+                can_react = True
+        
+        if not can_react:
+            return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện hành động này'}, status=403)
+
+
+        # === XỬ LÝ LOGIC REACTION (giữ nguyên) ===
+        content_type = ContentType.objects.get_for_model(Post)
+        existing_reaction = Reaction.objects.filter(
+            user=viewer, content_type=content_type, object_id=post.id
+        ).first()
+        
+        current_user_reaction = None
+        if existing_reaction:
+            if existing_reaction.reaction_type == reaction_type:
+                existing_reaction.delete()
+                current_user_reaction = None # Đã bỏ react
+            else:
+                existing_reaction.reaction_type = reaction_type
+                existing_reaction.save()
+                current_user_reaction = reaction_type
+        else:
+            Reaction.objects.create(
+                user=viewer,
+                content_type=content_type,
+                object_id=post.id,
+                reaction_type=reaction_type
+            )
+            current_user_reaction = reaction_type
+        
+        # === THỐNG KÊ CHI TIẾT REACTION (PHẦN NÂNG CẤP) ===
+        reaction_stats = post.reactions.values('reaction_type').annotate(count=Count('id')).order_by('-count')
+        
+        # Chuyển kết quả queryset thành một dict dễ dùng hơn
+        stats_dict = {item['reaction_type']: item['count'] for item in reaction_stats}
+        total_reactions = post.reactions.count()
+        
+        # Trả về một JSON Response với đầy đủ thông tin
+        return JsonResponse({
+            'status': 'ok',
+            'total_reactions': total_reactions,
+            'reaction_stats': stats_dict,
+            'current_user_reaction': current_user_reaction # Reaction hiện tại của user
+        })
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

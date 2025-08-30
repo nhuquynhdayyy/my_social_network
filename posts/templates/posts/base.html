@@ -1,53 +1,167 @@
 <!-- posts/templates/posts/base.html -->
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>MySocial</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="...bootstrap.bundle.min.js..."></script>
+  </head>
+  <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-            <!-- URL 'home' không có namespace vì nó nằm trong URL gốc -->
-            <a class="navbar-brand" href="{% url 'home' %}">MySocial</a>
-            <div class="d-flex">
-                {% if user.is_authenticated %}
-                    <!-- NÚT LỜI MỜI KẾT BẠN -->
-                    <a href="{% url 'accounts:friend_requests' %}" class="btn btn-outline-secondary position-relative me-3">
-                        Lời mời
-                        {% if unread_notifications_count > 0 %}
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            {{ unread_notifications_count }}
-                        </span>
-                        {% endif %}
-                    </a>
-                    <!-- SỬA Ở ĐÂY -->
-                    <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-primary me-3">Tìm bạn</a>
+      <div class="container-fluid">
+        <!-- URL 'home' không có namespace vì nó nằm trong URL gốc -->
+        <a class="navbar-brand" href="{% url 'home' %}">MySocial</a>
+        <div class="d-flex">
+          {% if user.is_authenticated %}
+          <!-- NÚT LỜI MỜI KẾT BẠN -->
+          <a
+            href="{% url 'accounts:friend_requests' %}"
+            class="btn btn-outline-secondary position-relative me-3"
+          >
+            Lời mời {% if unread_notifications_count > 0 %}
+            <span
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+            >
+              {{ unread_notifications_count }}
+            </span>
+            {% endif %}
+          </a>
+          <!-- SỬA Ở ĐÂY -->
+          <a
+            href="{% url 'accounts:user_list' %}"
+            class="btn btn-outline-primary me-3"
+            >Tìm bạn</a
+          >
 
-                    <span class="navbar-text me-3">
-                        <!-- SỬA Ở ĐÂY -->
-                        <a href="{% url 'accounts:profile' username=user.username %}" class="text-dark text-decoration-none">
-                            Chào, {{ user.username }}!
-                        </a>
-                    </span>
-                    <!-- SỬA Ở ĐÂY -->
-                    <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
-                {% else %}
-                    <!-- SỬA Ở ĐÂY -->
-                    <a href="{% url 'accounts:login' %}" class="btn btn-outline-success me-2">Đăng nhập</a>
-                    <!-- SỬA Ở ĐÂY -->
-                    <a href="{% url 'accounts:register' %}" class="btn btn-primary">Đăng ký</a>
-                {% endif %}
-            </div>
+          <span class="navbar-text me-3">
+            <!-- SỬA Ở ĐÂY -->
+            <a
+              href="{% url 'accounts:profile' username=user.username %}"
+              class="text-dark text-decoration-none"
+            >
+              Chào, {{ user.username }}!
+            </a>
+          </span>
+          <!-- SỬA Ở ĐÂY -->
+          <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger"
+            >Đăng xuất</a
+          >
+          {% else %}
+          <!-- SỬA Ở ĐÂY -->
+          <a
+            href="{% url 'accounts:login' %}"
+            class="btn btn-outline-success me-2"
+            >Đăng nhập</a
+          >
+          <!-- SỬA Ở ĐÂY -->
+          <a href="{% url 'accounts:register' %}" class="btn btn-primary"
+            >Đăng ký</a
+          >
+          {% endif %}
         </div>
+      </div>
     </nav>
 
     <main class="container mt-4">
-        {% block content %}
-        {% endblock content %}
+      {% block content %} {% endblock content %}
     </main>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+    <!-- === THÊM ĐOẠN SCRIPT SAU === -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Lấy cookie theo tên (chuẩn Django docs)
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === name + "=") {
+                cookieValue = decodeURIComponent(
+                  cookie.substring(name.length + 1)
+                );
+                break;
+              }
+            }
+          }
+          return cookieValue;
+        }
+
+        const csrftoken = getCookie("csrftoken");
+
+        function updateReactionStatsUI(postId, stats, total) {
+          const statsContainer = document.getElementById(
+            `reaction-stats-${postId}`
+          );
+          if (!statsContainer) return;
+          if (total > 0) {
+            let iconsHTML = '<div class="me-2">';
+            if (stats.LIKE) iconsHTML += "<span>👍</span>";
+            if (stats.LOVE) iconsHTML += "<span>❤️</span>";
+            if (stats.HAHA) iconsHTML += "<span>😂</span>";
+            if (stats.WOW) iconsHTML += "<span>😮</span>";
+            if (stats.SAD) iconsHTML += "<span>😢</span>";
+            if (stats.ANGRY) iconsHTML += "<span>😡</span>";
+            iconsHTML += "</div>";
+            statsContainer.innerHTML =
+              iconsHTML +
+              `<span id="reactions-count-${postId}">${total}</span>`;
+          } else {
+            statsContainer.innerHTML = `<span id="reactions-count-${postId}" class="text-muted">Chưa có cảm xúc</span>`;
+          }
+        }
+
+        function highlightSelectedReaction(postId, selectedType) {
+          const buttons = document.querySelectorAll(
+            `.reaction-btn[data-post-id='${postId}']`
+          );
+          buttons.forEach((btn) => {
+            if (btn.dataset.reactionType === selectedType) {
+              btn.classList.add("fw-bold", "text-primary");
+            } else {
+              btn.classList.remove("fw-bold", "text-primary");
+            }
+          });
+        }
+
+        document.querySelectorAll(".reaction-btn").forEach((button) => {
+          button.addEventListener("click", function (e) {
+            e.preventDefault();
+            const postId = this.dataset.postId;
+            const reactionType = this.dataset.reactionType;
+
+            fetch(`/post/${postId}/react/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken, // tên header phải đúng
+                "X-Requested-With": "XMLHttpRequest", // optional nhưng nên có
+              },
+              credentials: "same-origin", // gửi kèm cookie csrftoken
+              body: JSON.stringify({ reaction_type: reactionType }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                if (data.status === "ok") {
+                  updateReactionStatsUI(
+                    postId,
+                    data.reaction_stats,
+                    data.total_reactions
+                  );
+                  highlightSelectedReaction(postId, data.current_user_reaction);
+                } else {
+                  alert(data.message || "Có lỗi xảy ra.");
+                }
+              })
+              .catch((err) => console.error("Error:", err));
+          });
+        });
+      });
+    </script>
+  </body>
 </html>

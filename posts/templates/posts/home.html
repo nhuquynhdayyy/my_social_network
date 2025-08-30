@@ -110,6 +110,95 @@
           >
         </p>
       </div>
+      <!-- === BẮT ĐẦU KHỐI CODE REACTION - PHIÊN BẢN SỬA LỖI CUỐI CÙNG === -->
+      <hr />
+
+      <!-- Vùng hiển thị thống kê (số lượng và icon) -->
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div
+          id="reaction-stats-{{ post.id }}"
+          class="d-flex align-items-center"
+          style="font-size: 0.9rem"
+        >
+          {% with stats=post.get_reaction_stats %} {% if stats %}
+          <!-- Các icon reaction -->
+          <div class="me-2">
+            {% if 'LIKE' in stats %}
+            <span>👍</span>
+            {% endif %} {% if 'LOVE' in stats %}
+            <span>❤️</span>
+            {% endif %} {% if 'HAHA' in stats %}
+            <span>😂</span>
+            {% endif %} {% if 'WOW' in stats %}
+            <span>😮</span>
+            {% endif %} {% if 'SAD' in stats %}
+            <span>😢</span>
+            {% endif %} {% if 'ANGRY' in stats %}
+            <span>😡</span>
+            {% endif %}
+          </div>
+
+          <!-- Tổng số reaction -->
+          <span id="reactions-count-{{ post.id }}"
+            >{{ post.reactions.count }}</span
+          >
+          {% else %}
+          <span id="reactions-count-{{ post.id }}" class="text-muted"
+            >Chưa có cảm xúc</span
+          >
+          {% endif %} {% endwith %}
+        </div>
+      </div>
+
+      <!-- Vùng các nút bấm reaction -->
+      <div class="reaction-buttons-container border-top border-bottom py-1">
+        <div class="d-flex justify-content-around">
+          <button
+            class="btn btn-light reaction-btn flex-fill"
+            data-post-id="{{ post.id }}"
+            data-reaction-type="LIKE"
+          >
+            👍 Thích
+          </button>
+          <button
+            class="btn btn-light reaction-btn flex-fill"
+            data-post-id="{{ post.id }}"
+            data-reaction-type="LOVE"
+          >
+            ❤️ Yêu thích
+          </button>
+          <button
+            class="btn btn-light reaction-btn flex-fill"
+            data-post-id="{{ post.id }}"
+            data-reaction-type="HAHA"
+          >
+            😂 Haha
+          </button>
+          <button
+            class="btn btn-light reaction-btn flex-fill"
+            data-post-id="{{ post.id }}"
+            data-reaction-type="WOW"
+          >
+            😮 Wow
+          </button>
+          <button
+            class="btn btn-light reaction-btn flex-fill"
+            data-post-id="{{ post.id }}"
+            data-reaction-type="SAD"
+          >
+            😢 Buồn
+          </button>
+          <button
+            class="btn btn-light reaction-btn flex-fill"
+            data-post-id="{{ post.id }}"
+            data-reaction-type="ANGRY"
+          >
+            😡 Phẫn nộ
+          </button>
+        </div>
+      </div>
+
+      <!-- === KẾT THÚC KHỐI CODE REACTION === -->
     </div>
     {% empty %}
     <p>Chưa có bài đăng nào để hiển thị.</p>

@@ -2,8 +2,9 @@
 
 from django.db import models
 from django.conf import settings
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Count
 
 # Lựa chọn cho quyền riêng tư của bài đăng
 PRIVACY_CHOICES = [
@@ -19,13 +20,21 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     # Dùng cho tính năng chia sẻ
     shared_from = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='shares')
-
+    
+    # === THÊM DÒNG NÀY ĐỂ TẠO CẦU NỐI NGƯỢC ===
+    # Tên 'reactions' phải khớp với related_name mà chúng ta muốn
+    reactions = GenericRelation('Reaction')
+    # THÊM HÀM NÀY
+    def get_reaction_stats(self):
+        stats = self.reactions.values('reaction_type').annotate(count=Count('id')).order_by('-count')
+        return {item['reaction_type']: item['count'] for item in stats}
+    
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
         return f"Post by {self.author.username} at {self.created_at.strftime('%Y-%m-%d %H:%M')}"
-
+    
 class PostMedia(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
     file = models.FileField(upload_to='post_media/')
