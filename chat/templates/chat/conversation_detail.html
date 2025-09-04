@@ -1,0 +1,160 @@
+{% extends "posts/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4>Trò chuyện với {{ other_participant.username }}</h4>
+        </div>
+        <div class="card-body" id="message-container" style="height: 60vh; overflow-y: auto;">
+            <!-- Tin nhắn sẽ được hiển thị ở đây -->
+            {% for message in messages %}
+                <div id="message-{{ message.id }}" class="mb-3 d-flex {% if message.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
+                    <div class="message-bubble p-2 rounded {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 70%;">
+                        <p class="mb-0 message-text">{{ message.text }}</p>
+                        <small class="text-muted d-block text-end {% if message.sender == user %}text-white-50{% endif %}">
+                            {{ message.timestamp|date:"H:i, d/m/Y" }}
+                        </small>
+                        {% if message.sender == user %}
+                        <div class="message-actions">
+                            <button class="btn btn-sm btn-light py-0 px-1" onclick="showEditForm('{{ message.id }}')">Sửa</button>
+                            <button class="btn btn-sm btn-danger py-0 px-1" onclick="deleteMessage('{{ message.id }}')">Xóa</button>
+                        </div>
+                        <div id="edit-form-{{ message.id }}" style="display: none;">
+                            <textarea class="form-control form-control-sm mt-1" id="edit-text-{{ message.id }}">{{ message.text }}</textarea>
+                            <button class="btn btn-sm btn-success mt-1" onclick="submitEdit('{{ message.id }}')">Lưu</button>
+                            <button class="btn btn-sm btn-secondary mt-1" onclick="hideEditForm('{{ message.id }}')">Hủy</button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="card-footer">
+            <form id="message-form" method="post" action="{% url 'chat:send_message_api' conversation.id %}">
+                {% csrf_token %}
+                <div class="input-group">
+                    {{ form.text }}
+                    <button class="btn btn-primary" type="submit">Gửi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageContainer = document.getElementById('message-container');
+    // Tự động cuộn xuống tin nhắn mới nhất
+    messageContainer.scrollTop = messageContainer.scrollHeight;
+
+    const messageForm = document.getElementById('message-form');
+    const csrftoken = getCookie('csrftoken');
+
+    messageForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const textInput = document.querySelector('[name="text"]');
+        const text = textInput.value;
+        const url = this.action;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrftoken,
+            },
+            body: `text=${encodeURIComponent(text)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                const messageHtml = `
+                <div id="message-${data.message_id}" class="mb-3 d-flex justify-content-end">
+                    <div class="message-bubble p-2 rounded bg-primary text-white" style="max-width: 70%;">
+                        <p class="mb-0 message-text">${data.text}</p>
+                        <small class="text-muted d-block text-end text-white-50">
+                            ${data.timestamp}
+                        </small>
+                        <div class="message-actions">
+                             <button class="btn btn-sm btn-light py-0 px-1" onclick="showEditForm('${data.message_id}')">Sửa</button>
+                             <button class="btn btn-sm btn-danger py-0 px-1" onclick="deleteMessage('${data.message_id}')">Xóa</button>
+                        </div>
+                        <div id="edit-form-${data.message_id}" style="display: none;">
+                            <textarea class="form-control form-control-sm mt-1" id="edit-text-${data.message_id}">${data.text}</textarea>
+                            <button class="btn btn-sm btn-success mt-1" onclick="submitEdit('${data.message_id}')">Lưu</button>
+                            <button class="btn btn-sm btn-secondary mt-1" onclick="hideEditForm('${data.message_id}')">Hủy</button>
+                        </div>
+                    </div>
+                </div>`;
+                messageContainer.innerHTML += messageHtml;
+                textInput.value = '';
+                messageContainer.scrollTop = messageContainer.scrollHeight; // Cuộn xuống
+            }
+        });
+    });
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function deleteMessage(messageId) {
+    if (!confirm('Bạn có chắc muốn xóa tin nhắn này?')) return;
+    
+    fetch(`/chat/api/message/delete/${messageId}/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken')}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            document.getElementById(`message-${data.message_id}`).remove();
+        } else {
+            alert('Lỗi: ' + data.message);
+        }
+    });
+}
+
+function showEditForm(messageId) {
+    document.getElementById(`edit-form-${messageId}`).style.display = 'block';
+}
+
+function hideEditForm(messageId) {
+     document.getElementById(`edit-form-${messageId}`).style.display = 'none';
+}
+
+function submitEdit(messageId) {
+    const newText = document.getElementById(`edit-text-${messageId}`).value;
+    fetch(`/chat/api/message/edit/${messageId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({text: newText})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            // Cập nhật nội dung tin nhắn trên giao diện
+            const messageDiv = document.getElementById(`message-${data.message_id}`);
+            messageDiv.querySelector('.message-text').innerText = data.new_text;
+            hideEditForm(messageId);
+        } else {
+            alert('Lỗi: ' + data.message);
+        }
+    });
+}
+</script>
+{% endblock content %}
