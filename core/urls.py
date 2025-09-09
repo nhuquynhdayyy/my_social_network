@@ -11,6 +11,7 @@ urlpatterns = [
     # hãy chuyển hướng tất cả các yêu cầu còn lại cho file urls.py của app 'posts' xử lý.
     path('accounts/', include('accounts.urls')), # Thêm dòng này
     path('', include('posts.urls')),
+    path('chat/', include('chat.urls', namespace='chat')),
 ]
 
 # Cấu hình để Django phục vụ các file media (như avatar) trong môi trường phát triển

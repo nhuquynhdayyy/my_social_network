@@ -30,7 +30,12 @@
             </span>
             {% endif %}
           </a>
-          <!-- SỬA Ở ĐÂY -->
+
+          <!-- NÚT LINK TỚI TRANG CHAT CHÍNH -->
+          <a href="{% url 'chat:conversation_list' %}" class="btn btn-outline-info me-3">
+            Tin nhắn
+          </a>
+          
           <a
             href="{% url 'accounts:user_list' %}"
             class="btn btn-outline-primary me-3"
@@ -38,7 +43,6 @@
           >
 
           <span class="navbar-text me-3">
-            <!-- SỬA Ở ĐÂY -->
             <a
               href="{% url 'accounts:profile' username=user.username %}"
               class="text-dark text-decoration-none"
@@ -46,18 +50,15 @@
               Chào, {{ user.username }}!
             </a>
           </span>
-          <!-- SỬA Ở ĐÂY -->
           <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger"
             >Đăng xuất</a
           >
           {% else %}
-          <!-- SỬA Ở ĐÂY -->
           <a
             href="{% url 'accounts:login' %}"
             class="btn btn-outline-success me-2"
             >Đăng nhập</a
           >
-          <!-- SỬA Ở ĐÂY -->
           <a href="{% url 'accounts:register' %}" class="btn btn-primary"
             >Đăng ký</a
           >
@@ -187,5 +188,171 @@
         });
       });
     </script>
+
+    {% block extra_js %}{% endblock %}
+
+        {# ============== BẮT ĐẦU PHẦN WIDGET CHAT NỔI (PHIÊN BẢN NÂNG CẤP) ============== #}
+        {% if user.is_authenticated %}
+        <style>
+            .chat-widget-container { position: fixed; bottom: 25px; right: 25px; z-index: 1050; }
+            .chat-open-button { background-color: #0d6efd; color: white; padding: 16px; border: none; cursor: pointer; border-radius: 50%; width: 60px; height: 60px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
+            .chat-popup { display: none; position: absolute; bottom: 80px; right: 0; width: 320px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); background-color: white; flex-direction: column; }
+            .chat-popup-header { background-color: #0d6efd; color: white; padding: 10px 15px; border-top-left-radius: 10px; border-top-right-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+            .chat-popup-header h4 { margin: 0; font-size: 1.1rem; }
+            .chat-popup-header .header-buttons { display: flex; align-items: center; gap: 10px; }
+            .chat-popup-body { padding: 0; max-height: 400px; overflow-y: auto; }
+            .chat-popup-body .conversation-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; text-decoration: none; color: #212529; transition: background-color 0.2s; }
+            .chat-popup-body .conversation-item:last-child { border-bottom: none; }
+            .chat-popup-body .conversation-item:hover { background-color: #f1f1f1; }
+            .chat-popup-body .conversation-item .last-message { font-size: 0.85rem; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .chat-action-btn { background: none; border: none; color: white; cursor: pointer; padding: 0; font-size: 1.2rem; }
+            #search-users-view .search-header { padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
+            #search-users-view input { border-radius: 20px; }
+        </style>
+    
+        <div class="chat-widget-container">
+            <!-- Cửa sổ Popup (ẩn mặc định) -->
+            <div class="chat-popup" id="chatPopup">
+                <div class="chat-popup-header">
+                    <h4 id="chat-popup-title">Tin nhắn</h4>
+                    <div class="header-buttons">
+                        <button type="button" class="chat-action-btn" id="newMessageBtn" title="Tin nhắn mới">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
+                        </button>
+                        <button type="button" class="chat-action-btn" id="closeChatBtn" style="font-size: 1.5rem; line-height: 1;">&times;</button>
+                    </div>
+                </div>
+                <div class="chat-popup-body">
+                    <!-- Màn hình 1: Danh sách tin nhắn gần đây (mặc định) -->
+                    <div id="recent-conversations-view">
+                        <div id="chatPopupBodyContent" class="p-3 text-center text-muted">Đang tải...</div>
+                    </div>
+    
+                    <!-- Màn hình 2: Tạo tin nhắn mới (ẩn) -->
+                    <div id="search-users-view" style="display: none;">
+                        <div class="search-header">
+                            <button class="btn btn-light btn-sm" id="backToRecentBtn">&larr;</button>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm người dùng...">
+                        </div>
+                        <div id="searchResultsList"></div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Nút Tròn để mở Popup -->
+            <button class="chat-open-button" id="openChatBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chat-dots-fill" viewBox="0 0 16 16"><path d="M16 8c0 3.866-3.582 7-8 7a9.06 9.06 0 0 1-2.347-.306c-.584.296-1.925.864-4.181 1.234-.2.032-.352-.176-.273-.362.354-.836.674-1.95.77-2.966C.744 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7zM5 8a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
+            </button>
+        </div>
+    
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const openChatBtn = document.getElementById('openChatBtn');
+            const closeChatBtn = document.getElementById('closeChatBtn');
+            const chatPopup = document.getElementById('chatPopup');
+            const chatPopupBodyContent = document.getElementById('chatPopupBodyContent');
+            const chatPopupTitle = document.getElementById('chat-popup-title');
+    
+            // Các element cho màn hình mới
+            const newMessageBtn = document.getElementById('newMessageBtn');
+            const backToRecentBtn = document.getElementById('backToRecentBtn');
+            const recentConversationsView = document.getElementById('recent-conversations-view');
+            const searchUsersView = document.getElementById('search-users-view');
+            const searchInput = document.getElementById('searchInput');
+            const searchResultsList = document.getElementById('searchResultsList');
+    
+            let conversationsLoaded = false;
+    
+            // Mở/đóng popup
+            openChatBtn.addEventListener('click', function() {
+                chatPopup.style.display = 'flex';
+                if (!conversationsLoaded) { loadConversations(); }
+            });
+            closeChatBtn.addEventListener('click', function() { chatPopup.style.display = 'none'; });
+    
+            // Chuyển đổi giữa các màn hình
+            newMessageBtn.addEventListener('click', function() {
+                recentConversationsView.style.display = 'none';
+                searchUsersView.style.display = 'block';
+                chatPopupTitle.innerText = 'Tin nhắn mới';
+                searchInput.focus();
+            });
+            backToRecentBtn.addEventListener('click', function() {
+                searchUsersView.style.display = 'none';
+                recentConversationsView.style.display = 'block';
+                chatPopupTitle.innerText = 'Tin nhắn';
+                searchInput.value = '';
+                searchResultsList.innerHTML = '';
+            });
+    
+            // Hàm tải danh sách cuộc trò chuyện
+            function loadConversations() {
+                fetch("{% url 'chat:api_get_conversations' %}")
+                    .then(response => response.json())
+                    .then(data => {
+                        chatPopupBodyContent.innerHTML = ''; // Xóa "Đang tải..."
+                        chatPopupBodyContent.className = ''; // Xóa class padding
+                        if (data.conversations && data.conversations.length > 0) {
+                            data.conversations.forEach(conv => {
+                                chatPopupBodyContent.innerHTML += `
+                                    <a href="${conv.detail_url}" class="conversation-item">
+                                        <div class="flex-shrink-0 me-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-person-circle text-secondary" viewBox="0 0 16 16"><path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/></svg>
+                                        </div>
+                                        <div class="w-100" style="overflow: hidden;">
+                                            <strong>${conv.other_participant.username}</strong>
+                                            <p class="last-message mb-0">${conv.last_message || 'Bắt đầu trò chuyện'}</p>
+                                        </div>
+                                    </a>`;
+                            });
+                        } else {
+                            chatPopupBodyContent.innerHTML = '<p class="text-center text-muted p-3">Không có cuộc trò chuyện nào.</p>';
+                        }
+                        conversationsLoaded = true;
+                    }).catch(error => {
+                        console.error('Lỗi khi tải tin nhắn:', error);
+                        chatPopupBodyContent.innerHTML = '<p class="text-center text-danger p-3">Không thể tải tin nhắn.</p>';
+                    });
+            }
+            
+            // Logic tìm kiếm người dùng
+            let searchTimeout;
+            searchInput.addEventListener('keyup', function() {
+                clearTimeout(searchTimeout);
+                const query = searchInput.value.trim();
+    
+                if (query.length < 2) {
+                    searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Nhập ít nhất 2 ký tự để tìm kiếm.</p>';
+                    return;
+                }
+    
+                searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Đang tìm...</p>';
+    
+                // Debounce: Chờ 300ms sau khi người dùng ngừng gõ mới gửi request
+                searchTimeout = setTimeout(() => {
+                    fetch(`{% url 'chat:api_search_users' %}?q=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            searchResultsList.innerHTML = '';
+                            if (data.users && data.users.length > 0) {
+                                data.users.forEach(user => {
+                                    searchResultsList.innerHTML += `
+                                        <a href="${user.start_conversation_url}" class="conversation-item">
+                                            <div class="flex-shrink-0 me-3">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-person-circle text-secondary" viewBox="0 0 16 16"><path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/></svg>
+                                            </div>
+                                            <div class="w-100"><strong>${user.full_name}</strong></div>
+                                        </a>`;
+                                });
+                            } else {
+                                searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Không tìm thấy người dùng nào.</p>';
+                            }
+                        });
+                }, 300);
+            });
+        });
+        </script>
+        {% endif %}
+        {# ============== KẾT THÚC PHẦN WIDGET CHAT NỔI ============== #}
   </body>
 </html>
