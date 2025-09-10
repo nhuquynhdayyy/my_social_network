@@ -8,7 +8,8 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q # Dùng Q object cho truy vấn phức tạp
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from .models import User, Friendship # Import User model
-from posts.models import Post # Quan trọng: Import model Post
+from posts.models import Post, Reaction # Quan trọng: Import model Post
+from django.contrib.contenttypes.models import ContentType
 
 class SignUpView(CreateView):
     form_class = CustomUserCreationForm
@@ -78,7 +79,7 @@ class ProfileView(DetailView):
                 reaction['object_id']: reaction['reaction_type'] 
                 for reaction in user_reactions
             }
-            
+
         return context
 # View để chỉnh sửa Profile
 class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
