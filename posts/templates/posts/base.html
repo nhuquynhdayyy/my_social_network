@@ -156,6 +156,67 @@
               .catch((err) => console.error("Error:", err));
           });
         });
+        // === SCRIPT XỬ LÝ THÊM BÌNH LUẬN ===
+        document.querySelectorAll('.comment-form').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const url = this.action;
+                const formData = new FormData(this);
+                const contentInput = this.querySelector('input[name=content]');
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken },
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Thêm HTML của bình luận mới vào danh sách
+                        const commentList = this.closest('.comments-section').querySelector('.comment-list');
+                        commentList.insertAdjacentHTML('beforeend', data.comment_html);
+                        // Xóa trắng ô input
+                        contentInput.value = '';
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+
+        // === SCRIPT XỬ LÝ XÓA BÌNH LUẬN ===
+        // Dùng event delegation vì các nút xóa được thêm vào sau
+        document.body.addEventListener('click', function(event) {
+            if (event.target.classList.contains('delete-comment-btn')) {
+                event.preventDefault();
+                
+                if (!confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) {
+                    return;
+                }
+
+                const url = event.target.href;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Xóa bình luận khỏi giao diện
+                        const commentDiv = event.target.closest('[id^="comment-"]');
+                        if (commentDiv) {
+                            commentDiv.remove();
+                        }
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        });
       });
     </script>
     <script>
@@ -344,6 +405,7 @@
                         });
                 }, 300);
             });
+            
         });
         </script>
         {% endif %}

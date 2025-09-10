@@ -1,7 +1,7 @@
 # posts/forms.py
 
 from django import forms
-from .models import Post
+from .models import Post, Comment
 
 class PostCreateForm(forms.ModelForm):
     # 1. Khai báo field với widget cơ bản nhất để vượt qua kiểm tra của Django
@@ -27,3 +27,18 @@ class PostCreateForm(forms.ModelForm):
             'multiple': True,
             'class': 'form-control'
         })
+
+class CommentCreateForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ['content']
+        widgets = {
+            'content': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Viết bình luận...',
+                'autocomplete': 'off',
+            })
+        }
+        labels = {
+            'content': '', # Ẩn label của ô input
+        }

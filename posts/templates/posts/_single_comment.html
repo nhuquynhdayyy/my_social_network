@@ -1,0 +1,14 @@
+<!-- posts/templates/posts/_single_comment.html -->
+<div class="d-flex mb-2" id="comment-{{ comment.id }}">
+    <img src="{{ comment.author.avatar.url }}" class="rounded-circle me-2" width="30" height="30">
+    <div class="bg-light p-2 rounded">
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'accounts:profile' username=comment.author.username %}" class="fw-bold text-dark text-decoration-none">{{ comment.author.username }}</a>
+            <!-- Nút Xóa chỉ hiện cho người có quyền -->
+            {% if user == comment.author or user == comment.post.author %}
+                <a href="{% url 'delete_comment' comment_id=comment.id %}" class="text-danger text-decoration-none ms-2 delete-comment-btn" style="font-size: 0.8rem;">Xóa</a>
+            {% endif %}
+        </div>
+        <p class="mb-0">{{ comment.content }}</p>
+    </div>
+</div>

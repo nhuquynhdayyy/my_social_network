@@ -110,7 +110,7 @@
           >
         </p>
       </div>
-      <!-- === BẮT ĐẦU KHỐI CODE REACTION - PHIÊN BẢN SỬA LỖI CUỐI CÙNG === -->
+      {% comment %} <!-- === BẮT ĐẦU KHỐI CODE REACTION - PHIÊN BẢN SỬA LỖI CUỐI CÙNG === -->
       <hr />
 
       <!-- Vùng hiển thị thống kê (số lượng và icon) -->
@@ -138,12 +138,6 @@
             {% endif %}
           </div>
 
-          <!-- Tổng số reaction -->
-          {% comment %}
-          <span id="reactions-count-{{ post.id }}"
-            >{{ post.reactions.count }}</span
-          >
-          {% endcomment %}
           <span
             class="reaction-count"
             data-post-id="{{ post.id }}"
@@ -229,7 +223,8 @@
         </div>
       </div>
 
-      <!-- === KẾT THÚC KHỐI CODE REACTION === -->
+      <!-- === KẾT THÚC KHỐI CODE REACTION === --> {% endcomment %}
+      {% include 'posts/_post_interactive_section.html' %}
     </div>
     {% empty %}
     <p>Chưa có bài đăng nào để hiển thị.</p>

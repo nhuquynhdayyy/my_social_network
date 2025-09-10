@@ -4,14 +4,15 @@ from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView
 from django.db.models import Q, Count # Import Count để thống kê
-from .models import Post, PostMedia, Reaction
-from .forms import PostCreateForm
+from .models import Post, PostMedia, Reaction, Comment
+from .forms import PostCreateForm, CommentCreateForm
 from accounts.models import Friendship, User
 import json
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib.contenttypes.models import ContentType
+from django.template.loader import render_to_string # Dùng để render HTML trong view
 
 class HomePageView(ListView):
     model = Post
@@ -191,3 +192,54 @@ def reaction_detail(request, pk):
         data.setdefault(reaction.reaction_type, []).append(reaction.user.username)
 
     return JsonResponse(data)
+
+# === CÁC VIEW XỬ LÝ COMMENT ===
+
+@login_required
+@require_POST
+def add_comment(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    form = CommentCreateForm(request.POST)
+
+    # === KIỂM TRA QUYỀN BÌNH LUẬN (Tương tự Reaction) ===
+    viewer = request.user
+    author = post.author
+    can_comment = False
+    if viewer == author or post.privacy == 'PUBLIC':
+        can_comment = True
+    elif post.privacy == 'FRIENDS':
+        are_friends = Friendship.objects.filter(
+            (Q(from_user=author, to_user=viewer) | Q(from_user=viewer, to_user=author)),
+            status='ACCEPTED'
+        ).exists()
+        if are_friends:
+            can_comment = True
+    
+    if not can_comment:
+        return JsonResponse({'status': 'error', 'message': 'Không có quyền bình luận'}, status=403)
+
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.author = request.user
+        comment.post = post
+        comment.save()
+
+        # Render ra HTML cho comment mới
+        comment_html = render_to_string('posts/_single_comment.html', {'comment': comment}, request=request)
+        
+        return JsonResponse({'status': 'ok', 'comment_html': comment_html})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Bình luận không hợp lệ'}, status=400)
+
+@login_required
+@require_POST
+def delete_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    # Chỉ tác giả bình luận hoặc chủ bài viết mới có quyền xóa
+    if comment.author == request.user or comment.post.author == request.user:
+        comment.delete()
+        return JsonResponse({'status': 'ok'})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Không có quyền xóa'}, status=403)
+        
+# View cho việc sửa sẽ phức tạp hơn, chúng ta sẽ làm sau nếu bạn muốn

@@ -149,7 +149,7 @@
             >
           </p>
         </div>
-        <!-- === BẮT ĐẦU KHỐI CODE REACTION - PHIÊN BẢN SỬA LỖI CUỐI CÙNG === -->
+        {% comment %} <!-- === BẮT ĐẦU KHỐI CODE REACTION - PHIÊN BẢN SỬA LỖI CUỐI CÙNG === -->
         <hr />
 
         <!-- Vùng hiển thị thống kê (số lượng và icon) -->
@@ -265,7 +265,8 @@
           </div>
         </div>
 
-        <!-- === KẾT THÚC KHỐI CODE REACTION === -->
+        <!-- === KẾT THÚC KHỐI CODE REACTION === --> {% endcomment %}
+        {% include 'posts/_post_interactive_section.html' %}
       </div>
       {% empty %}
       <div class="card">
