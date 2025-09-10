@@ -217,6 +217,66 @@
                 .catch(error => console.error('Error:', error));
             }
         });
+        // === SCRIPT XỬ LÝ SỬA BÌNH LUẬN (LUỒNG MỚI) ===
+        document.body.addEventListener('click', function(event) {
+            
+            // --- Bắt đầu luồng chỉnh sửa: Lấy form từ server ---
+            if (event.target.classList.contains('edit-comment-btn')) {
+                event.preventDefault();
+                
+                const commentId = event.target.dataset.commentId;
+                const url = `/comment/${commentId}/get-edit-form/`;
+                const commentContentWrapper = document.getElementById(`comment-${commentId}`).querySelector('.comment-content-wrapper');
+
+                fetch(url) // Dùng GET, không cần header
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Lưu lại nội dung cũ và thay thế bằng form
+                        commentContentWrapper.dataset.originalContent = commentContentWrapper.innerHTML;
+                        commentContentWrapper.innerHTML = data.form_html;
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            }
+
+            // --- Hủy chỉnh sửa: Phục hồi nội dung cũ ---
+            if (event.target.classList.contains('cancel-edit-btn')) {
+                const commentContentWrapper = event.target.closest('.comment-content-wrapper');
+                // Lấy lại HTML gốc đã lưu và phục hồi
+                if (commentContentWrapper.dataset.originalContent) {
+                    commentContentWrapper.innerHTML = commentContentWrapper.dataset.originalContent;
+                }
+            }
+        });
+
+        // --- Lưu chỉnh sửa: Gửi dữ liệu form lên server ---
+        document.body.addEventListener('submit', function(event) {
+            if (event.target.classList.contains('edit-comment-form')) {
+                event.preventDefault();
+                
+                const form = event.target;
+                const url = form.action;
+                const formData = new FormData(form);
+                const commentDiv = form.closest('[id^="comment-"]');
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Thay thế toàn bộ div của bình luận bằng HTML mới từ server
+                        commentDiv.outerHTML = data.comment_html;
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            }
+        });
       });
     </script>
     <script>

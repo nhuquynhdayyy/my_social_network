@@ -1,14 +1,28 @@
 <!-- posts/templates/posts/_single_comment.html -->
 <div class="d-flex mb-2" id="comment-{{ comment.id }}">
-    <img src="{{ comment.author.avatar.url }}" class="rounded-circle me-2" width="30" height="30">
-    <div class="bg-light p-2 rounded">
+    <img src="{{ comment.author.avatar.url }}" class="rounded-circle me-2" width="30" height="30" alt="{{ comment.author.username }}">
+    
+    <div class="bg-light p-2 rounded w-100">
         <div class="d-flex justify-content-between">
             <a href="{% url 'accounts:profile' username=comment.author.username %}" class="fw-bold text-dark text-decoration-none">{{ comment.author.username }}</a>
-            <!-- Nút Xóa chỉ hiện cho người có quyền -->
-            {% if user == comment.author or user == comment.post.author %}
-                <a href="{% url 'delete_comment' comment_id=comment.id %}" class="text-danger text-decoration-none ms-2 delete-comment-btn" style="font-size: 0.8rem;">Xóa</a>
-            {% endif %}
+            
+            <!-- Khu vực chứa các nút hành động (Sửa/Xóa) -->
+            <div class="comment-actions">
+                {% if user == comment.author %}
+                    <!-- Chỉ tác giả bình luận mới thấy nút Sửa -->
+                    <a href="#" class="text-secondary text-decoration-none me-2 edit-comment-btn" data-comment-id="{{ comment.id }}" style="font-size: 0.8rem;">Sửa</a>
+                {% endif %}
+
+                {% if user == comment.author or user == comment.post.author %}
+                    <!-- Tác giả bình luận hoặc chủ bài viết đều thấy nút Xóa -->
+                    <a href="{% url 'delete_comment' comment_id=comment.id %}" class="text-danger text-decoration-none delete-comment-btn" style="font-size: 0.8rem;">Xóa</a>
+                {% endif %}
+            </div>
         </div>
-        <p class="mb-0">{{ comment.content }}</p>
+
+        <!-- Div bọc nội dung để JavaScript dễ dàng thay thế -->
+        <div class="comment-content-wrapper">
+            <p class="mb-0 comment-content">{{ comment.content|linebreaksbr }}</p>
+        </div>
     </div>
 </div>

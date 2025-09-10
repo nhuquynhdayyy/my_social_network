@@ -243,3 +243,35 @@ def delete_comment(request, comment_id):
         return JsonResponse({'status': 'error', 'message': 'Không có quyền xóa'}, status=403)
         
 # View cho việc sửa sẽ phức tạp hơn, chúng ta sẽ làm sau nếu bạn muốn
+
+# View để lấy form chỉnh sửa (GET request) - Đã hoàn thiện
+@login_required
+def get_comment_edit_form(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    # Kiểm tra quyền: Chỉ tác giả bình luận mới có quyền lấy form sửa
+    if comment.author != request.user:
+        return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện hành động này'}, status=403)
+    
+    # Render ra HTML cho form chỉnh sửa
+    form_html = render_to_string('posts/_comment_edit_form.html', {'comment': comment}, request=request)
+    return JsonResponse({'status': 'ok', 'form_html': form_html})
+
+# View để xử lý dữ liệu chỉnh sửa (POST request) - Đã hoàn thiện
+@login_required
+@require_POST
+def edit_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    # Kiểm tra quyền: Chỉ tác giả bình luận mới có quyền sửa
+    if comment.author != request.user:
+        return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện hành động này'}, status=403)
+        
+    # Dùng form để validate dữ liệu thay vì lấy trực tiếp từ request.POST
+    form = CommentCreateForm(request.POST, instance=comment)
+    if form.is_valid():
+        updated_comment = form.save()
+        # Render lại HTML cho bình luận đã được cập nhật
+        comment_html = render_to_string('posts/_single_comment.html', {'comment': updated_comment}, request=request)
+        return JsonResponse({'status': 'ok', 'comment_html': comment_html})
+    else:
+        # Trả về lỗi nếu form không hợp lệ (ví dụ: nội dung trống)
+        return JsonResponse({'status': 'error', 'message': 'Dữ liệu không hợp lệ'}, status=400)

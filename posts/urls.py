@@ -1,7 +1,7 @@
 # posts/urls.py
 
 from django.urls import path
-from .views import HomePageView, PostCreateView, PostDeleteView, PostUpdateView, react_to_post, add_comment, delete_comment
+from .views import HomePageView, PostCreateView, PostDeleteView, PostUpdateView, react_to_post, add_comment, delete_comment, get_comment_edit_form, edit_comment
 from . import views
 
 urlpatterns = [
@@ -20,4 +20,7 @@ urlpatterns = [
     # URL cho comment
     path('post/<int:post_id>/comment/', add_comment, name='add_comment'),
     path('comment/<int:comment_id>/delete/', delete_comment, name='delete_comment'),
+    # URLs cho việc sửa bình luận
+    path('comment/<int:comment_id>/edit/', edit_comment, name='edit_comment'),
+    path('comment/<int:comment_id>/get-edit-form/', get_comment_edit_form, name='get_comment_edit_form'),
 ]
