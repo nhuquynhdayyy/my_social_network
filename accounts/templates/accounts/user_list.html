@@ -15,19 +15,6 @@
                             <a href="{% url 'accounts:profile' username=u.username %}" class="text-decoration-none">{{ u.first_name }} {{ u.last_name }}</a>
                         </h5>
                         <h6 class="card-subtitle mb-2 text-muted">@{{ u.username }}</h6>
-                        
-                        {% comment %} <!-- Logic hiển thị nút -->
-                        {% if u.id in friend_ids %}
-                            <span class="badge bg-success">Bạn bè</span>
-                        {% elif u.id in sent_request_ids %}
-                            <button class="btn btn-secondary btn-sm" disabled>Đã gửi yêu cầu</button>
-                        {% elif u.id in received_request_ids %}
-                            <!-- Sau này sẽ làm nút Chấp nhận/Từ chối ở đây -->
-                            <a href="#" class="btn btn-info btn-sm">Phản hồi yêu cầu</a>
-                        {% else %}
-                            <!-- SỬA Ở ĐÂY: Thêm 'accounts:' -->
-                            <a href="{% url 'accounts:add_friend' username=u.username %}" class="btn btn-primary btn-sm">Thêm bạn bè</a>
-                        {% endif %} {% endcomment %}
 
                         <!-- Nhóm các nút hành động lại với nhau -->
                         <div class="mt-2">
@@ -37,7 +24,10 @@
                             {% elif u.id in sent_request_ids %}
                                 <button class="btn btn-secondary btn-sm" disabled>Đã gửi yêu cầu</button>
                             {% elif u.id in received_request_ids %}
-                                <a href="#" class="btn btn-info btn-sm">Phản hồi yêu cầu</a>
+                                {% comment %} <a href="#" class="btn btn-info btn-sm">Phản hồi yêu cầu</a> {% endcomment %}
+                                <!-- === THAY THẾ PHẦN NÀY === -->
+                                <a href="{% url 'accounts:friend_requests' %}" class="btn btn-info btn-sm">Phản hồi yêu cầu</a>
+                                <!-- === KẾT THÚC PHẦN THAY THẾ === -->
                             {% else %}
                                 <a href="{% url 'accounts:add_friend' username=u.username %}" class="btn btn-primary btn-sm">Thêm bạn bè</a>
                             {% endif %}
