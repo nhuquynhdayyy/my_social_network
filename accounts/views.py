@@ -65,6 +65,20 @@ class ProfileView(DetailView):
         # Thêm danh sách bài viết đã lọc vào context để template có thể sử dụng
         context['posts'] = queryset.order_by('-created_at')
         
+        # THÊM PHẦN LOGIC NÀY VÀO CUỐI HÀM
+        if self.request.user.is_authenticated:
+            post_ids = [post.id for post in context['posts']]
+            user_reactions = Reaction.objects.filter(
+                user=self.request.user, 
+                object_id__in=post_ids,
+                content_type=ContentType.objects.get_for_model(Post)
+            ).values('object_id', 'reaction_type')
+            
+            context['user_reactions_map'] = {
+                reaction['object_id']: reaction['reaction_type'] 
+                for reaction in user_reactions
+            }
+            
         return context
 # View để chỉnh sửa Profile
 class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):

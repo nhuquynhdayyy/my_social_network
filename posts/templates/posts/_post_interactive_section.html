@@ -1,5 +1,5 @@
 <!-- posts/templates/posts/_post_interactive_section.html -->
-
+{% load post_extras %}
 <!-- Phần Reaction -->
 <hr>
 <!-- Vùng hiển thị thống kê (số lượng và icon) -->
@@ -25,12 +25,26 @@
 <!-- Vùng các nút bấm reaction -->
 <div class="reaction-buttons-container border-top border-bottom py-1">
     <div class="d-flex justify-content-around">
-        <button class="btn btn-light reaction-btn flex-fill" data-post-id="{{ post.id }}" data-reaction-type="LIKE">👍 Thích</button>
-        <button class="btn btn-light reaction-btn flex-fill" data-post-id="{{ post.id }}" data-reaction-type="LOVE">❤️ Yêu thích</button>
-        <button class="btn btn-light reaction-btn flex-fill" data-post-id="{{ post.id }}" data-reaction-type="HAHA">😂 Haha</button>
-        <button class="btn btn-light reaction-btn flex-fill" data-post-id="{{ post.id }}" data-reaction-type="WOW">😮 Wow</button>
-        <button class="btn btn-light reaction-btn flex-fill" data-post-id="{{ post.id }}" data-reaction-type="SAD">😢 Buồn</button>
-        <button class="btn btn-light reaction-btn flex-fill" data-post-id="{{ post.id }}" data-reaction-type="ANGRY">😡 Phẫn nộ</button>
+        {% with user_reaction=user_reactions_map|get_item:post.id %}
+            <button 
+                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'LIKE' %}fw-bold text-primary{% endif %}" 
+                data-post-id="{{ post.id }}" data-reaction-type="LIKE">👍 Thích</button>
+            <button 
+                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'LOVE' %}fw-bold text-primary{% endif %}" 
+                data-post-id="{{ post.id }}" data-reaction-type="LOVE">❤️ Yêu thích</button>
+            <button 
+                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'HAHA' %}fw-bold text-primary{% endif %}" 
+                data-post-id="{{ post.id }}" data-reaction-type="HAHA">😂 Haha</button>
+            <button 
+                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'WOW' %}fw-bold text-primary{% endif %}" 
+                data-post-id="{{ post.id }}" data-reaction-type="WOW">😮 Wow</button>
+            <button 
+                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'SAD' %}fw-bold text-primary{% endif %}" 
+                data-post-id="{{ post.id }}" data-reaction-type="SAD">😢 Buồn</button>
+            <button 
+                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'ANGRY' %}fw-bold text-primary{% endif %}" 
+                data-post-id="{{ post.id }}" data-reaction-type="ANGRY">😡 Phẫn nộ</button>
+        {% endwith %}
     </div>
 </div>
 <!-- Kết thúc phần Reaction -->

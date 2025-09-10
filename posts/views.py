@@ -55,6 +55,25 @@ class HomePageView(ListView):
 
         return queryset
 
+    # THÊM HÀM NÀY
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            # Lấy tất cả reaction của user hiện tại trên các bài viết đang hiển thị
+            post_ids = [post.id for post in context['posts']]
+            user_reactions = Reaction.objects.filter(
+                user=self.request.user, 
+                object_id__in=post_ids,
+                content_type=ContentType.objects.get_for_model(Post)
+            ).values('object_id', 'reaction_type')
+            
+            # Chuyển thành một dict để template dễ truy cập: {post_id: reaction_type}
+            context['user_reactions_map'] = {
+                reaction['object_id']: reaction['reaction_type'] 
+                for reaction in user_reactions
+            }
+        return context
+    
 # View để tạo bài viết mới
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
