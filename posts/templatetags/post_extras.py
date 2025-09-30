@@ -3,6 +3,8 @@ from django import template
 
 register = template.Library()
 
-@register.filter(name='get_item')
+@register.filter
 def get_item(dictionary, key):
-    return dictionary.get(key)
+    if isinstance(dictionary, dict):
+        return dictionary.get(key)
+    return None
