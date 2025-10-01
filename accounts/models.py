@@ -1,11 +1,9 @@
-# accounts/models.py
-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     # Kế thừa AbstractUser đã có sẵn các trường username, password, email...
-    # Chúng ta chỉ cần thêm các trường mở rộng vào đây
+    # Chỉ cần thêm các trường mở rộng vào đây
     avatar = models.ImageField(default='default.jpg', upload_to='profile_images')
     cover_photo = models.ImageField(default='cover_default.jpg', upload_to='cover_images')
     bio = models.TextField(blank=True, null=True)

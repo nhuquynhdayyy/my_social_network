@@ -1,5 +1,3 @@
-# notifications/models.py
-
 from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -10,7 +8,6 @@ class Notification(models.Model):
         ('FRIEND_REQUEST', 'Yêu cầu kết bạn'),
         ('POST_LIKE', 'Thích bài viết'),
         ('POST_COMMENT', 'Bình luận bài viết'),
-        # Thêm các loại thông báo khác nếu cần
     ]
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
@@ -19,7 +16,6 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
-    # Generic relation để trỏ đến đối tượng liên quan (Post, Comment, Friendship...)
     target_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True)
     target_object_id = models.PositiveIntegerField(null=True, blank=True)
     target = GenericForeignKey('target_content_type', 'target_object_id')

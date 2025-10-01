@@ -1,23 +1,19 @@
-# accounts/views.py
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, UpdateView, DeleteView, ListView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin # Thêm Mixins
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q # Dùng Q object cho truy vấn phức tạp
+from django.db.models import Q 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
-from .models import User, Friendship # Import User model
-from posts.models import Post, Reaction # Quan trọng: Import model Post
+from .models import User, Friendship 
+from posts.models import Post, Reaction 
 from django.contrib.contenttypes.models import ContentType
 
 class SignUpView(CreateView):
     form_class = CustomUserCreationForm
-    # reverse_lazy sẽ đợi cho đến khi URL được load xong
-    success_url = reverse_lazy('accounts:login') # Chuyển hướng đến trang đăng nhập sau khi đăng ký thành công
+    success_url = reverse_lazy('accounts:login') 
     template_name = 'accounts/register.html'
 
-# View để xem Profile - ĐÃ NÂNG CẤP
 class ProfileView(DetailView):
     model = User
     template_name = 'accounts/profile.html'
@@ -34,8 +30,6 @@ class ProfileView(DetailView):
         # Lấy các đối tượng chính: chủ profile và người xem
         profile_user = self.get_object()
         visitor = self.request.user
-
-        # === BẮT ĐẦU LOGIC LỌC BÀI VIẾT ===
 
         # 1. Kiểm tra xem người xem có phải là chủ nhân profile không
         if visitor.is_authenticated and visitor == profile_user:

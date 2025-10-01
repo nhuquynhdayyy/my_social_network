@@ -63,9 +63,7 @@
             </li>
             {% endif %} {% if profile_user.birth_date %}
             <li class="list-group-item">
-              <!-- Dùng filter 'date' để định dạng ngày tháng cho đẹp -->
-              <strong>Ngày sinh:</strong> {{
-              profile_user.birth_date|date:"d/m/Y" }}
+              <strong>Ngày sinh:</strong> {{ profile_user.birth_date|date:"d/m/Y" }}
             </li>
             {% endif %}
           </ul>
