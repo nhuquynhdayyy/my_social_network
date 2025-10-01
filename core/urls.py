@@ -8,6 +8,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')), 
     path('', include('posts.urls')),
     path('chat/', include('chat.urls', namespace='chat')),
+    path('notifications/', include('notifications.urls')),
 ]
 
 # Cấu hình để Django phục vụ các file media (như avatar) trong môi trường phát triển

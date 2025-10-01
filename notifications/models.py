@@ -8,6 +8,7 @@ class Notification(models.Model):
         ('FRIEND_REQUEST', 'Yêu cầu kết bạn'),
         ('POST_LIKE', 'Thích bài viết'),
         ('POST_COMMENT', 'Bình luận bài viết'),
+        ('MESSAGE', 'Tin nhắn mới'),
     ]
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
