@@ -2,23 +2,27 @@
 {% extends "posts/base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card">
-                <div class="card-header">
-                    <h3>Tạo bài viết mới</h3>
-                </div>
-                <div class="card-body">
-                    <!-- Quan trọng: enctype để cho phép upload file -->
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        {{ form.as_p }}
-                        <button type="submit" class="btn btn-primary w-100 mt-3">Đăng bài</button>
-                    </form>
-                </div>
-            </div>
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-success text-white text-center">
+          <h4 class="mb-0">📝 Tạo bài viết mới</h4>
         </div>
+        <div class="card-body p-4">
+          <!-- enctype để cho phép upload file -->
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+              {{ form.as_p }}
+            </div>
+            <button type="submit" class="btn btn-success w-100 mt-3">
+              🚀 Đăng bài
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock content %}
