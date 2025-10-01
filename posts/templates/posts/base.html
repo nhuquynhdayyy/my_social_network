@@ -13,10 +13,9 @@
   <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'home' %}">MySocial</a>
+        <a class="navbar-brand fw-bold text-primary" href="{% url 'home' %}">MySocial</a>
         <div class="d-flex">
           {% if user.is_authenticated %}
-          <!-- NÚT LỜI MỜI KẾT BẠN -->
           <a
             href="{% url 'accounts:friend_requests' %}"
             class="btn btn-outline-secondary position-relative me-3"
@@ -24,7 +23,6 @@
             Lời mời
           </a>
 
-          <!-- NÚT LINK TỚI TRANG CHAT CHÍNH -->
           <a
             href="{% url 'chat:conversation_list' %}"
             class="btn btn-outline-info me-3"
@@ -32,7 +30,6 @@
             Tin nhắn
           </a>
 
-          <!-- NÚT THÔNG BÁO -->
           <div class="dropdown me-3">
             <button
               class="btn btn-outline-warning position-relative"
@@ -40,7 +37,7 @@
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
-              🔔
+              Thông báo
               <span
                 id="notif-count"
                 class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
@@ -59,24 +56,27 @@
             </ul>
           </div>
 
-          <!-- NÚT TÌM BẠN -->
           <a
             href="{% url 'accounts:user_list' %}"
             class="btn btn-outline-primary me-3"
             >Tìm bạn</a
           >
+          
+          <!-- Dropdown cho người dùng -->
+            <div class="dropdown ms-2">
+              <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="{{ user.avatar.url }}" alt="{{ user.username }}" width="32" height="32" class="rounded-circle"/>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end text-small" aria-labelledby="dropdownUser">
+                <li><span class="dropdown-item-text">Chào, <strong>{{ user.username }}</strong></span></li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><a class="dropdown-item" href="{% url 'accounts:profile' username=user.username %}">Trang cá nhân</a></li>
+                <li><a class="dropdown-item" href="{% url 'accounts:profile_edit' username=user.username %}">Chỉnh sửa hồ sơ</a></li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><a class="dropdown-item text-danger" href="{% url 'accounts:logout' %}">Đăng xuất</a></li>
+              </ul>
+            </div>
 
-          <span class="navbar-text me-3">
-            <a
-              href="{% url 'accounts:profile' username=user.username %}"
-              class="text-dark text-decoration-none"
-            >
-              Chào, {{ user.username }}!
-            </a>
-          </span>
-          <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger"
-            >Đăng xuất</a
-          >
           {% else %}
           <a
             href="{% url 'accounts:login' %}"
