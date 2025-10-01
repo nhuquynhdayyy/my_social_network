@@ -94,6 +94,242 @@
     <main class="container mt-4">
       {% block content %}{% endblock content %}
     </main>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Lấy cookie theo tên (chuẩn Django docs)
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === name + "=") {
+                cookieValue = decodeURIComponent(
+                  cookie.substring(name.length + 1)
+                );
+                break;
+              }
+            }
+          }
+          return cookieValue;
+        }
+
+        const csrftoken = getCookie("csrftoken");
+
+        function updateReactionStatsUI(postId, stats, total) {
+          const statsContainer = document.getElementById(
+            `reaction-stats-${postId}`
+          );
+          if (!statsContainer) return;
+          if (total > 0) {
+            let iconsHTML = '<div class="me-2">';
+            if (stats.LIKE) iconsHTML += "<span>👍</span>";
+            if (stats.LOVE) iconsHTML += "<span>❤️</span>";
+            if (stats.HAHA) iconsHTML += "<span>😂</span>";
+            if (stats.WOW) iconsHTML += "<span>😮</span>";
+            if (stats.SAD) iconsHTML += "<span>😢</span>";
+            if (stats.ANGRY) iconsHTML += "<span>😡</span>";
+            iconsHTML += "</div>";
+            statsContainer.innerHTML =
+              iconsHTML +
+              `<span id="reactions-count-${postId}">${total}</span>`;
+          } else {
+            statsContainer.innerHTML = `<span id="reactions-count-${postId}" class="text-muted">Chưa có cảm xúc</span>`;
+          }
+        }
+
+        function highlightSelectedReaction(postId, selectedType) {
+          const buttons = document.querySelectorAll(
+            `.reaction-btn[data-post-id='${postId}']`
+          );
+          buttons.forEach((btn) => {
+            if (btn.dataset.reactionType === selectedType) {
+              btn.classList.add("fw-bold", "text-primary");
+            } else {
+              btn.classList.remove("fw-bold", "text-primary");
+            }
+          });
+        }
+
+        document.querySelectorAll(".reaction-btn").forEach((button) => {
+          button.addEventListener("click", function (e) {
+            e.preventDefault();
+            const postId = this.dataset.postId;
+            const reactionType = this.dataset.reactionType;
+
+            fetch(`/post/${postId}/react/`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken, // tên header phải đúng
+                "X-Requested-With": "XMLHttpRequest", // optional nhưng nên có
+              },
+              credentials: "same-origin", // gửi kèm cookie csrftoken
+              body: JSON.stringify({ reaction_type: reactionType }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                if (data.status === "ok") {
+                  updateReactionStatsUI(
+                    postId,
+                    data.reaction_stats,
+                    data.total_reactions
+                  );
+                  highlightSelectedReaction(postId, data.current_user_reaction);
+                } else {
+                  alert(data.message || "Có lỗi xảy ra.");
+                }
+              })
+              .catch((err) => console.error("Error:", err));
+          });
+        });
+        // === SCRIPT XỬ LÝ THÊM BÌNH LUẬN ===
+        document.querySelectorAll('.comment-form').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const url = this.action;
+                const formData = new FormData(this);
+                const contentInput = this.querySelector('input[name=content]');
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken },
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Thêm HTML của bình luận mới vào danh sách
+                        const commentList = this.closest('.comments-section').querySelector('.comment-list');
+                        commentList.insertAdjacentHTML('beforeend', data.comment_html);
+                        // Xóa trắng ô input
+                        contentInput.value = '';
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+
+        // === SCRIPT XỬ LÝ XÓA BÌNH LUẬN ===
+        // Dùng event delegation vì các nút xóa được thêm vào sau
+        document.body.addEventListener('click', function(event) {
+            if (event.target.classList.contains('delete-comment-btn')) {
+                event.preventDefault();
+                
+                if (!confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) {
+                    return;
+                }
+
+                const url = event.target.href;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Xóa bình luận khỏi giao diện
+                        const commentDiv = event.target.closest('[id^="comment-"]');
+                        if (commentDiv) {
+                            commentDiv.remove();
+                        }
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        });
+        // === SCRIPT XỬ LÝ SỬA BÌNH LUẬN (LUỒNG MỚI) ===
+        document.body.addEventListener('click', function(event) {
+            
+            // --- Bắt đầu luồng chỉnh sửa: Lấy form từ server ---
+            if (event.target.classList.contains('edit-comment-btn')) {
+                event.preventDefault();
+                
+                const commentId = event.target.dataset.commentId;
+                const url = `/comment/${commentId}/get-edit-form/`;
+                const commentContentWrapper = document.getElementById(`comment-${commentId}`).querySelector('.comment-content-wrapper');
+
+                fetch(url) // Dùng GET, không cần header
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Lưu lại nội dung cũ và thay thế bằng form
+                        commentContentWrapper.dataset.originalContent = commentContentWrapper.innerHTML;
+                        commentContentWrapper.innerHTML = data.form_html;
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            }
+
+            // --- Hủy chỉnh sửa: Phục hồi nội dung cũ ---
+            if (event.target.classList.contains('cancel-edit-btn')) {
+                const commentContentWrapper = event.target.closest('.comment-content-wrapper');
+                // Lấy lại HTML gốc đã lưu và phục hồi
+                if (commentContentWrapper.dataset.originalContent) {
+                    commentContentWrapper.innerHTML = commentContentWrapper.dataset.originalContent;
+                }
+            }
+        });
+
+        // --- Lưu chỉnh sửa: Gửi dữ liệu form lên server ---
+        document.body.addEventListener('submit', function(event) {
+            if (event.target.classList.contains('edit-comment-form')) {
+                event.preventDefault();
+                
+                const form = event.target;
+                const url = form.action;
+                const formData = new FormData(form);
+                const commentDiv = form.closest('[id^="comment-"]');
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Thay thế toàn bộ div của bình luận bằng HTML mới từ server
+                        commentDiv.outerHTML = data.comment_html;
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            }
+        });
+      });
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".reaction-count").forEach(function (elem) {
+          elem.addEventListener("click", function () {
+            let postId = this.dataset.postId;
+
+            fetch(`/post/${postId}/reactions/detail/`)
+              .then((response) => response.json())
+              .then((data) => {
+                let html = "";
+                for (let type in data) {
+                  html += `<strong>${type}</strong>: ${data[type].join(
+                    ", "
+                  )}<br>`;
+                }
+                document.getElementById("reactionDetailBox").innerHTML = html;
+                new bootstrap.Modal(
+                  document.getElementById("reactionModal")
+                ).show();
+              });
+          });
+        });
+      });
+    </script>
 
     {% block extra_js %}{% endblock %}
 
@@ -439,4 +675,4 @@
     {% endif %}
     <!-- =================== HẾT CHAT WIDGET =================== -->
   </body>
-</html>
+</html> 
