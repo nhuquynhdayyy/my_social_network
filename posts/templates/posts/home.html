@@ -2,7 +2,7 @@
 {% extends "posts/base.html" %} {% block content %}
 <div class="row">
   <div class="col-md-8 offset-md-2">
-    {% if user.is_authenticated %}
+    {% comment %} {% if user.is_authenticated %}
     <div class="card mb-3">
       <div class="card-body">
         <h5 class="card-title">Tạo bài viết</h5>
@@ -12,11 +12,30 @@
         >
       </div>
     </div>
+    {% endif %} {% endcomment %}
+    {% if user.is_authenticated %}
+    <div class="card mb-4 shadow-sm border-0">
+      <div class="card-body d-flex align-items-center">
+        <!-- Avatar -->
+        <img src="{{ user.avatar.url }}" alt="avatar" 
+            class="rounded-circle me-3" style="width:40px; height:40px; object-fit:cover;">
+        
+        <!-- Nội dung gợi ý viết bài -->
+        <div class="flex-grow-1">
+          <p class="mb-2 text-muted">
+            Chào <strong>{{ user.first_name }}</strong>, bạn đang nghĩ gì?
+          </p>
+          <a href="{% url 'post_create' %}" class="btn btn-outline-primary btn-sm">
+            ✍️ Viết bài mới
+          </a>
+        </div>
+      </div>
+    </div>
     {% endif %}
+
 
     <h1 class="mb-4">Dòng thời gian</h1>
 
-    <!-- ======================= VÒNG LẶP ĐÃ NÂNG CẤP ======================= -->
     {% for post in posts %}
     <div class="card mb-3">
       <!-- Phần media (ảnh/video) -->
@@ -86,7 +105,6 @@
               >{{ post.author.username }}</a
             >
           </div>
-          <!-- === THÊM PHẦN NÀY === -->
           {% if user.is_authenticated and user == post.author %}
           <div class="ms-auto">
             <a
@@ -110,126 +128,11 @@
           >
         </p>
       </div>
-      {% comment %} <!-- === BẮT ĐẦU KHỐI CODE REACTION - PHIÊN BẢN SỬA LỖI CUỐI CÙNG === -->
-      <hr />
-
-      <!-- Vùng hiển thị thống kê (số lượng và icon) -->
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <div
-          id="reaction-stats-{{ post.id }}"
-          class="d-flex align-items-center"
-          style="font-size: 0.9rem"
-        >
-          {% with stats=post.get_reaction_stats %} {% if stats %}
-          <!-- Các icon reaction -->
-          <div class="me-2">
-            {% if 'LIKE' in stats %}
-            <span>👍</span>
-            {% endif %} {% if 'LOVE' in stats %}
-            <span>❤️</span>
-            {% endif %} {% if 'HAHA' in stats %}
-            <span>😂</span>
-            {% endif %} {% if 'WOW' in stats %}
-            <span>😮</span>
-            {% endif %} {% if 'SAD' in stats %}
-            <span>😢</span>
-            {% endif %} {% if 'ANGRY' in stats %}
-            <span>😡</span>
-            {% endif %}
-          </div>
-
-          <span
-            class="reaction-count"
-            data-post-id="{{ post.id }}"
-            style="cursor: pointer"
-          >
-            {{ post.reactions.count }}
-          </span>
-          {% else %}
-          <span id="reactions-count-{{ post.id }}" class="text-muted"
-            >Chưa có cảm xúc</span
-          >
-          <div
-            class="modal fade"
-            id="reactionModal"
-            tabindex="-1"
-            aria-labelledby="reactionModalLabel"
-            aria-hidden="true"
-          >
-            <div class="modal-dialog">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title">Chi tiết cảm xúc</h5>
-                  <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                  ></button>
-                </div>
-                <div class="modal-body" id="reactionDetailBox">Đang tải...</div>
-              </div>
-            </div>
-          </div>
-          {% endif %} {% endwith %}
-        </div>
-      </div>
-
-      <!-- Vùng các nút bấm reaction -->
-      <div class="reaction-buttons-container border-top border-bottom py-1">
-        <div class="d-flex justify-content-around">
-          <button
-            class="btn btn-light reaction-btn flex-fill"
-            data-post-id="{{ post.id }}"
-            data-reaction-type="LIKE"
-          >
-            👍 Thích
-          </button>
-          <button
-            class="btn btn-light reaction-btn flex-fill"
-            data-post-id="{{ post.id }}"
-            data-reaction-type="LOVE"
-          >
-            ❤️ Yêu thích
-          </button>
-          <button
-            class="btn btn-light reaction-btn flex-fill"
-            data-post-id="{{ post.id }}"
-            data-reaction-type="HAHA"
-          >
-            😂 Haha
-          </button>
-          <button
-            class="btn btn-light reaction-btn flex-fill"
-            data-post-id="{{ post.id }}"
-            data-reaction-type="WOW"
-          >
-            😮 Wow
-          </button>
-          <button
-            class="btn btn-light reaction-btn flex-fill"
-            data-post-id="{{ post.id }}"
-            data-reaction-type="SAD"
-          >
-            😢 Buồn
-          </button>
-          <button
-            class="btn btn-light reaction-btn flex-fill"
-            data-post-id="{{ post.id }}"
-            data-reaction-type="ANGRY"
-          >
-            😡 Phẫn nộ
-          </button>
-        </div>
-      </div>
-
-      <!-- === KẾT THÚC KHỐI CODE REACTION === --> {% endcomment %}
       {% include 'posts/_post_interactive_section.html' %}
     </div>
     {% empty %}
     <p>Chưa có bài đăng nào để hiển thị.</p>
     {% endfor %}
-    <!-- ======================= KẾT THÚC VÒNG LẶP ======================= -->
   </div>
 </div>
 {% endblock content %}
