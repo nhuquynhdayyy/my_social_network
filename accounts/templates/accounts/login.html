@@ -1,22 +1,57 @@
-{% extends "posts/base.html" %} 
+{% extends "posts/base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-6 offset-md-3">
-            <div class="card">
-                <div class="card-header">
-                    <h2>Đăng nhập</h2>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-lg border-0 rounded-3">
+                <div class="card-header bg-success text-white text-center py-3">
+                    <h3 class="mb-0">Đăng nhập</h3>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <form method="post">
                         {% csrf_token %}
                         {{ form.as_p }}
-                        <button type="submit" class="btn btn-success w-100">Đăng nhập</button>
+
+                        <button type="submit" class="btn btn-success w-100 py-2 rounded-pill">
+                            Đăng nhập
+                        </button>
                     </form>
+                </div>
+                <div class="card-footer text-center bg-light">
+                    <small>Chưa có tài khoản? 
+                        <a href="{% url 'accounts:register' %}" class="text-decoration-none">
+                            Đăng ký ngay
+                        </a>
+                    </small>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- CSS căn chỉnh cho form -->
+<style>
+    form p {
+        margin-bottom: 1rem;
+    }
+    form label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+    form input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+    form input:focus {
+        border-color: #198754; /* màu xanh success */
+        box-shadow: 0 0 4px rgba(25, 135, 84, 0.3);
+        outline: none;
+    }
+</style>
 {% endblock content %}
