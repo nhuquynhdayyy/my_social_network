@@ -56,22 +56,63 @@ class HomePageView(ListView):
         return queryset
 
     # THÊM HÀM NÀY
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     if self.request.user.is_authenticated:
+    #         # Lấy tất cả reaction của user hiện tại trên các bài viết đang hiển thị
+    #         post_ids = [post.id for post in context['posts']]
+    #         user_reactions = Reaction.objects.filter(
+    #             user=self.request.user, 
+    #             object_id__in=post_ids,
+    #             content_type=ContentType.objects.get_for_model(Post)
+    #         ).values('object_id', 'reaction_type')
+            
+    #         # Chuyển thành một dict để template dễ truy cập: {post_id: reaction_type}
+    #         context['user_reactions_map'] = {
+    #             reaction['object_id']: reaction['reaction_type'] 
+    #             for reaction in user_reactions
+    #         }
+    #     return context
+    # === THAY THẾ TOÀN BỘ HÀM NÀY BẰNG PHIÊN BẢN MỚI DƯỚI ĐÂY ===
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_authenticated:
-            # Lấy tất cả reaction của user hiện tại trên các bài viết đang hiển thị
+            # Lấy ID các bài viết đang hiển thị trên trang hiện tại
             post_ids = [post.id for post in context['posts']]
-            user_reactions = Reaction.objects.filter(
+            
+            # 1. Lấy reaction của user cho các BÀI VIẾT (giữ nguyên như cũ)
+            post_content_type = ContentType.objects.get_for_model(Post)
+            user_post_reactions = Reaction.objects.filter(
                 user=self.request.user, 
                 object_id__in=post_ids,
-                content_type=ContentType.objects.get_for_model(Post)
+                content_type=post_content_type
             ).values('object_id', 'reaction_type')
             
-            # Chuyển thành một dict để template dễ truy cập: {post_id: reaction_type}
             context['user_reactions_map'] = {
                 reaction['object_id']: reaction['reaction_type'] 
-                for reaction in user_reactions
+                for reaction in user_post_reactions
             }
+
+            # === PHẦN BẠN CẦN THÊM VÀO ===
+            # 2. Lấy reaction của user cho các BÌNH LUẬN thuộc các bài viết đó
+            comment_content_type = ContentType.objects.get_for_model(Comment)
+            
+            # Lấy ID của tất cả các bình luận thuộc các bài viết đang hiển thị
+            comment_ids = Comment.objects.filter(post_id__in=post_ids).values_list('id', flat=True)
+            
+            user_comment_reactions = Reaction.objects.filter(
+                user=self.request.user,
+                object_id__in=comment_ids,
+                content_type=comment_content_type
+            ).values('object_id', 'reaction_type')
+            
+            # Tạo một map riêng cho reaction của comment để template sử dụng
+            context['comment_user_reactions_map'] = {
+                reaction['object_id']: reaction['reaction_type']
+                for reaction in user_comment_reactions
+            }
+            # === KẾT THÚC PHẦN THÊM VÀO ===
+            
         return context
     
 # View để tạo bài viết mới
