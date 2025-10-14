@@ -1,4 +1,5 @@
 {% extends "posts/base.html" %}
+{% load post_extras %}
 
 {% block content %}
 <div class="container mt-4">
@@ -10,23 +11,54 @@
             <!-- Tin nhắn sẽ được hiển thị ở đây -->
             {% for message in messages %}
                 <div id="message-{{ message.id }}" class="mb-3 d-flex {% if message.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
-                    <div class="message-bubble p-2 rounded {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 70%;">
-                        <p class="mb-0 message-text">{{ message.text }}</p>
-                        <small class="text-muted d-block text-end {% if message.sender == user %}text-white-50{% endif %}">
-                            {{ message.timestamp|date:"H:i, d/m/Y" }}
-                        </small>
-                        {% if message.sender == user %}
-                        <div class="message-actions">
-                            <button class="btn btn-sm btn-light py-0 px-1" onclick="showEditForm('{{ message.id }}')">Sửa</button>
-                            <button class="btn btn-sm btn-danger py-0 px-1" onclick="deleteMessage('{{ message.id }}')">Xóa</button>
+                    
+                    <!-- BƯỚC 1: Thêm div container này -->
+                    <div class="message-bubble-container">
+
+                        <!-- Bong bóng chat (giữ nguyên) -->
+                        <div class="message-bubble p-2 rounded {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 70%;">
+                            <p class="mb-0 message-text">{{ message.text }}</p>
+                            <small class="text-muted d-block text-end {% if message.sender == user %}text-white-50{% endif %}">
+                                {{ message.timestamp|date:"H:i, d/m/Y" }}
+                            </small>
+                            {% if message.sender == user %}
+                            <div class="message-actions">
+                                <button class="btn btn-sm btn-light py-0 px-1" onclick="showEditForm('{{ message.id }}')">Sửa</button>
+                                <button class="btn btn-sm btn-danger py-0 px-1" onclick="deleteMessage('{{ message.id }}')">Xóa</button>
+                            </div>
+                            <div id="edit-form-{{ message.id }}" style="display: none;">
+                                <textarea class="form-control form-control-sm mt-1" id="edit-text-{{ message.id }}">{{ message.text }}</textarea>
+                                <button class="btn btn-sm btn-success mt-1" onclick="submitEdit('{{ message.id }}')">Lưu</button>
+                                <button class="btn btn-sm btn-secondary mt-1" onclick="hideEditForm('{{ message.id }}')">Hủy</button>
+                            </div>
+                            {% endif %}
                         </div>
-                        <div id="edit-form-{{ message.id }}" style="display: none;">
-                            <textarea class="form-control form-control-sm mt-1" id="edit-text-{{ message.id }}">{{ message.text }}</textarea>
-                            <button class="btn btn-sm btn-success mt-1" onclick="submitEdit('{{ message.id }}')">Lưu</button>
-                            <button class="btn btn-sm btn-secondary mt-1" onclick="hideEditForm('{{ message.id }}')">Hủy</button>
+
+                        <!-- Khu vực thống kê reaction (đặt bên trong container) -->
+                        <div id="message-reaction-stats-{{ message.id }}" class="reaction-stats-display">
+                            {% with stats=message.reaction_stats %}
+                                {% if stats %}
+                                    {% for reaction in stats %}
+                                        {% if reaction.reaction_type == 'LIKE' %}<span>👍</span>{% endif %}
+                                        {% if reaction.reaction_type == 'LOVE' %}<span>❤️</span>{% endif %}
+                                        {% if reaction.reaction_type == 'HAHA' %}<span>😂</span>{% endif %}
+                                    {% endfor %}
+                                    <span class="reaction-count">{{ message.reactions.count }}</span>
+                                {% endif %}
+                            {% endwith %}
                         </div>
-                        {% endif %}
-                    </div>
+
+                        <!-- Popup reaction (đặt bên trong container) -->
+                        <div class="reaction-popup">
+                            <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="LIKE">👍</button>
+                            <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="LOVE">❤️</button>
+                            <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="HAHA">😂</button>
+                            <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="WOW">😮</button>
+                            <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="SAD">😢</button>
+                            <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="ANGRY">😡</button>
+                        </div>
+
+                    </div> <!-- Kết thúc .message-bubble-container -->
                 </div>
             {% endfor %}
         </div>
@@ -42,9 +74,58 @@
     </div>
 </div>
 
+<style>
+    .message-bubble-container {
+        position: relative;
+    }
+
+    .message-bubble-container:hover .reaction-popup {
+        display: flex;
+    }
+    .reaction-popup {
+        display: none;
+        position: absolute;
+        top: -35px; /* Điều chỉnh vị trí popup */
+        left: 10px;
+        background-color: white;
+        border-radius: 20px;
+        padding: 4px 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        z-index: 10;
+        gap: 5px;
+    }
+    .reaction-popup .btn {
+        font-size: 1.2rem; padding: 0; border: none; background: none;
+        transition: transform 0.1s;
+    }
+    .reaction-popup .btn:hover {
+        transform: scale(1.3);
+    }
+    .reaction-stats-display {
+        position: absolute;
+        bottom: -10px;
+        right: 5px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1px 6px;
+        font-size: 0.75rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const messageContainer = document.getElementById('message-container');
+    
+    messageContainer.addEventListener('click', function(event) {
+        const button = event.target.closest('.message-reaction-choice-btn');
+        if (button) {
+            const messageId = button.dataset.messageId;
+            const reactionType = button.dataset.reactionType;
+            reactToMessage(messageId, reactionType);
+        }
+    });
+
     // Tự động cuộn xuống tin nhắn mới nhất
     messageContainer.scrollTop = messageContainer.scrollHeight;
 
@@ -93,6 +174,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+function reactToMessage(messageId, reactionType) {
+    fetch(`/chat/api/message/react/${messageId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reaction_type: reactionType })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            // Cập nhật giao diện thống kê reaction
+            updateReactionStatsUI(messageId, data.reaction_stats, data.total_reactions);
+        } else {
+            alert('Lỗi: ' + data.message);
+        }
+    });
+}
+
+function updateReactionStatsUI(messageId, stats, total) {
+    const statsContainer = document.getElementById(`message-reaction-stats-${messageId}`);
+    if (!statsContainer) return;
+    
+    if (total > 0) {
+        let iconsHTML = '';
+        if (stats.LIKE) iconsHTML += '<span>👍</span>';
+        if (stats.LOVE) iconsHTML += '<span>❤️</span>';
+        if (stats.HAHA) iconsHTML += '<span>😂</span>';
+        if (stats.WOW) iconsHTML += '<span>😮</span>';
+        if (stats.SAD) iconsHTML += '<span>😢</span>';
+        if (stats.ANGRY) iconsHTML += '<span>😡</span>';
+        statsContainer.innerHTML = `${iconsHTML} <span class="reaction-count">${total}</span>`;
+    } else {
+        statsContainer.innerHTML = ''; // Xóa trắng nếu không còn reaction
+    }
+}
 
 function getCookie(name) {
     let cookieValue = null;

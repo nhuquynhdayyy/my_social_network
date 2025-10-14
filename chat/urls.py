@@ -15,7 +15,7 @@ urlpatterns = [
     # Chi tiết một cuộc hội thoại (phòng chat)
     path('<int:conversation_id>/', views.conversation_detail_view, name='conversation_detail'),
     
-    path('chat/<int:conversation_id>/', views.conversation_detail, name='conversation_detail'),
+    # path('chat/<int:conversation_id>/', views.conversation_detail, name='conversation_detail'),
 
     # API nội bộ để gửi tin nhắn (sử dụng với JavaScript)
     path('api/message/send/<int:conversation_id>/', views.send_message_api, name='send_message_api'),
@@ -27,4 +27,5 @@ urlpatterns = [
     path('api/message/edit/<int:message_id>/', views.edit_message_api, name='edit_message_api'),
     path('api/conversations/', views.api_get_conversations, name='api_get_conversations'),
     path('api/search-users/', views.api_search_users, name='api_search_users'),
+    path('api/message/react/<int:message_id>/', views.react_to_message_api, name='react_to_message_api'),
 ]

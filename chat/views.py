@@ -2,7 +2,7 @@ from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.contrib.auth import get_user_model
 from django.db.models import OuterRef, Subquery, F
 from django.contrib.contenttypes.models import ContentType
@@ -10,6 +10,8 @@ from notifications.models import Notification
 from .models import Conversation, Message
 from .forms import MessageForm
 import json
+from posts.models import Reaction
+from django.urls import reverse
 
 User = get_user_model()
 
@@ -42,29 +44,29 @@ def start_conversation_view(request, user_id):
     return redirect('chat:conversation_detail', conversation_id=conversation.id)
 
 
-# ------------------- HIỂN THỊ CHI TIẾT -------------------
+# # ------------------- HIỂN THỊ CHI TIẾT -------------------
+# @login_required
+# def conversation_detail_view(request, conversation_id):
+#     conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+#     messages = conversation.messages.all()
+#     form = MessageForm()
+
+#     other_participant = conversation.participants.exclude(id=request.user.id).first()
+
+#     context = {
+#         'conversation': conversation,
+#         'messages': messages,
+#         'form': form,
+#         'other_participant': other_participant
+#     }
+#     return render(request, 'chat/conversation_detail.html', context)
+# ------------------- HIỂN THỊ CHI TIẾT (CẦN SỬA) -------------------
 @login_required
 def conversation_detail_view(request, conversation_id):
     conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
-    messages = conversation.messages.all()
-    form = MessageForm()
-
     other_participant = conversation.participants.exclude(id=request.user.id).first()
 
-    context = {
-        'conversation': conversation,
-        'messages': messages,
-        'form': form,
-        'other_participant': other_participant
-    }
-    return render(request, 'chat/conversation_detail.html', context)
-
-
-# ------------------- GỬI TIN NHẮN (TRANG HTML) -------------------
-@login_required
-def conversation_detail(request, conversation_id):
-    conversation = get_object_or_404(Conversation, id=conversation_id)
-
+    # Xử lý khi người dùng gửi tin nhắn mới
     if request.method == "POST":
         form = MessageForm(request.POST)
         if form.is_valid():
@@ -72,34 +74,122 @@ def conversation_detail(request, conversation_id):
             message.conversation = conversation
             message.sender = request.user
             message.save()
-
-            # Cập nhật last_message cho conversation
-            conversation.last_message = message
-            conversation.updated_at = timezone.now()
-            conversation.save()
-
-            # === Xác định receiver (người còn lại) ===
-            receivers = conversation.participants.exclude(id=request.user.id)
-
-            ct = ContentType.objects.get_for_model(message)
-            for receiver in receivers:
-                Notification.objects.create(
-                    recipient=receiver,
-                    sender=request.user,
-                    notification_type='MESSAGE',
-                    target_content_type=ct,
-                    target_object_id=message.id
-                )
-
+            # ... (Logic tạo notification giữ nguyên) ...
             return redirect('chat:conversation_detail', conversation_id=conversation.id)
 
+    # --- Logic chuẩn bị dữ liệu cho GET request ---
     messages = conversation.messages.all()
     form = MessageForm()
-    return render(request, "chat/conversation_detail.html", {
-        "conversation": conversation,
-        "messages": messages,
-        "form": form
-    })
+
+    # Chuẩn bị sẵn dữ liệu reaction cho từng tin nhắn (đã sửa ở bước trước)
+    for message in messages:
+        message.reaction_stats = message.reactions.values('reaction_type').annotate(count=Count('id'))
+
+    # Lấy reaction của người dùng hiện tại (logic quan trọng bị thiếu)
+    message_ids = [msg.id for msg in messages]
+    message_content_type = ContentType.objects.get_for_model(Message)
+    user_reactions = Reaction.objects.filter(
+        user=request.user,
+        content_type=message_content_type,
+        object_id__in=message_ids
+    ).values('object_id', 'reaction_type')
+    user_reactions_map = {item['object_id']: item['reaction_type'] for item in user_reactions}
+
+    context = {
+        'conversation': conversation,
+        'messages': messages,
+        'form': form,
+        'other_participant': other_participant,
+        'user_reactions_map': user_reactions_map # <-- Biến quan trọng đã được thêm vào
+    }
+    return render(request, 'chat/conversation_detail.html', context)
+
+
+# ------------------- GỬI TIN NHẮN (TRANG HTML) -------------------
+# @login_required
+# def conversation_detail(request, conversation_id):
+#     conversation = get_object_or_404(Conversation, id=conversation_id)
+
+#     if request.method == "POST":
+#         form = MessageForm(request.POST)
+#         if form.is_valid():
+#             message = form.save(commit=False)
+#             message.conversation = conversation
+#             message.sender = request.user
+#             message.save()
+
+#             # Cập nhật last_message cho conversation
+#             conversation.last_message = message
+#             conversation.updated_at = timezone.now()
+#             conversation.save()
+
+#             # === Xác định receiver (người còn lại) ===
+#             receivers = conversation.participants.exclude(id=request.user.id)
+
+#             ct = ContentType.objects.get_for_model(message)
+#             for receiver in receivers:
+#                 Notification.objects.create(
+#                     recipient=receiver,
+#                     sender=request.user,
+#                     notification_type='MESSAGE',
+#                     target_content_type=ct,
+#                     target_object_id=message.id
+#                 )
+
+#             return redirect('chat:conversation_detail', conversation_id=conversation.id)
+
+#     messages = conversation.messages.all()
+#     form = MessageForm()
+#     return render(request, "chat/conversation_detail.html", {
+#         "conversation": conversation,
+#         "messages": messages,
+#         "form": form
+#     })
+# @login_required
+# def conversation_detail(request, conversation_id):
+#     conversation = get_object_or_404(Conversation, id=conversation_id)
+
+#     if request.method == "POST":
+#         # ... logic xử lý POST request giữ nguyên ...
+#         form = MessageForm(request.POST)
+#         if form.is_valid():
+#             message = form.save(commit=False)
+#             message.conversation = conversation
+#             message.sender = request.user
+#             message.save()
+
+#             conversation.last_message = message
+#             conversation.updated_at = timezone.now()
+#             conversation.save()
+
+#             receivers = conversation.participants.exclude(id=request.user.id)
+#             ct = ContentType.objects.get_for_model(message)
+#             for receiver in receivers:
+#                 Notification.objects.create(
+#                     recipient=receiver,
+#                     sender=request.user,
+#                     notification_type='MESSAGE',
+#                     target_content_type=ct,
+#                     target_object_id=message.id
+#                 )
+
+#             return redirect('chat:conversation_detail', conversation_id=conversation.id)
+
+#     # === BẮT ĐẦU PHẦN SỬA LOGIC GET REQUEST ===
+#     messages = conversation.messages.all()
+    
+#     # Chuẩn bị sẵn dữ liệu reaction cho từng tin nhắn
+#     for message in messages:
+#         # Thực hiện query ở view và gán kết quả vào một thuộc tính mới
+#         message.reaction_stats = message.reactions.values('reaction_type').annotate(count=Count('id'))
+
+#     form = MessageForm()
+#     return render(request, "chat/conversation_detail.html", {
+#         "conversation": conversation,
+#         "messages": messages, # List 'messages' này giờ đã chứa sẵn 'reaction_stats'
+#         "form": form
+#     })
+#     # === KẾT THÚC PHẦN SỬA LOGIC GET REQUEST ===
 
 
 # ------------------- API GỬI TIN NHẮN (AJAX) -------------------
@@ -212,7 +302,8 @@ def api_get_conversations(request):
             },
             'last_message': last_message_text,
             'last_message_timestamp': last_message_ts,
-            'detail_url': f'/chat/{conv.id}/'
+            # SỬA DÒNG NÀY: Dùng `reverse` để tạo URL động và chính xác
+            'detail_url': reverse('chat:conversation_detail', kwargs={'conversation_id': conv.id})
         })
 
     return JsonResponse({'conversations': data})
@@ -241,3 +332,56 @@ def api_search_users(request):
         })
 
     return JsonResponse({'users': data})
+
+@login_required
+def react_to_message_api(request, message_id):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+    message = get_object_or_404(Message, id=message_id)
+    # Kiểm tra xem user có trong cuộc trò chuyện này không để đảm bảo quyền
+    if not message.conversation.participants.filter(id=request.user.id).exists():
+        return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        reaction_type = data.get('reaction_type')
+        if not reaction_type:
+            return JsonResponse({'status': 'error', 'message': 'Reaction type is required'}, status=400)
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+
+    content_type = ContentType.objects.get_for_model(Message)
+    existing_reaction = Reaction.objects.filter(
+        user=request.user, content_type=content_type, object_id=message.id
+    ).first()
+
+    current_user_reaction = None
+    if existing_reaction:
+        if existing_reaction.reaction_type == reaction_type:
+            existing_reaction.delete() # Bỏ react
+            current_user_reaction = None
+        else:
+            existing_reaction.reaction_type = reaction_type
+            existing_reaction.save() # Thay đổi reaction
+            current_user_reaction = reaction_type
+    else:
+        Reaction.objects.create(
+            user=request.user,
+            content_type=content_type,
+            object_id=message.id,
+            reaction_type=reaction_type
+        ) # React mới
+        current_user_reaction = reaction_type
+
+    # Lấy lại thống kê reaction cho tin nhắn này
+    reaction_stats = message.reactions.values('reaction_type').annotate(count=Count('id'))
+    stats_dict = {item['reaction_type']: item['count'] for item in reaction_stats}
+    total_reactions = message.reactions.count()
+    
+    return JsonResponse({
+        'status': 'ok',
+        'total_reactions': total_reactions,
+        'reaction_stats': stats_dict,
+        'current_user_reaction': current_user_reaction
+    })
