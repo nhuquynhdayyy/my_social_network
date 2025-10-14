@@ -23,4 +23,5 @@ urlpatterns = [
     # URLs cho việc sửa bình luận
     path('comment/<int:comment_id>/edit/', edit_comment, name='edit_comment'),
     path('comment/<int:comment_id>/get-edit-form/', get_comment_edit_form, name='get_comment_edit_form'),
+    path('comment/<int:comment_id>/react/', views.react_to_comment, name='react_to_comment'), 
 ]

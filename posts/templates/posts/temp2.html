@@ -95,26 +95,7 @@
       {% block content %}{% endblock content %}
     </main>
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // Lấy cookie theo tên (chuẩn Django docs)
-        function getCookie(name) {
-          let cookieValue = null;
-          if (document.cookie && document.cookie !== "") {
-            const cookies = document.cookie.split(";");
-            for (let i = 0; i < cookies.length; i++) {
-              const cookie = cookies[i].trim();
-              if (cookie.substring(0, name.length + 1) === name + "=") {
-                cookieValue = decodeURIComponent(
-                  cookie.substring(name.length + 1)
-                );
-                break;
-              }
-            }
-          }
-          return cookieValue;
-        }
-
-        const csrftoken = getCookie("csrftoken");
+      document.addEventListener("DOMContentLoaded", function () 
 
         function updateReactionStatsUI(postId, stats, total) {
           const statsContainer = document.getElementById(
@@ -567,15 +548,10 @@
       #search-users-view input {
         border-radius: 20px;
       }
-      .comment-reaction-container {
-        position: relative; /* Container làm gốc cho việc định vị popup */
-        padding-top: 1rem;  /* TẠO VÙNG ĐỆM VÔ HÌNH Ở TRÊN */
-        margin-top: -1rem; /* KÉO CONTAINER VỀ VỊ TRÍ CŨ ĐỂ KHÔNG PHÁ VỠ BỐ CỤC */
-      }
       .comment-reaction-popup {
-          display: none; /* Mặc định ẩn popup */
+          display: none;
           position: absolute;
-          bottom: 1.8rem; /* Vị trí của popup, ngay trên nút "Thích" */
+          bottom: 1.8rem; /* Nâng popup lên trên nút "Thích" */
           left: -10px;
           background-color: white;
           border-radius: 20px;
@@ -583,23 +559,47 @@
           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
           white-space: nowrap;
           z-index: 10;
-          gap: 5px; /* Khoảng cách giữa các icon */
+          transition: all 0.2s;
       }
-      /* Khi di chuột vào container, hiển thị popup dưới dạng flex */
       .comment-reaction-container:hover .comment-reaction-popup {
-          display: flex; 
+          display: flex; /* Dùng flex để các nút nằm ngang */
+          gap: 5px;
       }
       .comment-reaction-popup .btn {
           font-size: 1.5rem;
           padding: 0;
           border: none;
           background: none;
-          transition: transform 0.1s;
       }
       .comment-reaction-popup .btn:hover {
-          transform: scale(1.2); /* Hiệu ứng phóng to khi di chuột vào icon */
+          transform: scale(1.2);
+          transition: transform 0.1s;
       }
       .comment-reaction-container { position: relative; }
+      .comment-reaction-popup {
+          display: none;
+          position: absolute;
+          bottom: 1.8rem;
+          left: -10px;
+          background-color: white;
+          border-radius: 20px;
+          padding: 5px 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          white-space: nowrap;
+          z-index: 10;
+          transition: all 0.2s;
+          display: flex; /* Dùng flex để các nút nằm ngang */
+          gap: 5px;
+      }
+      .comment-reaction-container:hover .comment-reaction-popup {
+          display: flex; 
+      }
+      .comment-reaction-popup .btn {
+          font-size: 1.5rem; padding: 0; border: none; background: none;
+      }
+      .comment-reaction-popup .btn:hover {
+          transform: scale(1.2); transition: transform 0.1s;
+      }
     </style>
 
     <div class="chat-widget-container">

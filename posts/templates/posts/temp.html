@@ -1,0 +1,171 @@
+<!-- =================== JAVASCRIPT SECTION (CLEAN & COMPLETE VERSION) =================== -->
+{% if user.is_authenticated %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const body = document.body;
+    
+    // === HÀM LẤY CSRF TOKEN (Định nghĩa một lần duy nhất) ===
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // =================== LOGIC CHUNG CHO REACTION (CHO CẢ POST & COMMENT) ===================
+    function handleReaction(event) {
+        event.preventDefault();
+        const button = event.currentTarget; // Dùng currentTarget để đảm bảo bắt đúng nút
+        const postId = button.dataset.postId;
+        const commentId = button.dataset.commentId;
+        const reactionType = button.dataset.reactionType;
+        let url = '';
+
+        if (postId) {
+            url = `/post/${postId}/react/`;
+        } else if (commentId) {
+            url = `/comment/${commentId}/react/`;
+        } else {
+            console.error('Không tìm thấy post ID hoặc comment ID trên nút reaction.');
+            return;
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+            body: JSON.stringify({reaction_type: reactionType})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                // Tải lại trang là cách đơn giản và đáng tin cậy nhất để cập nhật UI phức tạp.
+                window.location.reload();
+            } else {
+                alert(data.message || "Có lỗi xảy ra khi thả cảm xúc.");
+            }
+        })
+        .catch(error => console.error('Reaction Error:', error));
+    }
+
+    // Gắn sự kiện cho TẤT CẢ các nút reaction (cả post và comment)
+    document.querySelectorAll('.reaction-btn, .reaction-btn-choice, .comment-reaction-btn, .comment-reaction-choice-btn').forEach(button => {
+        button.addEventListener('click', handleReaction);
+    });
+
+    // =================== LOGIC COMMENT ===================
+    // Bấm nút "Bình luận" để focus vào ô input
+    body.addEventListener('click', function(event) {
+        const commentToggleButton = event.target.closest('.comment-toggle-btn');
+        if (commentToggleButton) {
+            const targetId = commentToggleButton.dataset.bsTarget;
+            // Dùng setTimeout để đợi cho collapse animation hoàn tất
+            setTimeout(() => {
+                const commentInput = document.querySelector(`${targetId} input[name="content"]`);
+                if (commentInput) commentInput.focus();
+            }, 350); // 350ms là thời gian an toàn cho animation
+        }
+    });
+
+    // Xử lý Thêm & Sửa comment (qua sự kiện submit)
+    body.addEventListener('submit', function(event) {
+        // Thêm comment mới
+        if (event.target.classList.contains('comment-form')) {
+            event.preventDefault();
+            const form = event.target;
+            const url = form.action;
+            const formData = new FormData(form);
+            const contentInput = form.querySelector('input[name=content]');
+
+            fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrftoken }, body: formData })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    const commentList = form.closest('.comments-section').querySelector('.comment-list');
+                    commentList.insertAdjacentHTML('beforeend', data.comment_html);
+                    contentInput.value = '';
+                } else { alert(data.message || "Lỗi khi gửi bình luận."); }
+            })
+            .catch(error => console.error('Add Comment Error:', error));
+        }
+
+        // Lưu comment đã sửa
+        if (event.target.classList.contains('edit-comment-form')) {
+            event.preventDefault();
+            const form = event.target;
+            const url = form.action;
+            const formData = new FormData(form);
+            const commentDiv = form.closest('[id^="comment-"]');
+
+            fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrftoken }, body: formData })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    commentDiv.outerHTML = data.comment_html;
+                } else { alert(data.message || "Lỗi khi sửa bình luận."); }
+            })
+            .catch(error => console.error('Edit Comment Error:', error));
+        }
+    });
+
+    // Xử lý Xóa, Sửa, Hủy sửa comment (qua sự kiện click)
+    body.addEventListener('click', function(event) {
+        // Xóa comment
+        const deleteBtn = event.target.closest('.delete-comment-btn');
+        if (deleteBtn) {
+            event.preventDefault();
+            if (!confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) { return; }
+            const url = deleteBtn.href;
+            fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrftoken } })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    deleteBtn.closest('[id^="comment-"]').remove();
+                } else { alert(data.message || "Lỗi khi xóa bình luận."); }
+            })
+            .catch(error => console.error('Delete Comment Error:', error));
+        }
+        
+        // Lấy form sửa comment
+        const editBtn = event.target.closest('.edit-comment-btn');
+        if (editBtn) {
+            event.preventDefault();
+            const commentId = editBtn.dataset.commentId;
+            const url = `/comment/${commentId}/get-edit-form/`;
+            const commentContentWrapper = document.getElementById(`comment-${commentId}`).querySelector('.comment-content-wrapper');
+            fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    commentContentWrapper.dataset.originalContent = commentContentWrapper.innerHTML;
+                    commentContentWrapper.innerHTML = data.form_html;
+                    // Tự động focus vào ô input sau khi form hiện ra
+                    commentContentWrapper.querySelector('input[name="content"]').focus();
+                } else { alert(data.message || "Lỗi khi lấy form sửa."); }
+            });
+        }
+
+        // Hủy sửa comment
+        const cancelBtn = event.target.closest('.cancel-edit-btn');
+        if (cancelBtn) {
+            const commentContentWrapper = cancelBtn.closest('.comment-content-wrapper');
+            if (commentContentWrapper.dataset.originalContent) {
+                commentContentWrapper.innerHTML = commentContentWrapper.dataset.originalContent;
+            }
+        }
+    });
+
+    // =================== CÁC LOGIC KHÁC (NOTIFICATION, CHAT) ===================
+    // (Bạn có thể thêm code cho các tính năng này vào đây sau)
+
+});
+</script>
+{% endif %}

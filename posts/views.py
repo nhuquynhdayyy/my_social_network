@@ -294,3 +294,64 @@ def edit_comment(request, comment_id):
     else:
         # Trả về lỗi nếu form không hợp lệ (ví dụ: nội dung trống)
         return JsonResponse({'status': 'error', 'message': 'Dữ liệu không hợp lệ'}, status=400)
+    
+@login_required
+@require_POST
+def react_to_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    post = comment.post
+    
+    # ... (Phần kiểm tra quyền giữ nguyên như cũ) ...
+    viewer = request.user
+    author = post.author
+    can_react = False
+    if viewer == author or post.privacy == 'PUBLIC':
+        can_react = True
+    elif post.privacy == 'FRIENDS':
+        if Friendship.objects.filter((Q(from_user=author, to_user=viewer) | Q(from_user=viewer, to_user=author)), status='ACCEPTED').exists():
+            can_react = True
+    
+    if not can_react:
+        return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện hành động này'}, status=403)
+    
+    # === NÂNG CẤP LOGIC REACTION ===
+    data = json.loads(request.body)
+    reaction_type = data.get('reaction_type')
+
+    # Kiểm tra xem reaction_type có hợp lệ không
+    valid_reactions = [choice[0] for choice in Reaction.REACTION_CHOICES]
+    if reaction_type not in valid_reactions:
+        return JsonResponse({'status': 'error', 'message': 'Loại reaction không hợp lệ'}, status=400)
+
+    content_type = ContentType.objects.get_for_model(Comment)
+    existing_reaction = Reaction.objects.filter(
+        user=viewer, content_type=content_type, object_id=comment.id
+    ).first()
+
+    current_user_reaction = None
+    if existing_reaction:
+        if existing_reaction.reaction_type == reaction_type:
+            existing_reaction.delete()
+            current_user_reaction = None
+        else:
+            existing_reaction.reaction_type = reaction_type
+            existing_reaction.save()
+            current_user_reaction = reaction_type
+    else:
+        Reaction.objects.create(
+            user=viewer, content_type=content_type, object_id=comment.id, reaction_type=reaction_type
+        )
+        current_user_reaction = reaction_type
+
+    # === NÂNG CẤP PHẦN TRẢ VỀ ===
+    # Thống kê chi tiết
+    reaction_stats = comment.reactions.values('reaction_type').annotate(count=Count('id'))
+    stats_dict = {item['reaction_type']: item['count'] for item in reaction_stats}
+    total_reactions = comment.reactions.count()
+        
+    return JsonResponse({
+        'status': 'ok',
+        'total_reactions': total_reactions,
+        'reaction_stats': stats_dict,
+        'current_user_reaction': current_user_reaction
+    })

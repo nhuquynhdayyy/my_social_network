@@ -50,6 +50,13 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.author.username} on {self.post}"
+    
+    reactions = GenericRelation('Reaction')
+
+    # THÊM HÀM NÀY
+    def get_reaction_stats_for_comment(self):
+        stats = self.reactions.values('reaction_type').annotate(count=Count('id'))
+        return {item['reaction_type']: item['count'] for item in stats}
 
 class Reaction(models.Model):
     REACTION_CHOICES = [

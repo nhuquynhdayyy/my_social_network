@@ -1,28 +1,65 @@
 <!-- posts/templates/posts/_single_comment.html -->
+{% load post_extras %}
 <div class="d-flex mb-2" id="comment-{{ comment.id }}">
     <img src="{{ comment.author.avatar.url }}" class="rounded-circle me-2" width="30" height="30" alt="{{ comment.author.username }}">
     
-    <div class="bg-light p-2 rounded w-100">
-        <div class="d-flex justify-content-between">
-            <a href="{% url 'accounts:profile' username=comment.author.username %}" class="fw-bold text-dark text-decoration-none">{{ comment.author.username }}</a>
+    <div class="w-100">
+        <!-- Hộp nội dung bình luận -->
+        <div class="bg-light p-2 rounded position-relative mb-3">
+            <!-- ... code hiển thị tên, nút sửa/xóa, và nội dung ... -->
+            <div class="comment-content-wrapper">
+                <p class="mb-0 comment-content">{{ comment.content|linebreaksbr }}</p>
+            </div>
             
-            <!-- Khu vực chứa các nút hành động (Sửa/Xóa) -->
-            <div class="comment-actions">
-                {% if user == comment.author %}
-                    <!-- Chỉ tác giả bình luận mới thấy nút Sửa -->
-                    <a href="#" class="text-secondary text-decoration-none me-2 edit-comment-btn" data-comment-id="{{ comment.id }}" style="font-size: 0.8rem;">Sửa</a>
-                {% endif %}
-
-                {% if user == comment.author or user == comment.post.author %}
-                    <!-- Tác giả bình luận hoặc chủ bài viết đều thấy nút Xóa -->
-                    <a href="{% url 'delete_comment' comment_id=comment.id %}" class="text-danger text-decoration-none delete-comment-btn" style="font-size: 0.8rem;">Xóa</a>
-                {% endif %}
+            <!-- Thống kê reaction -->
+            <div id="comment-reaction-stats-{{ comment.id }}" class="position-absolute bottom-0 end-0 bg-white rounded-pill px-2 py-1 shadow-sm" style="transform: translateY(50%); font-size: 0.75rem;">
+                {% with stats=comment.get_reaction_stats_for_comment %}
+                    {% if stats %}
+                        {% if 'LIKE' in stats %}<span>👍</span>{% endif %}
+                        {% if 'LOVE' in stats %}<span>❤️</span>{% endif %}
+                        {% if 'HAHA' in stats %}<span>😂</span>{% endif %}
+                        {% if 'WOW' in stats %}<span>😮</span>{% endif %}
+                        {% if 'SAD' in stats %}<span>😢</span>{% endif %}
+                        {% if 'ANGRY' in stats %}<span>😡</span>{% endif %}
+                        <span class="ms-1">{{ comment.reactions.count }}</span>
+                    {% endif %}
+                {% endwith %}
             </div>
         </div>
 
-        <!-- Div bọc nội dung để JavaScript dễ dàng thay thế -->
-        <div class="comment-content-wrapper">
-            <p class="mb-0 comment-content">{{ comment.content|linebreaksbr }}</p>
+        <!-- Dòng hành động -->
+        <div class="d-flex align-items-center mt-1" style="font-size: 0.8rem;">
+            <!-- Container cho nút Thích và popup -->
+            <div class="comment-reaction-container">
+                
+                <!-- Popup các lựa chọn reaction -->
+                <div class="comment-reaction-popup">
+                    <button class="btn comment-reaction-choice-btn" data-comment-id="{{ comment.id }}" data-reaction-type="LIKE">👍</button>
+                    <button class="btn comment-reaction-choice-btn" data-comment-id="{{ comment.id }}" data-reaction-type="LOVE">❤️</button>
+                    <button class="btn comment-reaction-choice-btn" data-comment-id="{{ comment.id }}" data-reaction-type="HAHA">😂</button>
+                    <button class="btn comment-reaction-choice-btn" data-comment-id="{{ comment.id }}" data-reaction-type="WOW">😮</button>
+                    <button class="btn comment-reaction-choice-btn" data-comment-id="{{ comment.id }}" data-reaction-type="SAD">😢</button>
+                    <button class="btn comment-reaction-choice-btn" data-comment-id="{{ comment.id }}" data-reaction-type="ANGRY">😡</button>
+                </div>
+
+                <!-- Nút "Thích" chính, hiển thị trạng thái đã react -->
+                {% with user_reaction=comment_user_reactions_map|get_item:comment.id %}
+                <a href="#" 
+                   class="text-decoration-none me-2 comment-reaction-btn {% if user_reaction %}text-primary fw-bold{% else %}text-muted{% endif %}" 
+                   data-comment-id="{{ comment.id }}" 
+                   data-reaction-type="{{ user_reaction|default:'LIKE' }}">
+                    {% if user_reaction == 'LIKE' %}👍 Thích
+                    {% elif user_reaction == 'LOVE' %}❤️ Yêu thích
+                    {% elif user_reaction == 'HAHA' %}😂 Haha
+                    {% elif user_reaction == 'WOW' %}😮 Wow
+                    {% elif user_reaction == 'SAD' %}😢 Buồn
+                    {% elif user_reaction == 'ANGRY' %}😡 Phẫn nộ
+                    {% else %}Thích{% endif %}
+                </a>
+                {% endwith %}
+            </div>
+            
+            <span class="text-muted">· Trả lời</span>
         </div>
     </div>
 </div>
