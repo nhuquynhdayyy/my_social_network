@@ -35,103 +35,14 @@
 
 
     <h1 class="mb-4">Dòng thời gian</h1>
-
     {% for post in posts %}
-    <div class="card mb-3">
-      <!-- Phần media (ảnh/video) -->
-      {% if post.media.all %}
-      <div
-        id="carouselPost{{ post.id }}"
-        class="carousel slide"
-        data-bs-ride="carousel"
-      >
-        <div class="carousel-inner">
-          {% for media_item in post.media.all %}
-          <div class="carousel-item {% if forloop.first %}active{% endif %}">
-            {% if media_item.media_type == 'IMAGE' %}
-            <img
-              src="{{ media_item.file.url }}"
-              class="d-block w-100"
-              style="max-height: 500px; object-fit: cover"
-              alt="Post image"
-            />
-            {% elif media_item.media_type == 'VIDEO' %}
-            <video
-              src="{{ media_item.file.url }}"
-              class="d-block w-100"
-              controls
-            ></video>
-            {% endif %}
-          </div>
-          {% endfor %}
-        </div>
-        {% if post.media.all|length > 1 %}
-        <button
-          class="carousel-control-prev"
-          type="button"
-          data-bs-target="#carouselPost{{ post.id }}"
-          data-bs-slide="prev"
-        >
-          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Previous</span>
-        </button>
-        <button
-          class="carousel-control-next"
-          type="button"
-          data-bs-target="#carouselPost{{ post.id }}"
-          data-bs-slide="next"
-        >
-          <span class="carousel-control-next-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Next</span>
-        </button>
-        {% endif %}
-      </div>
-      {% endif %}
-
-      <!-- Phần nội dung bài viết -->
-      <div class="card-body">
-        <div class="d-flex align-items-center mb-2">
-          <img
-            src="{{ post.author.avatar.url }}"
-            alt="{{ post.author.username }}"
-            class="rounded-circle"
-            width="40"
-            height="40"
-          />
-          <div class="ms-2">
-            <a
-              href="{% url 'accounts:profile' username=post.author.username %}"
-              class="fw-bold text-decoration-none text-dark"
-              >{{ post.author.username }}</a
-            >
-          </div>
-          {% if user.is_authenticated and user == post.author %}
-          <div class="ms-auto">
-            <a
-              href="{% url 'post_edit' pk=post.pk %}"
-              class="btn btn-sm btn-outline-secondary me-1"
-              >Sửa</a
-            >
-            <a
-              href="{% url 'post_delete' pk=post.pk %}"
-              class="btn btn-sm btn-outline-danger"
-              >Xóa</a
-            >
-          </div>
-          {% endif %}
-          <!-- === KẾT THÚC PHẦN THÊM === -->
-        </div>
-        <p class="card-text">{{ post.content|linebreaksbr }}</p>
-        <p class="card-text">
-          <small class="text-muted"
-            >{{ post.created_at|timesince }} trước</small
-          >
-        </p>
-      </div>
-      {% include 'posts/_post_interactive_section.html' %}
-    </div>
+      {% include 'posts/_single_post.html' %}
     {% empty %}
-    <p>Chưa có bài đăng nào để hiển thị.</p>
+      <div class="card">
+          <div class="card-body">
+              <p class="text-center text-muted">Chưa có bài viết nào.</p>
+          </div>
+      </div>
     {% endfor %}
   </div>
 </div>

@@ -1,0 +1,26 @@
+{% load post_extras %}
+
+<div class="comments-section px-3 pt-2">
+    <!-- Danh sách bình luận hiện có -->
+    <div class="comment-list">
+        {% for comment in post.comments.all %}
+            {% if comment.parent is None %} <!-- Chỉ hiển thị các comment gốc -->
+                {% include 'posts/_single_comment.html' %}
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- Form để thêm bình luận mới -->
+    {% if user.is_authenticated %}
+    <div class="d-flex mt-2">
+        <img src="{{ user.avatar.url }}" class="rounded-circle me-2" width="30" height="30" alt="{{ user.username }}">
+        <form class="w-100 comment-form" method="post" action="{% url 'add_comment' post_id=post.id %}">
+            {% csrf_token %}
+            <div class="input-group">
+                <input type="text" name="content" class="form-control rounded-pill" placeholder="Viết bình luận..." id="comment-input-{{ post.id }}">
+                <!-- Nút gửi có thể ẩn đi nếu bạn muốn gửi bằng phím Enter -->
+            </div>
+        </form>
+    </div>
+    {% endif %}
+</div>
