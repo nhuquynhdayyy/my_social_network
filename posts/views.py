@@ -1,4 +1,5 @@
 # posts/views.py
+from urllib import request
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -55,25 +56,7 @@ class HomePageView(ListView):
 
         return queryset
 
-    # THÊM HÀM NÀY
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     if self.request.user.is_authenticated:
-    #         # Lấy tất cả reaction của user hiện tại trên các bài viết đang hiển thị
-    #         post_ids = [post.id for post in context['posts']]
-    #         user_reactions = Reaction.objects.filter(
-    #             user=self.request.user, 
-    #             object_id__in=post_ids,
-    #             content_type=ContentType.objects.get_for_model(Post)
-    #         ).values('object_id', 'reaction_type')
-            
-    #         # Chuyển thành một dict để template dễ truy cập: {post_id: reaction_type}
-    #         context['user_reactions_map'] = {
-    #             reaction['object_id']: reaction['reaction_type'] 
-    #             for reaction in user_reactions
-    #         }
-    #     return context
-    # === THAY THẾ TOÀN BỘ HÀM NÀY BẰNG PHIÊN BẢN MỚI DƯỚI ĐÂY ===
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_authenticated:
@@ -282,12 +265,35 @@ def add_comment(request, post_id):
         comment = form.save(commit=False)
         comment.author = request.user
         comment.post = post
+
+        # === PHẦN NÂNG CẤP: XỬ LÝ COMMENT TRẢ LỜI ===
+        parent_id = request.POST.get('parent_id')
+        if parent_id:
+            try:
+                parent_comment = Comment.objects.get(id=parent_id)
+                comment.parent = parent_comment
+            except Comment.DoesNotExist:
+                # Nếu parent comment không tồn tại, bỏ qua
+                pass
+        # === KẾT THÚC PHẦN NÂNG CẤP ===
+
         comment.save()
 
-        # Render ra HTML cho comment mới
-        comment_html = render_to_string('posts/_single_comment.html', {'comment': comment}, request=request)
+        context = {
+            'comment': comment,
+            'post': post, 
+            'user': request.user # Truyền user để các điều kiện trong template hoạt động
+        }
+        comment_html = render_to_string('posts/_single_comment.html', context, request=request)
         
-        return JsonResponse({'status': 'ok', 'comment_html': comment_html})
+        # Trả về ID của parent để JS biết chèn reply vào đâu
+        response_data = {
+            'status': 'ok',
+            'comment_html': comment_html,
+            'is_reply': bool(parent_id),
+            'parent_id': parent_id
+        }
+        return JsonResponse(response_data)
     else:
         return JsonResponse({'status': 'error', 'message': 'Bình luận không hợp lệ'}, status=400)
 
@@ -329,8 +335,13 @@ def edit_comment(request, comment_id):
     form = CommentCreateForm(request.POST, instance=comment)
     if form.is_valid():
         updated_comment = form.save()
-        # Render lại HTML cho bình luận đã được cập nhật
-        comment_html = render_to_string('posts/_single_comment.html', {'comment': updated_comment}, request=request)
+        # SỬA Ở ĐÂY
+        context = {
+            'comment': updated_comment,
+            'post': updated_comment.post,
+            'user': request.user
+        }
+        comment_html = render_to_string('posts/_single_comment.html', context, request=request)
         return JsonResponse({'status': 'ok', 'comment_html': comment_html})
     else:
         # Trả về lỗi nếu form không hợp lệ (ví dụ: nội dung trống)

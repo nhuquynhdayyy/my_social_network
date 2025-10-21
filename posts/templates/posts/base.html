@@ -243,6 +243,20 @@
                 })
                 .catch(error => console.error('Error:', error));
             }
+            // THÊM LOGIC MỚI: Xử lý click nút "Trả lời"
+          if (event.target.classList.contains('reply-btn')) {
+              event.preventDefault();
+              const commentId = event.target.dataset.commentId;
+              const replyFormContainer = document.getElementById(`reply-form-for-${commentId}`);
+              
+              // Toggle (bật/tắt) form trả lời
+              if (replyFormContainer.style.display === 'none') {
+                  replyFormContainer.style.display = 'block';
+                  replyFormContainer.querySelector('input[name="content"]').focus();
+              } else {
+                  replyFormContainer.style.display = 'none';
+              }
+          }
         });
         // === SCRIPT XỬ LÝ SỬA BÌNH LUẬN (LUỒNG MỚI) ===
         document.body.addEventListener('click', function(event) {
@@ -303,6 +317,41 @@
                     }
                 });
             }
+            if (event.target.classList.contains('comment-form')) {
+              event.preventDefault();
+
+              const form = event.target;
+              const url = form.action;
+              const formData = new FormData(form);
+              const contentInput = form.querySelector('input[name=content]');
+
+              fetch(url, {
+                  method: 'POST',
+                  headers: { 'X-CSRFToken': csrftoken },
+                  body: formData,
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.status === 'ok') {
+                      if (data.is_reply) {
+                          // Nếu là reply, chèn vào container của parent
+                          const repliesContainer = document.getElementById(`replies-for-${data.parent_id}`);
+                          repliesContainer.insertAdjacentHTML('beforeend', data.comment_html);
+                          // Ẩn form reply đi sau khi gửi
+                          form.closest('.reply-form-container').style.display = 'none';
+                      } else {
+                          // Nếu là comment gốc, chèn vào danh sách chính
+                          const commentList = form.closest('.comments-section').querySelector('.comment-list');
+                          commentList.insertAdjacentHTML('beforeend', data.comment_html);
+                      }
+                      // Xóa trắng ô input
+                      contentInput.value = '';
+                  } else {
+                      alert(data.message);
+                  }
+              })
+              .catch(error => console.error('Error:', error));
+          }
         });
       });
     </script>
