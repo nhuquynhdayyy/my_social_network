@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView
-from django.db.models import Q, Count # Import Count để thống kê
+from django.db.models import Q, Count
 from .models import Post, PostMedia, Reaction, Comment
 from .forms import PostCreateForm, CommentCreateForm
 from accounts.models import Friendship, User
@@ -12,14 +12,17 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib.contenttypes.models import ContentType
-from django.template.loader import render_to_string # Dùng để render HTML trong view
+from django.template.loader import render_to_string
+# === THÊM DÒNG IMPORT NÀY ===
+from notifications.models import Notification
+
 
 class HomePageView(ListView):
     model = Post
     template_name = 'posts/home.html'
     context_object_name = 'posts'
     # Phân trang: hiển thị 10 bài viết mỗi trang
-    paginate_by = 10 
+    paginate_by = 10
 
     def get_queryset(self):
         # Lấy người dùng đang đăng nhập
@@ -55,25 +58,6 @@ class HomePageView(ListView):
 
         return queryset
 
-    # THÊM HÀM NÀY
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     if self.request.user.is_authenticated:
-    #         # Lấy tất cả reaction của user hiện tại trên các bài viết đang hiển thị
-    #         post_ids = [post.id for post in context['posts']]
-    #         user_reactions = Reaction.objects.filter(
-    #             user=self.request.user, 
-    #             object_id__in=post_ids,
-    #             content_type=ContentType.objects.get_for_model(Post)
-    #         ).values('object_id', 'reaction_type')
-            
-    #         # Chuyển thành một dict để template dễ truy cập: {post_id: reaction_type}
-    #         context['user_reactions_map'] = {
-    #             reaction['object_id']: reaction['reaction_type'] 
-    #             for reaction in user_reactions
-    #         }
-    #     return context
-    # === THAY THẾ TOÀN BỘ HÀM NÀY BẰNG PHIÊN BẢN MỚI DƯỚI ĐÂY ===
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_authenticated:
@@ -93,7 +77,6 @@ class HomePageView(ListView):
                 for reaction in user_post_reactions
             }
 
-            # === PHẦN BẠN CẦN THÊM VÀO ===
             # 2. Lấy reaction của user cho các BÌNH LUẬN thuộc các bài viết đó
             comment_content_type = ContentType.objects.get_for_model(Comment)
             
@@ -111,7 +94,6 @@ class HomePageView(ListView):
                 reaction['object_id']: reaction['reaction_type']
                 for reaction in user_comment_reactions
             }
-            # === KẾT THÚC PHẦN THÊM VÀO ===
             
         return context
     
@@ -120,19 +102,13 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
     form_class = PostCreateForm
     template_name = 'posts/post_form.html'
-    success_url = reverse_lazy('home') # Chuyển về trang chủ sau khi đăng bài thành công
+    success_url = reverse_lazy('home')
 
     def form_valid(self, form):
-        # Gán author là user đang đăng nhập trước khi lưu form
         form.instance.author = self.request.user
-        
-        # Gọi super().form_valid(form) để lưu đối tượng Post và nhận lại response
         response = super().form_valid(form)
         
-        # Xử lý các file media đã upload
-        # self.object chính là đối tượng Post vừa được lưu
         for file in self.request.FILES.getlist('media_files'):
-            # Giả định đơn giản, cần cải tiến để xác định video/image
             media_type = 'IMAGE' if 'image' in file.content_type else 'VIDEO'
             PostMedia.objects.create(post=self.object, file=file, media_type=media_type)
         
@@ -142,10 +118,8 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Post
     template_name = 'posts/post_confirm_delete.html'
-    # Chuyển hướng về trang chủ sau khi xóa thành công
     success_url = reverse_lazy('home')
 
-    # Hàm kiểm tra quyền: user đang đăng nhập có phải là tác giả của bài viết không
     def test_func(self):
         post = self.get_object()
         return self.request.user == post.author
@@ -153,15 +127,13 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 # View để chỉnh sửa bài viết
 class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Post
-    form_class = PostCreateForm # Tái sử dụng form tạo bài viết
-    template_name = 'posts/post_form_edit.html' # Dùng template mới để tùy chỉnh tiêu đề
+    form_class = PostCreateForm
+    template_name = 'posts/post_form_edit.html'
     
-    # Hàm kiểm tra quyền: user đang đăng nhập có phải là tác giả của bài viết không
     def test_func(self):
         post = self.get_object()
         return self.request.user == post.author
 
-    # Chuyển hướng về trang chủ sau khi chỉnh sửa thành công
     def get_success_url(self):
         return reverse_lazy('home')
     
@@ -174,8 +146,6 @@ def react_to_post(request, post_id):
         data = json.loads(request.body)
         reaction_type = data.get('reaction_type')
         
-        # ... (Phần kiểm tra reaction_type và kiểm tra quyền giữ nguyên như cũ) ...
-        # === KIỂM TRA QUYỀN (PERMISSION CHECKING) ===
         viewer = request.user
         author = post.author
         can_react = False
@@ -195,8 +165,6 @@ def react_to_post(request, post_id):
         if not can_react:
             return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện hành động này'}, status=403)
 
-
-        # === XỬ LÝ LOGIC REACTION (giữ nguyên) ===
         content_type = ContentType.objects.get_for_model(Post)
         existing_reaction = Reaction.objects.filter(
             user=viewer, content_type=content_type, object_id=post.id
@@ -206,7 +174,7 @@ def react_to_post(request, post_id):
         if existing_reaction:
             if existing_reaction.reaction_type == reaction_type:
                 existing_reaction.delete()
-                current_user_reaction = None # Đã bỏ react
+                current_user_reaction = None
             else:
                 existing_reaction.reaction_type = reaction_type
                 existing_reaction.save()
@@ -219,20 +187,27 @@ def react_to_post(request, post_id):
                 reaction_type=reaction_type
             )
             current_user_reaction = reaction_type
+            
+            # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO CHO REACTION BÀI VIẾT ===
+            if viewer != author:
+                Notification.objects.create(
+                    recipient=author,
+                    sender=viewer,
+                    notification_type='POST_REACTION',
+                    target_content_type=content_type,
+                    target_object_id=post.id
+                )
+            # === KẾT THÚC SỬA ===
         
-        # === THỐNG KÊ CHI TIẾT REACTION (PHẦN NÂNG CẤP) ===
         reaction_stats = post.reactions.values('reaction_type').annotate(count=Count('id')).order_by('-count')
-        
-        # Chuyển kết quả queryset thành một dict dễ dùng hơn
         stats_dict = {item['reaction_type']: item['count'] for item in reaction_stats}
         total_reactions = post.reactions.count()
         
-        # Trả về một JSON Response với đầy đủ thông tin
         return JsonResponse({
             'status': 'ok',
             'total_reactions': total_reactions,
             'reaction_stats': stats_dict,
-            'current_user_reaction': current_user_reaction # Reaction hiện tại của user
+            'current_user_reaction': current_user_reaction
         })
 
     except Exception as e:
@@ -261,7 +236,6 @@ def add_comment(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     form = CommentCreateForm(request.POST)
 
-    # === KIỂM TRA QUYỀN BÌNH LUẬN (Tương tự Reaction) ===
     viewer = request.user
     author = post.author
     can_comment = False
@@ -284,7 +258,17 @@ def add_comment(request, post_id):
         comment.post = post
         comment.save()
 
-        # Render ra HTML cho comment mới
+        # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO CHO BÌNH LUẬN MỚI ===
+        if request.user != post.author:
+            Notification.objects.create(
+                recipient=post.author,
+                sender=request.user,
+                notification_type='POST_COMMENT',
+                target_content_type=ContentType.objects.get_for_model(post),
+                target_object_id=post.id
+            )
+        # === KẾT THÚC SỬA ===
+
         comment_html = render_to_string('posts/_single_comment.html', {'comment': comment}, request=request)
         
         return JsonResponse({'status': 'ok', 'comment_html': comment_html})
@@ -295,45 +279,34 @@ def add_comment(request, post_id):
 @require_POST
 def delete_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    # Chỉ tác giả bình luận hoặc chủ bài viết mới có quyền xóa
     if comment.author == request.user or comment.post.author == request.user:
         comment.delete()
         return JsonResponse({'status': 'ok'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Không có quyền xóa'}, status=403)
         
-# View cho việc sửa sẽ phức tạp hơn, chúng ta sẽ làm sau nếu bạn muốn
-
-# View để lấy form chỉnh sửa (GET request) - Đã hoàn thiện
 @login_required
 def get_comment_edit_form(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    # Kiểm tra quyền: Chỉ tác giả bình luận mới có quyền lấy form sửa
     if comment.author != request.user:
         return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện hành động này'}, status=403)
     
-    # Render ra HTML cho form chỉnh sửa
     form_html = render_to_string('posts/_comment_edit_form.html', {'comment': comment}, request=request)
     return JsonResponse({'status': 'ok', 'form_html': form_html})
 
-# View để xử lý dữ liệu chỉnh sửa (POST request) - Đã hoàn thiện
 @login_required
 @require_POST
 def edit_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
-    # Kiểm tra quyền: Chỉ tác giả bình luận mới có quyền sửa
     if comment.author != request.user:
         return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện hành động này'}, status=403)
         
-    # Dùng form để validate dữ liệu thay vì lấy trực tiếp từ request.POST
     form = CommentCreateForm(request.POST, instance=comment)
     if form.is_valid():
         updated_comment = form.save()
-        # Render lại HTML cho bình luận đã được cập nhật
         comment_html = render_to_string('posts/_single_comment.html', {'comment': updated_comment}, request=request)
         return JsonResponse({'status': 'ok', 'comment_html': comment_html})
     else:
-        # Trả về lỗi nếu form không hợp lệ (ví dụ: nội dung trống)
         return JsonResponse({'status': 'error', 'message': 'Dữ liệu không hợp lệ'}, status=400)
     
 @login_required
@@ -342,7 +315,6 @@ def react_to_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     post = comment.post
     
-    # ... (Phần kiểm tra quyền giữ nguyên như cũ) ...
     viewer = request.user
     author = post.author
     can_react = False
@@ -355,11 +327,9 @@ def react_to_comment(request, comment_id):
     if not can_react:
         return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện hành động này'}, status=403)
     
-    # === NÂNG CẤP LOGIC REACTION ===
     data = json.loads(request.body)
     reaction_type = data.get('reaction_type')
 
-    # Kiểm tra xem reaction_type có hợp lệ không
     valid_reactions = [choice[0] for choice in Reaction.REACTION_CHOICES]
     if reaction_type not in valid_reactions:
         return JsonResponse({'status': 'error', 'message': 'Loại reaction không hợp lệ'}, status=400)
@@ -384,8 +354,17 @@ def react_to_comment(request, comment_id):
         )
         current_user_reaction = reaction_type
 
-    # === NÂNG CẤP PHẦN TRẢ VỀ ===
-    # Thống kê chi tiết
+        # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO CHO REACTION BÌNH LUẬN ===
+        if viewer != comment.author:
+            Notification.objects.create(
+                recipient=comment.author,
+                sender=viewer,
+                notification_type='COMMENT_REACTION',
+                target_content_type=content_type,
+                target_object_id=comment.id
+            )
+        # === KẾT THÚC SỬA ===
+
     reaction_stats = comment.reactions.values('reaction_type').annotate(count=Count('id'))
     stats_dict = {item['reaction_type']: item['count'] for item in reaction_stats}
     total_reactions = comment.reactions.count()

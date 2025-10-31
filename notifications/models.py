@@ -1,13 +1,18 @@
+# notifications/models.py
+
 from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
+
 class Notification(models.Model):
+    # <-- SỬA Ở ĐÂY: Thêm 'COMMENT_REACTION' vào danh sách
     NOTIFICATION_TYPES = [
         ('FRIEND_REQUEST', 'Yêu cầu kết bạn'),
         ('POST_LIKE', 'Thích bài viết'),
         ('POST_COMMENT', 'Bình luận bài viết'),
+        ('COMMENT_REACTION', 'Bày tỏ cảm xúc về bình luận'), # <-- THÊM LOẠI MỚI
         ('MESSAGE', 'Tin nhắn mới'),
     ]
 

@@ -1,0 +1,53 @@
+<!-- notifications/templates/notifications/notification_list.html -->
+
+{% extends "posts/base.html" %}
+{% load post_extras %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2 class="mb-4">Lịch sử thông báo</h2>
+
+            <div class="list-group">
+                {% for notif in notifications %}
+                <a href="{% url 'notifications:redirect' pk=notif.pk %}" 
+                   class="list-group-item list-group-item-action {% if not notif.is_read %}list-group-item-info{% endif %}">
+                    
+                    <div class="d-flex w-100 justify-content-between">
+                        <p class="mb-1">
+                            <strong>{{ notif.sender.username }}</strong>
+                            
+                            <!-- Hiển thị nội dung thông báo một cách thân thiện -->
+                            {% if notif.notification_type == 'FRIEND_REQUEST' %}
+                                đã gửi cho bạn một lời mời kết bạn.
+                            {% elif notif.notification_type == 'POST_REACTION' %}
+                                đã bày tỏ cảm xúc về bài viết của bạn.
+                            {% elif notif.notification_type == 'POST_COMMENT' %}
+                                đã bình luận về bài viết của bạn.
+                            {% elif notif.notification_type == 'COMMENT_REACTION' %}
+                                đã bày tỏ cảm xúc về bình luận của bạn.
+                            {% elif notif.notification_type == 'MESSAGE' %}
+                                đã gửi cho bạn một tin nhắn mới.
+                            {% endif %}
+                        </p>
+                        <small>{{ notif.timestamp|timesince }} trước</small>
+                    </div>
+
+                    <!-- Hiển thị một phần nội dung của đối tượng được thông báo -->
+                    {% if notif.target and notif.target.content %}
+                    <p class="mb-1 text-muted border-start border-3 ps-2">
+                        <em>"{{ notif.target.content|truncatewords:15 }}"</em>
+                    </p>
+                    {% endif %}
+                </a>
+                {% empty %}
+                <div class="list-group-item">
+                    <p class="text-center text-muted mb-0">Bạn chưa có thông báo nào.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
