@@ -14,6 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib.contenttypes.models import ContentType
 from django.template.loader import render_to_string # Dùng để render HTML trong view
+from notifications.models import Notification
 
 class HomePageView(ListView):
     model = Post
@@ -156,9 +157,7 @@ def react_to_post(request, post_id):
         post = get_object_or_404(Post, id=post_id)
         data = json.loads(request.body)
         reaction_type = data.get('reaction_type')
-        
-        # ... (Phần kiểm tra reaction_type và kiểm tra quyền giữ nguyên như cũ) ...
-        # === KIỂM TRA QUYỀN (PERMISSION CHECKING) ===
+
         viewer = request.user
         author = post.author
         can_react = False
@@ -178,8 +177,6 @@ def react_to_post(request, post_id):
         if not can_react:
             return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện hành động này'}, status=403)
 
-
-        # === XỬ LÝ LOGIC REACTION (giữ nguyên) ===
         content_type = ContentType.objects.get_for_model(Post)
         existing_reaction = Reaction.objects.filter(
             user=viewer, content_type=content_type, object_id=post.id
@@ -203,14 +200,21 @@ def react_to_post(request, post_id):
             )
             current_user_reaction = reaction_type
         
-        # === THỐNG KÊ CHI TIẾT REACTION (PHẦN NÂNG CẤP) ===
+            # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO CHO REACTION BÀI VIẾT ===
+            if viewer != author:
+                Notification.objects.create(
+                    recipient=author,
+                    sender=viewer,
+                    notification_type='POST_REACTION',
+                    target_content_type=content_type,
+                    target_object_id=post.id
+                )
+            # === KẾT THÚC SỬA ===
+            
         reaction_stats = post.reactions.values('reaction_type').annotate(count=Count('id')).order_by('-count')
-        
-        # Chuyển kết quả queryset thành một dict dễ dùng hơn
         stats_dict = {item['reaction_type']: item['count'] for item in reaction_stats}
         total_reactions = post.reactions.count()
         
-        # Trả về một JSON Response với đầy đủ thông tin
         return JsonResponse({
             'status': 'ok',
             'total_reactions': total_reactions,
@@ -278,6 +282,17 @@ def add_comment(request, post_id):
         # === KẾT THÚC PHẦN NÂNG CẤP ===
 
         comment.save()
+
+        # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO CHO BÌNH LUẬN MỚI ===
+        if request.user != post.author:
+            Notification.objects.create(
+                recipient=post.author,
+                sender=request.user,
+                notification_type='POST_COMMENT',
+                target_content_type=ContentType.objects.get_for_model(post),
+                target_object_id=post.id
+            )
+        # === KẾT THÚC SỬA ===
 
         context = {
             'comment': comment,
@@ -395,6 +410,17 @@ def react_to_comment(request, comment_id):
         )
         current_user_reaction = reaction_type
 
+        # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO CHO REACTION BÌNH LUẬN ===
+        if viewer != comment.author:
+            Notification.objects.create(
+                recipient=comment.author,
+                sender=viewer,
+                notification_type='COMMENT_REACTION',
+                target_content_type=content_type,
+                target_object_id=comment.id
+            )
+        # === KẾT THÚC SỬA ===
+        
     # === NÂNG CẤP PHẦN TRẢ VỀ ===
     # Thống kê chi tiết
     reaction_stats = comment.reactions.values('reaction_type').annotate(count=Count('id'))

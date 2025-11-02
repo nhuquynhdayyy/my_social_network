@@ -8,6 +8,7 @@ class Notification(models.Model):
         ('FRIEND_REQUEST', 'Yêu cầu kết bạn'),
         ('POST_LIKE', 'Thích bài viết'),
         ('POST_COMMENT', 'Bình luận bài viết'),
+        ('COMMENT_REACTION', 'Bày tỏ cảm xúc về bình luận'), 
         ('MESSAGE', 'Tin nhắn mới'),
     ]
 
