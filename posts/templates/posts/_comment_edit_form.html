@@ -1,7 +1,10 @@
 <!-- posts/templates/posts/_comment_edit_form.html -->
-<form class="edit-comment-form d-flex w-100" method="POST" action="{% url 'edit_comment' comment_id=comment.id %}">
+
+<form class="edit-comment-form" method="POST" action="{% url 'posts:edit_comment' comment_id=comment.id %}">
     {% csrf_token %}
-    <input type="text" name="content" class="form-control form-control-sm" value="{{ comment.content }}" required autofocus>
-    <button type="submit" class="btn btn-primary btn-sm ms-2">Lưu</button>
-    <button type="button" class="btn btn-secondary btn-sm ms-1 cancel-edit-btn">Hủy</button>
+    <div class="input-group">
+        <input type="text" name="content" class="form-control" value="{{ comment.content }}" required autofocus>
+        <button type="submit" class="btn btn-primary btn-sm">Lưu</button>
+    </div>
+    <button type="button" class="btn btn-link btn-sm text-muted cancel-edit-btn mt-1">Hủy</button>
 </form>

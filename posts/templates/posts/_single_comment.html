@@ -80,7 +80,7 @@
             <!-- Container để JS chèn reply mới và hiển thị reply đã có -->
             <div class="replies-container mt-2" id="replies-for-{{ comment.id }}">
                 {% for reply in comment.replies.all %}
-                    {% include 'posts/_single_comment.html' with comment=reply post=post %}
+                    {% include 'posts/_single_comment.html' with comment=reply post=post comment_user_reactions_map=comment_user_reactions_map %}
                 {% endfor %}
             </div>
             

@@ -465,12 +465,15 @@
         });
 
         document.body.addEventListener('click', function(event) {
-            // --- XÓA BÌNH LUẬN ---
+            // --- XÓA BÌNH LUẬN (ĐÃ SỬA LỖI) ---
             if (event.target.classList.contains('delete-comment-btn')) {
                 event.preventDefault();
                 if (!confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) return;
 
-                const url = event.target.href;
+                const commentId = event.target.dataset.commentId;
+                // Tự tạo URL đúng bằng cách dùng namespace
+                const url = `/comment/${commentId}/delete/`; 
+
                 fetch(url, {
                     method: 'POST',
                     headers: { 'X-CSRFToken': csrftoken }
@@ -502,10 +505,11 @@
                 }
             }
 
-            // --- BẮT ĐẦU CHỈNH SỬA BÌNH LUẬN (Lấy form) ---
+            // --- BẮT ĐẦU CHỈNH SỬA BÌNH LUẬN (Lấy form - ĐÃ SỬA LỖI) ---
             if (event.target.classList.contains('edit-comment-btn')) {
                 event.preventDefault();
                 const commentId = event.target.dataset.commentId;
+                // Tự tạo URL đúng bằng cách dùng namespace
                 const url = `/comment/${commentId}/get-edit-form/`;
                 const commentContentWrapper = document.getElementById(`comment-${commentId}`).querySelector('.comment-content-wrapper');
 
