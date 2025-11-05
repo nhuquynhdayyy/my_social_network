@@ -22,7 +22,7 @@
         {% endwith %}
     </div>
 </div>
-<!-- Vùng các nút bấm reaction -->
+{% comment %} <!-- Vùng các nút bấm reaction -->
 <div class="reaction-buttons-container border-top border-bottom py-1">
     <div class="d-flex justify-content-around">
         {% with user_reaction=user_reactions_map|get_item:post.id %}
@@ -47,7 +47,57 @@
         {% endwith %}
     </div>
 </div>
-<!-- Kết thúc phần Reaction -->
+<!-- Kết thúc phần Reaction --> {% endcomment %}
+ <!-- posts/templates/posts/_post_interactive_section.html (ĐÃ CẬP NHẬT) -->
+
+<!-- Vùng các nút bấm tương tác (Thích, Bình luận, Chia sẻ) -->
+<div class="d-flex justify-content-around border-top mt-2 pt-1">
+    
+    <!-- Nút Thích (Container chính cho popup) -->
+    <div class="post-reaction-container flex-fill text-center">
+        
+        <!-- Popup chứa các icon reaction (sẽ hiện khi hover) -->
+        <div class="post-reaction-popup">
+            <button class="btn reaction-btn" data-post-id="{{ post.id }}" data-reaction-type="LIKE">👍</button>
+            <button class="btn reaction-btn" data-post-id="{{ post.id }}" data-reaction-type="LOVE">❤️</button>
+            <button class="btn reaction-btn" data-post-id="{{ post.id }}" data-reaction-type="HAHA">😂</button>
+            <button class="btn reaction-btn" data-post-id="{{ post.id }}" data-reaction-type="WOW">😮</button>
+            <button class="btn reaction-btn" data-post-id="{{ post.id }}" data-reaction-type="SAD">😢</button>
+            <button class="btn reaction-btn" data-post-id="{{ post.id }}" data-reaction-type="ANGRY">😡</button>
+        </div>
+
+        <!-- Nút "Thích" mặc định, luôn hiển thị -->
+        {% with user_reaction=user_reactions_map|get_item:post.id %}
+        <button 
+            class="btn btn-light reaction-btn w-100 {% if user_reaction %}fw-bold text-primary{% endif %}" 
+            data-post-id="{{ post.id }}" data-reaction-type="LIKE">
+            
+            {% if user_reaction == 'LIKE' %}👍 Thích
+            {% elif user_reaction == 'LOVE' %}❤️ Yêu thích
+            {% elif user_reaction == 'HAHA' %}😂 Haha
+            {% elif user_reaction == 'WOW' %}😮 Wow
+            {% elif user_reaction == 'SAD' %}😢 Buồn
+            {% elif user_reaction == 'ANGRY' %}😡 Phẫn nộ
+            {% else %}👍 Thích
+            {% endif %}
+        </button>
+        {% endwith %}
+    </div>
+
+    <!-- Nút Bình luận -->
+    <div class="flex-fill text-center">
+        <a href="{% url 'posts:post_detail' post.id %}" class="btn btn-light w-100">
+            💬 Bình luận
+        </a>
+    </div>
+    
+    <!-- Nút Chia sẻ (Giả) -->
+    <div class="flex-fill text-center">
+        <button class="btn btn-light w-100">
+            ↪️ Chia sẻ
+        </button>
+    </div>
+</div>
 
 
 <!-- Phần Bình luận -->
@@ -61,7 +111,7 @@
     
     <!-- Form thêm bình luận mới -->
     {% if user.is_authenticated %}
-        <form class="comment-form d-flex mt-2" method="POST" action="{% url 'add_comment' post_id=post.id %}">
+        <form class="comment-form d-flex mt-2" method="POST" action="{% url 'posts:add_comment' post_id=post.id %}">
             {% csrf_token %}
             <input type="text" name="content" class="form-control me-2" placeholder="Viết bình luận..." autocomplete="off">
             <button type="submit" class="btn btn-primary btn-sm">Gửi</button>
