@@ -103,11 +103,29 @@
 <!-- Phần Bình luận -->
 <div class="comments-section mt-3" id="comments-section-{{ post.id }}">
     <!-- Danh sách các bình luận đã có -->
+    <!-- THAY THẾ BẰNG ĐOẠN NÀY -->
     <div class="comment-list">
-        {% for comment in post.comments.all %}
-            {% include 'posts/_single_comment.html' %}
+        {% for comment in post.get_initial_comments %}
+            {% include 'posts/_single_comment.html' with comment=comment post=post comment_user_reactions_map=comment_user_reactions_map %}
         {% endfor %}
     </div>
+
+    <!-- Nút "Xem thêm bình luận" -->
+    {% with initial_count=post.get_initial_comments.count %}
+        {% if post.comment_count > initial_count %}
+            <div class="mt-2 text-center">
+                <a href="#" 
+                class="text-decoration-none fw-bold load-more-comments" 
+                data-post-id="{{ post.id }}" 
+                data-offset="{{ initial_count }}">
+                    Xem thêm bình luận
+                </a>
+                <div class="spinner-border spinner-border-sm ms-2 d-none" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
     
     <!-- Form thêm bình luận mới -->
     {% if user.is_authenticated %}

@@ -754,7 +754,46 @@
           }, 300);
         });
         {% endif %}
+        
+        // =======================================================
+        // === LOGIC TẢI THÊM BÌNH LUẬN
+        // =======================================================
+        document.body.addEventListener('click', function(event) {
+            if (event.target.classList.contains('load-more-comments')) {
+                event.preventDefault();
+                
+                const button = event.target;
+                const spinner = button.nextElementSibling; // Lấy cái spinner bên cạnh
+                const postId = button.dataset.postId;
+                const offset = button.dataset.offset;
 
+                // Hiển thị loading và vô hiệu hóa nút
+                button.classList.add('d-none');
+                spinner.classList.remove('d-none');
+
+                fetch(`/post/${postId}/load-comments/?offset=${offset}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.html) {
+                            const commentList = button.closest('.comments-section').querySelector('.comment-list');
+                            commentList.insertAdjacentHTML('beforeend', data.html);
+                        }
+
+                        // Cập nhật hoặc xóa nút
+                        if (data.has_more) {
+                            button.dataset.offset = data.new_offset;
+                            button.classList.remove('d-none');
+                        } else {
+                            button.parentElement.remove(); // Xóa cả div bọc ngoài nút
+                        }
+                    })
+                    .catch(error => console.error('Error loading comments:', error))
+                    .finally(() => {
+                        // Luôn ẩn spinner sau khi xong
+                        spinner.classList.add('d-none');
+                    });
+            }
+        });
       });
     </script>
 

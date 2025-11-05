@@ -28,6 +28,15 @@ class Post(models.Model):
     def __str__(self):
         return f"Post by {self.author.username} at {self.created_at.strftime('%Y-%m-%d %H:%M')}"
     
+    @property
+    def comment_count(self):
+        """Trả về tổng số bình luận (chỉ tính bình luận gốc, không tính reply)."""
+        return self.comments.filter(parent__isnull=True).count()
+
+    def get_initial_comments(self, limit=3):
+        """Trả về các bình luận gốc gần nhất, giới hạn bởi `limit`."""
+        return self.comments.filter(parent__isnull=True).order_by('-created_at')[:limit]
+    
 class PostMedia(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
     file = models.FileField(upload_to='post_media/')

@@ -446,3 +446,45 @@ def react_to_comment(request, comment_id):
         'reaction_stats': stats_dict,
         'current_user_reaction': current_user_reaction
     })
+
+@login_required
+def load_more_comments(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    offset = int(request.GET.get('offset', 0))
+    limit = 5  # Tải 5 bình luận mỗi lần bấm
+
+    # Lấy các bình luận tiếp theo
+    comments = post.comments.filter(parent__isnull=True).order_by('-created_at')[offset:offset + limit]
+
+    if not comments:
+        return JsonResponse({'html': '', 'has_more': False})
+
+    # Lấy reaction map cho các bình luận sắp được render
+    comment_ids = [c.id for c in comments]
+    comment_content_type = ContentType.objects.get_for_model(Comment)
+    user_comment_reactions = Reaction.objects.filter(
+        user=request.user,
+        object_id__in=comment_ids,
+        content_type=comment_content_type
+    ).values('object_id', 'reaction_type')
+    
+    comment_user_reactions_map = {
+        r['object_id']: r['reaction_type'] for r in user_comment_reactions
+    }
+
+    # Render các bình luận ra HTML
+    html = ""
+    for comment in comments:
+        context = {
+            'comment': comment,
+            'post': post,
+            'user': request.user,
+            'comment_user_reactions_map': comment_user_reactions_map
+        }
+        html += render_to_string('posts/_single_comment.html', context, request=request)
+    
+    # Kiểm tra xem còn bình luận để tải nữa không
+    new_offset = offset + len(comments)
+    has_more = post.comment_count > new_offset
+
+    return JsonResponse({'html': html, 'has_more': has_more, 'new_offset': new_offset})
