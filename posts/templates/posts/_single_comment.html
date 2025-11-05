@@ -1,7 +1,8 @@
 <!-- posts/templates/posts/_single_comment.html -->
 {% load post_extras %}
 
-<div class="d-flex mb-2 {% if comment.parent %}ms-5 mt-2{% endif %}" id="comment-{{ comment.id }}">
+<!-- THAY ĐỔI DUY NHẤT Ở DÒNG NÀY: ms-5 được đổi thành ms-4 -->
+<div class="d-flex mb-2 {% if comment.parent %}ms-4 mt-2{% endif %}" id="comment-{{ comment.id }}">
     <!-- Avatar -->
     <img src="{{ comment.author.avatar.url }}" class="rounded-circle me-2" width="30" height="30" alt="{{ comment.author.username }}">
     
@@ -39,7 +40,7 @@
             </div>
         </div>
 
-        <!-- Dòng hành động -->
+        <!-- Dòng hành động (Thích, Trả lời, Thời gian) -->
         <div class="d-flex align-items-center mt-1" style="font-size: 0.8rem;">
             <!-- Container cho nút Thích và popup -->
             <div class="comment-reaction-container">
@@ -54,7 +55,7 @@
                     <button class="btn comment-reaction-choice-btn" data-comment-id="{{ comment.id }}" data-reaction-type="ANGRY">😡</button>
                 </div>
 
-                <!-- Nút "Thích" chính, hiển thị trạng thái đã react -->
+                <!-- Nút "Thích" chính -->
                 {% with user_reaction=comment_user_reactions_map|get_item:comment.id %}
                 <a href="#" 
                    class="text-decoration-none me-2 comment-reaction-btn {% if user_reaction %}text-primary fw-bold{% else %}text-muted{% endif %}" 
@@ -76,29 +77,31 @@
                 {% endif %}
             </div>
             
-            <!-- === KHU VỰC CHO REPLIES === -->
-            <!-- Container để JS chèn reply mới và hiển thị reply đã có -->
-            <div class="replies-container mt-2" id="replies-for-{{ comment.id }}">
-                {% for reply in comment.replies.all %}
-                    {% include 'posts/_single_comment.html' with comment=reply post=post comment_user_reactions_map=comment_user_reactions_map %}
-                {% endfor %}
-            </div>
-            
-            <!-- Form trả lời -->
-            {% if user.is_authenticated %}
-            <div class="reply-form-container mt-2" id="reply-form-for-{{ comment.id }}" style="display: none;">
-                <div class="d-flex">
-                    <img src="{{ user.avatar.url }}" class="rounded-circle me-2" width="30" height="30" alt="{{ user.username }}">
-                    <form class="w-100 comment-form" method="post" action="{% url 'posts:add_comment' post_id=post.id %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                        <div class="input-group">
-                            <input type="text" name="content" class="form-control rounded-pill" placeholder="Viết câu trả lời..." autocomplete="off">
-                        </div>
-                    </form>
-                </div>
-            </div>
-            {% endif %}
+            <!-- Thời gian bình luận -->
+            <small class="text-muted ms-3">{{ comment.created_at|timesince }}</small>
         </div>
+
+        <!-- Khu vực cho replies và form trả lời -->
+        <div class="replies-container mt-2" id="replies-for-{{ comment.id }}">
+            {% for reply in comment.replies.all %}
+                {% include 'posts/_single_comment.html' with comment=reply post=post comment_user_reactions_map=comment_user_reactions_map %}
+            {% endfor %}
+        </div>
+        
+        <!-- Form trả lời -->
+        {% if user.is_authenticated %}
+        <div class="reply-form-container mt-2" id="reply-form-for-{{ comment.id }}" style="display: none;">
+            <div class="d-flex">
+                <img src="{{ user.avatar.url }}" class="rounded-circle me-2" width="30" height="30" alt="{{ user.username }}">
+                <form class="w-100 comment-form" method="post" action="{% url 'posts:add_comment' post_id=post.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                    <div class="input-group">
+                        <input type="text" name="content" class="form-control rounded-pill" placeholder="Viết câu trả lời..." autocomplete="off">
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
