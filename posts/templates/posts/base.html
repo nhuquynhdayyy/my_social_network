@@ -794,6 +794,29 @@
                     });
             }
         });
+        // =======================================================
+        // === LOGIC FOCUS VÀO Ô BÌNH LUẬN KHI CLICK NÚT COMMENT
+        // =======================================================
+        document.body.addEventListener('click', function(event) {
+            // Kiểm tra xem phần tử được click có phải là nút "Bình luận" không
+            const commentButton = event.target.closest('.comment-button');
+            
+            if (commentButton) {
+                // Ngăn hành vi mặc định của thẻ <a> (là nhảy lên đầu trang)
+                event.preventDefault();
+                
+                // Lấy ID của bài viết từ thuộc tính data-post-id
+                const postId = commentButton.dataset.postId;
+                
+                // Tìm ô input tương ứng bằng ID mà chúng ta đã đặt
+                const commentInput = document.getElementById(`comment-input-${postId}`);
+                
+                // Nếu tìm thấy, di chuyển con trỏ chuột vào đó
+                if (commentInput) {
+                    commentInput.focus();
+                }
+            }
+        });
       });
     </script>
 

@@ -86,7 +86,7 @@
 
     <!-- Nút Bình luận -->
     <div class="flex-fill text-center">
-        <a href="{% url 'posts:post_detail' post.id %}" class="btn btn-light w-100">
+        <a href="#" class="btn btn-light w-100 comment-button" data-post-id="{{ post.id }}">
             💬 Bình luận
         </a>
     </div>
@@ -131,7 +131,7 @@
     {% if user.is_authenticated %}
         <form class="comment-form d-flex mt-2" method="POST" action="{% url 'posts:add_comment' post_id=post.id %}">
             {% csrf_token %}
-            <input type="text" name="content" class="form-control me-2" placeholder="Viết bình luận..." autocomplete="off">
+            <input type="text" name="content" class="form-control me-2" id="comment-input-{{ post.id }}" placeholder="Viết bình luận..." autocomplete="off">
             <button type="submit" class="btn btn-primary btn-sm">Gửi</button>
         </form>
     {% endif %}
