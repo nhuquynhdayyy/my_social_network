@@ -36,9 +36,13 @@ class HomePageView(ListView):
             friends_q = Friendship.objects.filter(
                 (Q(from_user=current_user) | Q(to_user=current_user)) & Q(status='ACCEPTED')
             )
-            friend_ids = []
-            for friendship in friends_q:
-                friend_ids.append(friendship.from_user_id if friendship.to_user_id == current_user.id else friendship.to_user_id)
+            # friend_ids = []
+            # for friendship in friends_q:
+            #     friend_ids.append(friendship.from_user_id if friendship.to_user_id == current_user.id else friendship.to_user_id)
+            friend_ids = [
+                f.from_user_id if f.to_user_id == current_user.id else f.to_user_id
+                for f in friends_q
+            ]
 
             # 2. Xây dựng các điều kiện lọc
             
@@ -191,6 +195,13 @@ def react_to_post(request, post_id):
                 existing_reaction.reaction_type = reaction_type
                 existing_reaction.save()
                 current_user_reaction = reaction_type
+                # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO KHI THAY ĐỔI REACTION (Code gốc của bạn - Đã giữ lại) ===
+                if viewer != author:
+                    Notification.objects.create(
+                        recipient=author, sender=viewer, notification_type='POST_REACTION',
+                        target_content_type=content_type, target_object_id=post.id
+                    )
+                # === KẾT THÚC SỬA ===
         else:
             Reaction.objects.create(
                 user=viewer,
@@ -404,6 +415,13 @@ def react_to_comment(request, comment_id):
             existing_reaction.reaction_type = reaction_type
             existing_reaction.save()
             current_user_reaction = reaction_type
+            # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO KHI THAY ĐỔI REACTION (Code gốc của bạn - Đã giữ lại) ===
+            if viewer != comment.author:
+                Notification.objects.create(
+                    recipient=comment.author, sender=viewer, notification_type='COMMENT_REACTION',
+                    target_content_type=content_type, target_object_id=comment.id
+                )
+            # === KẾT THÚC SỬA ===
     else:
         Reaction.objects.create(
             user=viewer, content_type=content_type, object_id=comment.id, reaction_type=reaction_type
