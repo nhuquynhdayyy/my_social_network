@@ -137,7 +137,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Chuyển hướng đến trang chủ sau khi đăng nhập thành công
 # Trang chủ (name='home') không thuộc namespace nào nên giữ nguyên là '/' hoặc 'home'
-LOGIN_REDIRECT_URL = 'home' # hoặc '/' đều được
+LOGIN_REDIRECT_URL = 'posts:home' # hoặc '/' đều được
 
 # Chuyển hướng đến trang đăng nhập sau khi đăng xuất
 # Chỉ định rõ namespace 'accounts' cho URL 'login'

@@ -9,10 +9,9 @@
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- === CSS ĐỂ PHÂN BIỆT THÔNG BÁO ĐÃ ĐỌC === -->
-    <!-- === CSS GỐC + BỔ SUNG CSS CHO THÔNG BÁO CHƯA ĐỌC === -->
+
+    <!-- === CSS TỔNG HỢP CHO TOÀN BỘ TRANG === -->
     <style>
-      /* =================== BẮT ĐẦU BỔ SUNG =================== */
       /* Thông báo CHƯA ĐỌC sẽ có chấm xanh ở đầu */
       .notification-unread {
         position: relative;
@@ -29,15 +28,16 @@
         background-color: #0d6efd; /* Màu xanh dương của Bootstrap */
         border-radius: 50%;
       }
-      /* =================== KẾT THÚC BỔ SUNG =================== */
 
-      /* Thông báo ĐÃ ĐỌC có nền xám (Code gốc) */
+      /* Thông báo ĐÃ ĐỌC có nền xám */
       .notification-read {
         background-color: #f8f9fa; /* Màu nền xám nhạt */
       }
       .notification-read:hover {
         background-color: #e9ecef;
       }
+
+      /* CSS cho Chat Widget */
       .chat-widget-container {
         position: fixed;
         bottom: 25px;
@@ -133,6 +133,8 @@
       #search-users-view input {
         border-radius: 20px;
       }
+      
+      /* CSS cho Reaction trên Bình luận */
       .comment-reaction-container {
         position: relative;
         padding-top: 1rem;
@@ -164,62 +166,69 @@
       .comment-reaction-popup .btn:hover {
           transform: scale(1.2);
       }
+
+      /* === CSS: CHO REACTION TRÊN BÀI VIẾT (POST) - ĐÃ SỬA LẠI CHO MƯỢT === */
+      .post-reaction-container {
+        position: relative;
+        /* TẠO VÙNG ĐỆM VÔ HÌNH Ở TRÊN ĐỂ BẮT SỰ KIỆN RÊ CHUỘT */
+        padding-top: 1rem;
+        /* KÉO CONTAINER VỀ VỊ TRÍ CŨ, TRÁNH XÔ LỆCH GIAO DIỆN */
+        margin-top: -1rem;
+      }
+      .post-reaction-popup {
+          display: none;
+          position: absolute;
+          /* THAY ĐỔI VỊ TRÍ: Giống hệt của bình luận */
+          bottom: 2.2rem; /* Điều chỉnh để nằm ngay trên nút "Thích" */
+          left: 0;
+          background-color: white;
+          border-radius: 20px;
+          padding: 5px 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          white-space: nowrap;
+          z-index: 10;
+          gap: 5px;
+      }
+      /* Khi di chuột vào container, hiển thị popup */
+      .post-reaction-container:hover .post-reaction-popup {
+          display: flex; 
+      }
+      .post-reaction-popup .btn {
+          font-size: 1.8rem;
+          padding: 0;
+          border: none;
+          background: none;
+          transition: transform 0.1s;
+      }
+      .post-reaction-popup .btn:hover {
+          transform: scale(1.2);
+      }
     </style>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <div class="container-fluid">
-        <a class="navbar-brand fw-bold text-primary" href="{% url 'home' %}">MySocial</a>
-        <div class="d-flex">
+        <a class="navbar-brand fw-bold text-primary" href="{% url 'posts:home' %}">MySocial</a>
+        <div class="d-flex align-items-center">
           {% if user.is_authenticated %}
-          <a
-            href="{% url 'accounts:friend_requests' %}"
-            class="btn btn-outline-secondary position-relative me-3"
-          >
-            Lời mời
-          </a>
-
-          <a
-            href="{% url 'chat:conversation_list' %}"
-            class="btn btn-outline-info me-3"
-          >
-            Tin nhắn
-          </a>
+          <a href="{% url 'accounts:friend_requests' %}" class="btn btn-outline-secondary position-relative me-3">Lời mời</a>
+          <a href="{% url 'chat:conversation_list' %}" class="btn btn-outline-info me-3">Tin nhắn</a>
 
           <div class="dropdown me-3">
-            <button
-              class="btn btn-outline-warning position-relative"
-              id="notifDropdown"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
+            <button class="btn btn-outline-warning position-relative" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false">
               Thông báo
-              <span
-                id="notif-count"
-                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                >0</span
-              >
+              <span id="notif-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">0</span>
             </button>
-            <ul
-              class="dropdown-menu dropdown-menu-end"
-              aria-labelledby="notifDropdown"
-              id="notif-list"
-              style="min-width: 320px"
-            >
-              <li>
-                <span class="dropdown-item">Không có thông báo</span>
-              </li>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notifDropdown" id="notif-list" style="min-width: 350px; max-height: 400px; overflow-y: auto;">
+              <li><span class="dropdown-item text-muted">Đang tải...</span></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item text-center text-primary" href="{% url 'notifications:notification_list' %}">Xem tất cả thông báo</a></li>
             </ul>
           </div>
 
-          <a
-            href="{% url 'accounts:user_list' %}"
-            class="btn btn-outline-primary me-3"
-            >Tìm bạn</a
-          >
-          
-          <!-- Dropdown cho người dùng -->
-            <div class="dropdown ms-2">
+          <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-primary me-3">Tìm bạn</a>
+
+          <div class="dropdown ms-2">
               <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown" aria-expanded="false">
                 <img src="{{ user.avatar.url }}" alt="{{ user.username }}" width="32" height="32" class="rounded-circle"/>
               </a>
@@ -234,14 +243,8 @@
             </div>
 
           {% else %}
-          <a
-            href="{% url 'accounts:login' %}"
-            class="btn btn-outline-success me-2"
-            >Đăng nhập</a
-          >
-          <a href="{% url 'accounts:register' %}" class="btn btn-primary"
-            >Đăng ký</a
-          >
+          <a href="{% url 'accounts:login' %}" class="btn btn-outline-success me-2">Đăng nhập</a>
+          <a href="{% url 'accounts:register' %}" class="btn btn-primary">Đăng ký</a>
           {% endif %}
         </div>
       </div>
@@ -250,9 +253,42 @@
     <main class="container mt-4">
       {% block content %}{% endblock content %}
     </main>
+
+    {% block extra_js %}{% endblock %}
+
+    <!-- =================== CHAT WIDGET NỔI =================== -->
+    {% if user.is_authenticated %}
+    <div class="chat-widget-container">
+      <div class="chat-popup" id="chatPopup">
+        <div class="chat-popup-header">
+          <h4 id="chat-popup-title">Tin nhắn</h4>
+          <div class="header-buttons">
+            <button type="button" class="chat-action-btn" id="newMessageBtn" title="Tin nhắn mới">✏️</button>
+            <button type="button" class="chat-action-btn" id="closeChatBtn" style="font-size: 1.5rem; line-height: 1">&times;</button>
+          </div>
+        </div>
+        <div class="chat-popup-body">
+          <div id="recent-conversations-view">
+            <div id="chatPopupBodyContent" class="p-3 text-center text-muted">Đang tải...</div>
+          </div>
+          <div id="search-users-view" style="display: none">
+            <div class="search-header">
+              <button class="btn btn-light btn-sm" id="backToRecentBtn">&larr;</button>
+              <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm người dùng..."/>
+            </div>
+            <div id="searchResultsList"></div>
+          </div>
+        </div>
+      </div>
+      <button class="chat-open-button" id="openChatBtn">💬</button>
+    </div>
+    {% endif %}
+    <!-- =================== HẾT CHAT WIDGET =================== -->
+
+    <!-- =================== SCRIPT CHUNG (Đã tối ưu và gộp) =================== -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        // Lấy cookie theo tên (chuẩn Django docs)
+        // === HÀM TIỆN ÍCH: LẤY COOKIE CSRF ===
         function getCookie(name) {
           let cookieValue = null;
           if (document.cookie && document.cookie !== "") {
@@ -260,93 +296,121 @@
             for (let i = 0; i < cookies.length; i++) {
               const cookie = cookies[i].trim();
               if (cookie.substring(0, name.length + 1) === name + "=") {
-                cookieValue = decodeURIComponent(
-                  cookie.substring(name.length + 1)
-                );
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                 break;
               }
             }
           }
           return cookieValue;
         }
-
         const csrftoken = getCookie("csrftoken");
 
+        // =======================================================
+        // === LOGIC REACTION CHO BÀI VIẾT (POST)
+        // =======================================================
         function updateReactionStatsUI(postId, stats, total) {
-          const statsContainer = document.getElementById(
-            `reaction-stats-${postId}`
-          );
-          if (!statsContainer) return;
-          if (total > 0) {
-            let iconsHTML = '<div class="me-2">';
-            if (stats.LIKE) iconsHTML += "<span>👍</span>";
-            if (stats.LOVE) iconsHTML += "<span>❤️</span>";
-            if (stats.HAHA) iconsHTML += "<span>😂</span>";
-            if (stats.WOW) iconsHTML += "<span>😮</span>";
-            if (stats.SAD) iconsHTML += "<span>😢</span>";
-            if (stats.ANGRY) iconsHTML += "<span>😡</span>";
-            iconsHTML += "</div>";
-            statsContainer.innerHTML =
-              iconsHTML +
-              `<span id="reactions-count-${postId}">${total}</span>`;
-          } else {
-            statsContainer.innerHTML = `<span id="reactions-count-${postId}" class="text-muted">Chưa có cảm xúc</span>`;
-          }
-        }
-
-        function highlightSelectedReaction(postId, selectedType) {
-          const buttons = document.querySelectorAll(
-            `.reaction-btn[data-post-id='${postId}']`
-          );
-          buttons.forEach((btn) => {
-            if (btn.dataset.reactionType === selectedType) {
-              btn.classList.add("fw-bold", "text-primary");
+            const statsContainer = document.getElementById(`reaction-stats-${postId}`);
+            if (!statsContainer) return;
+            if (total > 0) {
+                let iconsHTML = '<div class="me-2">';
+                if (stats.LIKE) iconsHTML += "<span>👍</span>";
+                if (stats.LOVE) iconsHTML += "<span>❤️</span>";
+                if (stats.HAHA) iconsHTML += "<span>😂</span>";
+                if (stats.WOW) iconsHTML += "<span>😮</span>";
+                if (stats.SAD) iconsHTML += "<span>😢</span>";
+                if (stats.ANGRY) iconsHTML += "<span>😡</span>";
+                iconsHTML += "</div>";
+                statsContainer.innerHTML = iconsHTML + `<span id="reactions-count-${postId}">${total}</span>`;
             } else {
-              btn.classList.remove("fw-bold", "text-primary");
+                statsContainer.innerHTML = `<span id="reactions-count-${postId}" class="text-muted">Chưa có cảm xúc</span>`;
             }
-          });
         }
 
-        document.querySelectorAll(".reaction-btn").forEach((button) => {
-          button.addEventListener("click", function (e) {
-            e.preventDefault();
-            const postId = this.dataset.postId;
-            const reactionType = this.dataset.reactionType;
+        
+        // Dùng event delegation cho các nút reaction của bài viết
+        document.body.addEventListener('click', function(event) {
+            const reactionButton = event.target.closest(".reaction-btn[data-post-id]");
+            if (reactionButton) {
+                event.preventDefault();
+                const postId = reactionButton.dataset.postId;
+                const reactionType = reactionButton.dataset.reactionType;
 
-            fetch(`/post/${postId}/react/`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrftoken, // tên header phải đúng
-                "X-Requested-With": "XMLHttpRequest", // optional nhưng nên có
-              },
-              credentials: "same-origin", // gửi kèm cookie csrftoken
-              body: JSON.stringify({ reaction_type: reactionType }),
-            })
-              .then((res) => res.json())
+                fetch(`/post/${postId}/react/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrftoken,
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                    credentials: "same-origin",
+                    body: JSON.stringify({ reaction_type: reactionType }),
+                })
+                .then((res) => res.json())
+                // THAY BẰNG ĐOẠN NÀY
+                .then((data) => {
+                    if (data.status === "ok") {
+                        updateReactionStatsUI(postId, data.reaction_stats, data.total_reactions);
+
+                        // === BẮT ĐẦU NÂNG CẤP: CẬP NHẬT NỘI DUNG NÚT "THÍCH" CHÍNH ===
+                        const mainPostReactionButton = document.querySelector(`.reaction-btn[data-post-id='${postId}'][data-reaction-type='LIKE'].w-100`);
+
+                        if (mainPostReactionButton) {
+                            if (data.current_user_reaction) {
+                                mainPostReactionButton.classList.add('text-primary', 'fw-bold');
+                                let reactionText = '👍 Thích'; // Mặc định
+                                if (data.current_user_reaction === 'LIKE') reactionText = '👍 Thích';
+                                else if (data.current_user_reaction === 'LOVE') reactionText = '❤️ Yêu thích';
+                                else if (data.current_user_reaction === 'HAHA') reactionText = '😂 Haha';
+                                else if (data.current_user_reaction === 'WOW') reactionText = '😮 Wow';
+                                else if (data.current_user_reaction === 'SAD') reactionText = '😢 Buồn';
+                                else if (data.current_user_reaction === 'ANGRY') reactionText = '😡 Phẫn nộ';
+                                mainPostReactionButton.innerHTML = reactionText;
+                            } else {
+                                mainPostReactionButton.classList.remove('text-primary', 'fw-bold');
+                                mainPostReactionButton.innerHTML = '👍 Thích';
+                            }
+                        }
+                        // === KẾT THÚC NÂNG CẤP ===
+
+                    } else {
+                        alert(data.message || "Có lỗi xảy ra.");
+                    }
+                })
+                .catch((err) => console.error("Error:", err));
+            }
+        });
+
+        document.querySelectorAll(".reaction-count").forEach(function (elem) {
+          elem.addEventListener("click", function () {
+            let postId = this.dataset.postId;
+            fetch(`/post/${postId}/reactions/detail/`)
+              .then((response) => response.json())
               .then((data) => {
-                if (data.status === "ok") {
-                  updateReactionStatsUI(
-                    postId,
-                    data.reaction_stats,
-                    data.total_reactions
-                  );
-                  highlightSelectedReaction(postId, data.current_user_reaction);
-                } else {
-                  alert(data.message || "Có lỗi xảy ra.");
+                let html = "";
+                for (let type in data) {
+                  html += `<strong>${type}</strong>: ${data[type].join(", ")}<br>`;
                 }
-              })
-              .catch((err) => console.error("Error:", err));
+                const detailBox = document.getElementById("reactionDetailBox");
+                const modal = document.getElementById("reactionModal");
+                if (detailBox && modal) {
+                    detailBox.innerHTML = html;
+                    new bootstrap.Modal(modal).show();
+                }
+              });
           });
         });
-        // === SCRIPT XỬ LÝ THÊM BÌNH LUẬN ===
-        document.querySelectorAll('.comment-form').forEach(form => {
-            form.addEventListener('submit', function(event) {
-                event.preventDefault();
 
-                const url = this.action;
-                const formData = new FormData(this);
-                const contentInput = this.querySelector('input[name=content]');
+        // =======================================================
+        // === LOGIC CRUD & REPLY CHO BÌNH LUẬN (COMMENT)
+        // =======================================================
+        document.body.addEventListener('submit', function(event) {
+            // --- THÊM BÌNH LUẬN & TRẢ LỜI BÌNH LUẬN ---
+            if (event.target.classList.contains('comment-form')) {
+                event.preventDefault();
+                const form = event.target;
+                const url = form.action;
+                const formData = new FormData(form);
+                const contentInput = form.querySelector('input[name=content]');
 
                 fetch(url, {
                     method: 'POST',
@@ -356,9 +420,17 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'ok') {
-                        // Thêm HTML của bình luận mới vào danh sách
-                        const commentList = this.closest('.comments-section').querySelector('.comment-list');
-                        commentList.insertAdjacentHTML('beforeend', data.comment_html);
+                        if (data.is_reply) {
+                            // Nếu là reply, chèn vào container của parent
+                            const repliesContainer = document.getElementById(`replies-for-${data.parent_id}`);
+                            repliesContainer.insertAdjacentHTML('beforeend', data.comment_html);
+                            // Ẩn form reply đi sau khi gửi
+                            form.closest('.reply-form-container').style.display = 'none';
+                        } else {
+                            // Nếu là comment gốc, chèn vào danh sách chính
+                            const commentList = form.closest('.comments-section').querySelector('.comment-list');
+                            commentList.insertAdjacentHTML('beforeend', data.comment_html);
+                        }
                         // Xóa trắng ô input
                         contentInput.value = '';
                     } else {
@@ -366,93 +438,11 @@
                     }
                 })
                 .catch(error => console.error('Error:', error));
-            });
-        });
-
-        // === SCRIPT XỬ LÝ XÓA BÌNH LUẬN ===
-        // Dùng event delegation vì các nút xóa được thêm vào sau
-        document.body.addEventListener('click', function(event) {
-            if (event.target.classList.contains('delete-comment-btn')) {
-                event.preventDefault();
-                
-                if (!confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) {
-                    return;
-                }
-
-                const url = event.target.href;
-
-                fetch(url, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': csrftoken }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'ok') {
-                        // Xóa bình luận khỏi giao diện
-                        const commentDiv = event.target.closest('[id^="comment-"]');
-                        if (commentDiv) {
-                            commentDiv.remove();
-                        }
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            }
-            // THÊM LOGIC MỚI: Xử lý click nút "Trả lời"
-          if (event.target.classList.contains('reply-btn')) {
-              event.preventDefault();
-              const commentId = event.target.dataset.commentId;
-              const replyFormContainer = document.getElementById(`reply-form-for-${commentId}`);
-              
-              // Toggle (bật/tắt) form trả lời
-              if (replyFormContainer.style.display === 'none') {
-                  replyFormContainer.style.display = 'block';
-                  replyFormContainer.querySelector('input[name="content"]').focus();
-              } else {
-                  replyFormContainer.style.display = 'none';
-              }
-          }
-        });
-        // === SCRIPT XỬ LÝ SỬA BÌNH LUẬN (LUỒNG MỚI) ===
-        document.body.addEventListener('click', function(event) {
-            
-            // --- Bắt đầu luồng chỉnh sửa: Lấy form từ server ---
-            if (event.target.classList.contains('edit-comment-btn')) {
-                event.preventDefault();
-                
-                const commentId = event.target.dataset.commentId;
-                const url = `/comment/${commentId}/get-edit-form/`;
-                const commentContentWrapper = document.getElementById(`comment-${commentId}`).querySelector('.comment-content-wrapper');
-
-                fetch(url) // Dùng GET, không cần header
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'ok') {
-                        // Lưu lại nội dung cũ và thay thế bằng form
-                        commentContentWrapper.dataset.originalContent = commentContentWrapper.innerHTML;
-                        commentContentWrapper.innerHTML = data.form_html;
-                    } else {
-                        alert(data.message);
-                    }
-                });
             }
 
-            // --- Hủy chỉnh sửa: Phục hồi nội dung cũ ---
-            if (event.target.classList.contains('cancel-edit-btn')) {
-                const commentContentWrapper = event.target.closest('.comment-content-wrapper');
-                // Lấy lại HTML gốc đã lưu và phục hồi
-                if (commentContentWrapper.dataset.originalContent) {
-                    commentContentWrapper.innerHTML = commentContentWrapper.dataset.originalContent;
-                }
-            }
-        });
-
-        // --- Lưu chỉnh sửa: Gửi dữ liệu form lên server ---
-        document.body.addEventListener('submit', function(event) {
+            // --- LƯU CHỈNH SỬA BÌNH LUẬN ---
             if (event.target.classList.contains('edit-comment-form')) {
                 event.preventDefault();
-                
                 const form = event.target;
                 const url = form.action;
                 const formData = new FormData(form);
@@ -466,138 +456,87 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'ok') {
-                        // Thay thế toàn bộ div của bình luận bằng HTML mới từ server
                         commentDiv.outerHTML = data.comment_html;
                     } else {
                         alert(data.message);
                     }
                 });
             }
-            if (event.target.classList.contains('comment-form')) {
-              event.preventDefault();
-
-              const form = event.target;
-              const url = form.action;
-              const formData = new FormData(form);
-              const contentInput = form.querySelector('input[name=content]');
-
-              fetch(url, {
-                  method: 'POST',
-                  headers: { 'X-CSRFToken': csrftoken },
-                  body: formData,
-              })
-              .then(response => response.json())
-              .then(data => {
-                  if (data.status === 'ok') {
-                      if (data.is_reply) {
-                          // Nếu là reply, chèn vào container của parent
-                          const repliesContainer = document.getElementById(`replies-for-${data.parent_id}`);
-                          repliesContainer.insertAdjacentHTML('beforeend', data.comment_html);
-                          // Ẩn form reply đi sau khi gửi
-                          form.closest('.reply-form-container').style.display = 'none';
-                      } else {
-                          // Nếu là comment gốc, chèn vào danh sách chính
-                          const commentList = form.closest('.comments-section').querySelector('.comment-list');
-                          commentList.insertAdjacentHTML('beforeend', data.comment_html);
-                      }
-                      // Xóa trắng ô input
-                      contentInput.value = '';
-                  } else {
-                      alert(data.message);
-                  }
-              })
-              .catch(error => console.error('Error:', error));
-          }
         });
-      });
-    </script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".reaction-count").forEach(function (elem) {
-          elem.addEventListener("click", function () {
-            let postId = this.dataset.postId;
 
-            fetch(`/post/${postId}/reactions/detail/`)
-              .then((response) => response.json())
-              .then((data) => {
-                let html = "";
-                for (let type in data) {
-                  html += `<strong>${type}</strong>: ${data[type].join(
-                    ", "
-                  )}<br>`;
-                }
-                document.getElementById("reactionDetailBox").innerHTML = html;
-                new bootstrap.Modal(
-                  document.getElementById("reactionModal")
-                ).show();
-              });
-          });
-        });
-      });
-    </script>
+        document.body.addEventListener('click', function(event) {
+            // --- XÓA BÌNH LUẬN (ĐÃ SỬA LỖI) ---
+            if (event.target.classList.contains('delete-comment-btn')) {
+                event.preventDefault();
+                if (!confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) return;
 
-    {% block extra_js %}{% endblock %}
+                const commentId = event.target.dataset.commentId;
+                // Tự tạo URL đúng bằng cách dùng namespace
+                const url = `/comment/${commentId}/delete/`; 
 
-    <!-- =================== SCRIPT CHUNG =================== -->
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        // === COOKIE CSRF ===
-        function getCookie(name) {
-          let cookieValue = null;
-          if (document.cookie && document.cookie !== "") {
-            const cookies = document.cookie.split(";");
-            for (let i = 0; i < cookies.length; i++) {
-              const cookie = cookies[i].trim();
-              if (cookie.substring(0, name.length + 1) === name + "=") {
-                cookieValue = decodeURIComponent(
-                  cookie.substring(name.length + 1)
-                );
-                break;
-              }
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        const commentDiv = event.target.closest('[id^="comment-"]');
+                        if (commentDiv) commentDiv.remove();
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
             }
-          }
-          return cookieValue;
-        }
-        const csrftoken = getCookie("csrftoken");
+            
+            // --- MỞ/ĐÓNG FORM TRẢ LỜI ---
+            if (event.target.classList.contains('reply-btn')) {
+                event.preventDefault();
+                const commentId = event.target.dataset.commentId;
+                const replyFormContainer = document.getElementById(`reply-form-for-${commentId}`);
+                
+                if (replyFormContainer) {
+                    const isHidden = replyFormContainer.style.display === 'none' || !replyFormContainer.style.display;
+                    replyFormContainer.style.display = isHidden ? 'block' : 'none';
+                    if (isHidden) {
+                        replyFormContainer.querySelector('input[name="content"]').focus();
+                    }
+                }
+            }
 
-        // === NOTIFICATION POLLING ===
-        function loadNotifications() {
-          fetch("/notifications/api/")
-            .then((resp) => resp.json())
-            .then((data) => {
-              const list = document.getElementById("notif-list");
-              const count = document.getElementById("notif-count");
-              list.innerHTML = "";
+            // --- BẮT ĐẦU CHỈNH SỬA BÌNH LUẬN (Lấy form - ĐÃ SỬA LỖI) ---
+            if (event.target.classList.contains('edit-comment-btn')) {
+                event.preventDefault();
+                const commentId = event.target.dataset.commentId;
+                // Tự tạo URL đúng bằng cách dùng namespace
+                const url = `/comment/${commentId}/get-edit-form/`;
+                const commentContentWrapper = document.getElementById(`comment-${commentId}`).querySelector('.comment-content-wrapper');
 
-              if (!data.notifications || data.notifications.length === 0) {
-                list.innerHTML =
-                  '<li><span class="dropdown-item">Không có thông báo</span></li>';
-                count.innerText = 0;
-                return;
-              }
+                fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        commentContentWrapper.dataset.originalContent = commentContentWrapper.innerHTML;
+                        commentContentWrapper.innerHTML = data.form_html;
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            }
 
-              count.innerText = data.notifications.length;
-              data.notifications.forEach((n) => {
-                list.insertAdjacentHTML(
-                  "beforeend",
-                  `
-                  <li>
-                    <a class="dropdown-item" href="${n.link}">
-                      <strong>${n.sender}</strong> — ${n.type}<br>
-                      <small class="text-muted">${n.timestamp}</small>
-                    </a>
-                  </li>
-                `
-                );
-              });
-            })
-            .catch((err) => console.error("Load notifications error", err));
-        }
-        {% if user.is_authenticated %}
-        loadNotifications();
-        setInterval(loadNotifications, 10000);
-        {% endif %}
-
+            // --- HỦY CHỈNH SỬA BÌNH LUẬN ---
+            if (event.target.classList.contains('cancel-edit-btn')) {
+                const commentContentWrapper = event.target.closest('.comment-content-wrapper');
+                if (commentContentWrapper.dataset.originalContent) {
+                    commentContentWrapper.innerHTML = commentContentWrapper.dataset.originalContent;
+                }
+            }
+        });
+        
+        // =======================================================
+        // === LOGIC REACTION CHO BÌNH LUẬN (COMMENT)
+        // =======================================================
         function handleCommentReaction(event) {
             event.preventDefault();
             const button = event.target.closest('.comment-reaction-btn, .comment-reaction-choice-btn');
@@ -607,10 +546,7 @@
             const reactionType = button.dataset.reactionType;
             const url = `/comment/${commentId}/react/`;
 
-            if (!commentId) {
-                console.error("Không tìm thấy comment ID!");
-                return;
-            }
+            if (!commentId) return;
 
             fetch(url, {
                 method: 'POST',
@@ -620,9 +556,6 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'ok') {
-                    // === PHẦN NÂNG CẤP: CẬP NHẬT UI KHÔNG CẦN RELOAD ===
-                    
-                    // 1. Cập nhật khu vực thống kê reaction
                     const statsContainer = document.getElementById(`comment-reaction-stats-${commentId}`);
                     if (statsContainer) {
                         if (data.total_reactions > 0) {
@@ -635,11 +568,10 @@
                             if (data.reaction_stats.ANGRY) iconsHTML += '<span>😡</span>';
                             statsContainer.innerHTML = `<span class="ms-1">${iconsHTML} ${data.total_reactions}</span>`;
                         } else {
-                            statsContainer.innerHTML = ''; // Ẩn đi nếu không có reaction
+                            statsContainer.innerHTML = '';
                         }
                     }
 
-                    // 2. Cập nhật nút "Thích" chính
                     const mainReactionButton = document.querySelector(`.comment-reaction-btn[data-comment-id='${commentId}']`);
                     if (mainReactionButton) {
                         if (data.current_user_reaction) {
@@ -665,224 +597,79 @@
             })
             .catch(error => console.error('Comment Reaction Error:', error));
         }
-        // Gắn sự kiện cho cả nút "Thích" chính và các nút trong popup
         document.body.addEventListener('click', function(event) {
-            if (event.target.classList.contains('comment-reaction-btn') || event.target.classList.contains('comment-reaction-choice-btn')) {
+            if (event.target.closest('.comment-reaction-btn, .comment-reaction-choice-btn')) {
                 handleCommentReaction(event);
             }
         });
-      });
-    </script>
 
-    <!-- =================== CHAT WIDGET NỔI =================== -->
-    {% if user.is_authenticated %}
-    <style>
-      .chat-widget-container {
-        position: fixed;
-        bottom: 25px;
-        right: 25px;
-        z-index: 1050;
-      }
-      .chat-open-button {
-        background-color: #0d6efd;
-        color: white;
-        padding: 16px;
-        border: none;
-        cursor: pointer;
-        border-radius: 50%;
-        width: 60px;
-        height: 60px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .chat-popup {
-        display: none;
-        position: absolute;
-        bottom: 80px;
-        right: 0;
-        width: 320px;
-        border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        background-color: white;
-        flex-direction: column;
-      }
-      .chat-popup-header {
-        background-color: #0d6efd;
-        color: white;
-        padding: 10px 15px;
-        border-top-left-radius: 10px;
-        border-top-right-radius: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .chat-popup-header h4 {
-        margin: 0;
-        font-size: 1.1rem;
-      }
-      .chat-popup-header .header-buttons {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .chat-popup-body {
-        padding: 0;
-        max-height: 400px;
-        overflow-y: auto;
-      }
-      .chat-popup-body .conversation-item {
-        display: flex;
-        align-items: center;
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-        text-decoration: none;
-        color: #212529;
-        transition: background-color 0.2s;
-      }
-      .chat-popup-body .conversation-item:last-child {
-        border-bottom: none;
-      }
-      .chat-popup-body .conversation-item:hover {
-        background-color: #f1f1f1;
-      }
-      .chat-popup-body .conversation-item .last-message {
-        font-size: 0.85rem;
-        color: #6c757d;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .chat-action-btn {
-        background: none;
-        border: none;
-        color: white;
-        cursor: pointer;
-        padding: 0;
-        font-size: 1.2rem;
-      }
-      #search-users-view .search-header {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      #search-users-view input {
-        border-radius: 20px;
-      }
-      .comment-reaction-container {
-        position: relative; /* Container làm gốc cho việc định vị popup */
-        padding-top: 1rem;  /* TẠO VÙNG ĐỆM VÔ HÌNH Ở TRÊN */
-        margin-top: -1rem; /* KÉO CONTAINER VỀ VỊ TRÍ CŨ ĐỂ KHÔNG PHÁ VỠ BỐ CỤC */
-      }
-      .comment-reaction-popup {
-          display: none; /* Mặc định ẩn popup */
-          position: absolute;
-          bottom: 1.8rem; /* Vị trí của popup, ngay trên nút "Thích" */
-          left: -10px;
-          background-color: white;
-          border-radius: 20px;
-          padding: 5px 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          white-space: nowrap;
-          z-index: 10;
-          gap: 5px; /* Khoảng cách giữa các icon */
-      }
-      /* Khi di chuột vào container, hiển thị popup dưới dạng flex */
-      .comment-reaction-container:hover .comment-reaction-popup {
-          display: flex; 
-      }
-      .comment-reaction-popup .btn {
-          font-size: 1.5rem;
-          padding: 0;
-          border: none;
-          background: none;
-          transition: transform 0.1s;
-      }
-      .comment-reaction-popup .btn:hover {
-          transform: scale(1.2); /* Hiệu ứng phóng to khi di chuột vào icon */
-      }
-      .comment-reaction-container { position: relative; }
-    </style>
+        // =======================================================
+        // === LOGIC THÔNG BÁO (NOTIFICATION) - ĐÃ CẬP NHẬT
+        // =======================================================
+        {% if user.is_authenticated %}
+        function loadNotifications() {
+          fetch("/notifications/api/")
+            .then((resp) => resp.json())
+            .then((data) => {
+              const list = document.getElementById("notif-list");
+              const countBadge = document.getElementById("notif-count");
+              
+              // Xóa các thông báo cũ một cách an toàn
+              const dividerLi = list.querySelector('.dropdown-divider').parentElement;
+              let current = list.firstChild;
+              while (current && current !== dividerLi) {
+                  let next = current.nextSibling;
+                  list.removeChild(current);
+                  current = next;
+              }
 
-    <div class="chat-widget-container">
-      <!-- Cửa sổ Popup -->
-      <div class="chat-popup" id="chatPopup">
-        <div class="chat-popup-header">
-          <h4 id="chat-popup-title">Tin nhắn</h4>
-          <div class="header-buttons">
-            <button
-              type="button"
-              class="chat-action-btn"
-              id="newMessageBtn"
-              title="Tin nhắn mới"
-            >
-              ✏️
-            </button>
-            <button
-              type="button"
-              class="chat-action-btn"
-              id="closeChatBtn"
-              style="font-size: 1.5rem; line-height: 1"
-            >
-              &times;
-            </button>
-          </div>
-        </div>
-        <div class="chat-popup-body">
-          <!-- View 1 -->
-          <div id="recent-conversations-view">
-            <div
-              id="chatPopupBodyContent"
-              class="p-3 text-center text-muted"
-            >
-              Đang tải...
-            </div>
-          </div>
+              if (!data.notifications || data.notifications.length === 0) {
+                const noNotifItem = '<li><span class="dropdown-item text-muted">Không có thông báo nào</span></li>';
+                dividerLi.insertAdjacentHTML('beforebegin', noNotifItem);
+                
+                countBadge.innerText = 0;
+                countBadge.style.display = 'none';
+              } else {
+                countBadge.innerText = data.total_unread;
+                countBadge.style.display = data.total_unread > 0 ? 'block' : 'none';
 
-          <!-- View 2 -->
-          <div id="search-users-view" style="display: none">
-            <div class="search-header">
-              <button class="btn btn-light btn-sm" id="backToRecentBtn">
-                &larr;
-              </button>
-              <input
-                type="text"
-                class="form-control"
-                id="searchInput"
-                placeholder="Tìm kiếm người dùng..."
-              />
-            </div>
-            <div id="searchResultsList"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Nút tròn mở chat -->
-      <button class="chat-open-button" id="openChatBtn">💬</button>
-    </div>
-
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
+                data.notifications.forEach((n) => {
+                  // Phân biệt class cho thông báo đã đọc (nền xám) và chưa đọc (chấm xanh)
+                  const statusClass = n.is_read ? 'notification-read' : 'notification-unread';
+                  
+                  const notifHtml = `
+                    <li>
+                      <a class="dropdown-item text-wrap ${statusClass}" style="white-space: normal;" href="${n.link}">
+                        <strong>${n.sender}</strong> ${n.type}<br>
+                        <small class="text-muted">${n.timestamp}</small>
+                      </a>
+                    </li>`;
+                  dividerLi.insertAdjacentHTML('beforebegin', notifHtml);
+                });
+              }
+            })
+            .catch((err) => console.error("Load notifications error", err));
+        }
+        
+        loadNotifications();
+        setInterval(loadNotifications, 10000);
+        {% endif %}
+        
+        // =======================================================
+        // === LOGIC WIDGET TRÒ CHUYỆN (CHAT)
+        // =======================================================
+        {% if user.is_authenticated %}
         const openChatBtn = document.getElementById("openChatBtn");
         const closeChatBtn = document.getElementById("closeChatBtn");
         const chatPopup = document.getElementById("chatPopup");
-        const chatPopupBodyContent = document.getElementById(
-          "chatPopupBodyContent"
-        );
+        const chatPopupBodyContent = document.getElementById("chatPopupBodyContent");
         const chatPopupTitle = document.getElementById("chat-popup-title");
-
         const newMessageBtn = document.getElementById("newMessageBtn");
         const backToRecentBtn = document.getElementById("backToRecentBtn");
-        const recentConversationsView = document.getElementById(
-          "recent-conversations-view"
-        );
+        const recentConversationsView = document.getElementById("recent-conversations-view");
         const searchUsersView = document.getElementById("search-users-view");
         const searchInput = document.getElementById("searchInput");
-        const searchResultsList =
-          document.getElementById("searchResultsList");
+        const searchResultsList = document.getElementById("searchResultsList");
 
         let conversationsLoaded = false;
 
@@ -892,17 +679,15 @@
             loadConversations();
           }
         });
-        closeChatBtn.addEventListener("click", function () {
-          chatPopup.style.display = "none";
-        });
+        closeChatBtn.addEventListener("click", () => { chatPopup.style.display = "none"; });
 
-        newMessageBtn.addEventListener("click", function () {
+        newMessageBtn.addEventListener("click", () => {
           recentConversationsView.style.display = "none";
           searchUsersView.style.display = "block";
           chatPopupTitle.innerText = "Tin nhắn mới";
           searchInput.focus();
         });
-        backToRecentBtn.addEventListener("click", function () {
+        backToRecentBtn.addEventListener("click", () => {
           searchUsersView.style.display = "none";
           recentConversationsView.style.display = "block";
           chatPopupTitle.innerText = "Tin nhắn";
@@ -920,27 +705,21 @@
                 data.conversations.forEach((conv) => {
                   chatPopupBodyContent.innerHTML += `
                     <a href="${conv.detail_url}" class="conversation-item">
-                      <div class="flex-shrink-0 me-3">
-                        👤
-                      </div>
+                      <div class="flex-shrink-0 me-3">👤</div>
                       <div class="w-100" style="overflow: hidden;">
                         <strong>${conv.other_participant.username}</strong>
-                        <p class="last-message mb-0">${
-                          conv.last_message || "Bắt đầu trò chuyện"
-                        }</p>
+                        <p class="last-message mb-0">${conv.last_message || "Bắt đầu trò chuyện"}</p>
                       </div>
                     </a>`;
                 });
               } else {
-                chatPopupBodyContent.innerHTML =
-                  '<p class="text-center text-muted p-3">Không có cuộc trò chuyện nào.</p>';
+                chatPopupBodyContent.innerHTML = '<p class="text-center text-muted p-3">Không có cuộc trò chuyện nào.</p>';
               }
               conversationsLoaded = true;
             })
             .catch((error) => {
               console.error("Lỗi khi tải tin nhắn:", error);
-              chatPopupBodyContent.innerHTML =
-                '<p class="text-center text-danger p-3">Không thể tải tin nhắn.</p>';
+              chatPopupBodyContent.innerHTML = '<p class="text-center text-danger p-3">Không thể tải tin nhắn.</p>';
             });
         }
 
@@ -950,20 +729,13 @@
           const query = searchInput.value.trim();
 
           if (query.length < 2) {
-            searchResultsList.innerHTML =
-              '<p class="text-center text-muted p-3">Nhập ít nhất 2 ký tự để tìm kiếm.</p>';
+            searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Nhập ít nhất 2 ký tự.</p>';
             return;
           }
-
-          searchResultsList.innerHTML =
-            '<p class="text-center text-muted p-3">Đang tìm...</p>';
+          searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Đang tìm...</p>';
 
           searchTimeout = setTimeout(() => {
-            fetch(
-              `{% url 'chat:api_search_users' %}?q=${encodeURIComponent(
-                query
-              )}`
-            )
+            fetch(`{% url 'chat:api_search_users' %}?q=${encodeURIComponent(query)}`)
               .then((response) => response.json())
               .then((data) => {
                 searchResultsList.innerHTML = "";
@@ -976,15 +748,77 @@
                       </a>`;
                   });
                 } else {
-                  searchResultsList.innerHTML =
-                    '<p class="text-center text-muted p-3">Không tìm thấy người dùng nào.</p>';
+                  searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Không tìm thấy người dùng.</p>';
                 }
               });
           }, 300);
         });
+        {% endif %}
+        
+        // =======================================================
+        // === LOGIC TẢI THÊM BÌNH LUẬN
+        // =======================================================
+        document.body.addEventListener('click', function(event) {
+            if (event.target.classList.contains('load-more-comments')) {
+                event.preventDefault();
+                
+                const button = event.target;
+                const spinner = button.nextElementSibling; // Lấy cái spinner bên cạnh
+                const postId = button.dataset.postId;
+                const offset = button.dataset.offset;
+
+                // Hiển thị loading và vô hiệu hóa nút
+                button.classList.add('d-none');
+                spinner.classList.remove('d-none');
+
+                fetch(`/post/${postId}/load-comments/?offset=${offset}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.html) {
+                            const commentList = button.closest('.comments-section').querySelector('.comment-list');
+                            commentList.insertAdjacentHTML('beforeend', data.html);
+                        }
+
+                        // Cập nhật hoặc xóa nút
+                        if (data.has_more) {
+                            button.dataset.offset = data.new_offset;
+                            button.classList.remove('d-none');
+                        } else {
+                            button.parentElement.remove(); // Xóa cả div bọc ngoài nút
+                        }
+                    })
+                    .catch(error => console.error('Error loading comments:', error))
+                    .finally(() => {
+                        // Luôn ẩn spinner sau khi xong
+                        spinner.classList.add('d-none');
+                    });
+            }
+        });
+        // =======================================================
+        // === LOGIC FOCUS VÀO Ô BÌNH LUẬN KHI CLICK NÚT COMMENT
+        // =======================================================
+        document.body.addEventListener('click', function(event) {
+            // Kiểm tra xem phần tử được click có phải là nút "Bình luận" không
+            const commentButton = event.target.closest('.comment-button');
+            
+            if (commentButton) {
+                // Ngăn hành vi mặc định của thẻ <a> (là nhảy lên đầu trang)
+                event.preventDefault();
+                
+                // Lấy ID của bài viết từ thuộc tính data-post-id
+                const postId = commentButton.dataset.postId;
+                
+                // Tìm ô input tương ứng bằng ID mà chúng ta đã đặt
+                const commentInput = document.getElementById(`comment-input-${postId}`);
+                
+                // Nếu tìm thấy, di chuyển con trỏ chuột vào đó
+                if (commentInput) {
+                    commentInput.focus();
+                }
+            }
+        });
       });
     </script>
-    {% endif %}
-    <!-- =================== HẾT CHAT WIDGET =================== -->
+
   </body>
-</html> 
+</html>
