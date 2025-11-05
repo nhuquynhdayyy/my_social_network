@@ -8,45 +8,231 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <script src="...bootstrap.bundle.min.js..."></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- === CSS ĐỂ PHÂN BIỆT THÔNG BÁO ĐÃ ĐỌC === -->
+    <!-- === CSS GỐC + BỔ SUNG CSS CHO THÔNG BÁO CHƯA ĐỌC === -->
+    <style>
+      /* =================== BẮT ĐẦU BỔ SUNG =================== */
+      /* Thông báo CHƯA ĐỌC sẽ có chấm xanh ở đầu */
+      .notification-unread {
+        position: relative;
+        padding-left: 28px !important; /* Tạo không gian cho chấm xanh */
+      }
+      .notification-unread::before {
+        content: '';
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        background-color: #0d6efd; /* Màu xanh dương của Bootstrap */
+        border-radius: 50%;
+      }
+      /* =================== KẾT THÚC BỔ SUNG =================== */
+
+      /* Thông báo ĐÃ ĐỌC có nền xám (Code gốc) */
+      .notification-read {
+        background-color: #f8f9fa; /* Màu nền xám nhạt */
+      }
+      .notification-read:hover {
+        background-color: #e9ecef;
+      }
+      .chat-widget-container {
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        z-index: 1050;
+      }
+      .chat-open-button {
+        background-color: #0d6efd;
+        color: white;
+        padding: 16px;
+        border: none;
+        cursor: pointer;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .chat-popup {
+        display: none;
+        position: absolute;
+        bottom: 80px;
+        right: 0;
+        width: 320px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        background-color: white;
+        flex-direction: column;
+      }
+      .chat-popup-header {
+        background-color: #0d6efd;
+        color: white;
+        padding: 10px 15px;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .chat-popup-header h4 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+      .chat-popup-header .header-buttons {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .chat-popup-body {
+        padding: 0;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .chat-popup-body .conversation-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        text-decoration: none;
+        color: #212529;
+        transition: background-color 0.2s;
+      }
+      .chat-popup-body .conversation-item:last-child {
+        border-bottom: none;
+      }
+      .chat-popup-body .conversation-item:hover {
+        background-color: #f1f1f1;
+      }
+      .chat-popup-body .conversation-item .last-message {
+        font-size: 0.85rem;
+        color: #6c757d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .chat-action-btn {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        font-size: 1.2rem;
+      }
+      #search-users-view .search-header {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      #search-users-view input {
+        border-radius: 20px;
+      }
+      .comment-reaction-container {
+        position: relative;
+        padding-top: 1rem;
+        margin-top: -1rem;
+      }
+      .comment-reaction-popup {
+          display: none;
+          position: absolute;
+          bottom: 1.8rem;
+          left: -10px;
+          background-color: white;
+          border-radius: 20px;
+          padding: 5px 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          white-space: nowrap;
+          z-index: 10;
+          gap: 5px;
+      }
+      .comment-reaction-container:hover .comment-reaction-popup {
+          display: flex;
+      }
+      .comment-reaction-popup .btn {
+          font-size: 1.5rem;
+          padding: 0;
+          border: none;
+          background: none;
+          transition: transform 0.1s;
+      }
+      .comment-reaction-popup .btn:hover {
+          transform: scale(1.2);
+      }
+    </style>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <div class="container-fluid">
-        <!-- URL 'home' không có namespace vì nó nằm trong URL gốc -->
-        <a class="navbar-brand" href="{% url 'home' %}">MySocial</a>
+        <a class="navbar-brand fw-bold text-primary" href="{% url 'home' %}">MySocial</a>
         <div class="d-flex">
           {% if user.is_authenticated %}
-          <!-- NÚT LỜI MỜI KẾT BẠN -->
           <a
             href="{% url 'accounts:friend_requests' %}"
             class="btn btn-outline-secondary position-relative me-3"
           >
-            Lời mời 
+            Lời mời
           </a>
 
-          <!-- NÚT LINK TỚI TRANG CHAT CHÍNH -->
-          <a href="{% url 'chat:conversation_list' %}" class="btn btn-outline-info me-3">
+          <a
+            href="{% url 'chat:conversation_list' %}"
+            class="btn btn-outline-info me-3"
+          >
             Tin nhắn
           </a>
-          
+
+          <div class="dropdown me-3">
+            <button
+              class="btn btn-outline-warning position-relative"
+              id="notifDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              Thông báo
+              <span
+                id="notif-count"
+                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                >0</span
+              >
+            </button>
+            <ul
+              class="dropdown-menu dropdown-menu-end"
+              aria-labelledby="notifDropdown"
+              id="notif-list"
+              style="min-width: 320px"
+            >
+              <li>
+                <span class="dropdown-item">Không có thông báo</span>
+              </li>
+            </ul>
+          </div>
+
           <a
             href="{% url 'accounts:user_list' %}"
             class="btn btn-outline-primary me-3"
             >Tìm bạn</a
           >
+          
+          <!-- Dropdown cho người dùng -->
+            <div class="dropdown ms-2">
+              <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="{{ user.avatar.url }}" alt="{{ user.username }}" width="32" height="32" class="rounded-circle"/>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end text-small" aria-labelledby="dropdownUser">
+                <li><span class="dropdown-item-text">Chào, <strong>{{ user.username }}</strong></span></li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><a class="dropdown-item" href="{% url 'accounts:profile' username=user.username %}">Trang cá nhân</a></li>
+                <li><a class="dropdown-item" href="{% url 'accounts:profile_edit' username=user.username %}">Chỉnh sửa hồ sơ</a></li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><a class="dropdown-item text-danger" href="{% url 'accounts:logout' %}">Đăng xuất</a></li>
+              </ul>
+            </div>
 
-          <span class="navbar-text me-3">
-            <a
-              href="{% url 'accounts:profile' username=user.username %}"
-              class="text-dark text-decoration-none"
-            >
-              Chào, {{ user.username }}!
-            </a>
-          </span>
-          <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger"
-            >Đăng xuất</a
-          >
           {% else %}
           <a
             href="{% url 'accounts:login' %}"
@@ -62,11 +248,8 @@
     </nav>
 
     <main class="container mt-4">
-      {% block content %} {% endblock content %}
+      {% block content %}{% endblock content %}
     </main>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- === THÊM ĐOẠN SCRIPT SAU === -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         // Lấy cookie theo tên (chuẩn Django docs)
@@ -216,6 +399,20 @@
                 })
                 .catch(error => console.error('Error:', error));
             }
+            // THÊM LOGIC MỚI: Xử lý click nút "Trả lời"
+          if (event.target.classList.contains('reply-btn')) {
+              event.preventDefault();
+              const commentId = event.target.dataset.commentId;
+              const replyFormContainer = document.getElementById(`reply-form-for-${commentId}`);
+              
+              // Toggle (bật/tắt) form trả lời
+              if (replyFormContainer.style.display === 'none') {
+                  replyFormContainer.style.display = 'block';
+                  replyFormContainer.querySelector('input[name="content"]').focus();
+              } else {
+                  replyFormContainer.style.display = 'none';
+              }
+          }
         });
         // === SCRIPT XỬ LÝ SỬA BÌNH LUẬN (LUỒNG MỚI) ===
         document.body.addEventListener('click', function(event) {
@@ -276,6 +473,41 @@
                     }
                 });
             }
+            if (event.target.classList.contains('comment-form')) {
+              event.preventDefault();
+
+              const form = event.target;
+              const url = form.action;
+              const formData = new FormData(form);
+              const contentInput = form.querySelector('input[name=content]');
+
+              fetch(url, {
+                  method: 'POST',
+                  headers: { 'X-CSRFToken': csrftoken },
+                  body: formData,
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.status === 'ok') {
+                      if (data.is_reply) {
+                          // Nếu là reply, chèn vào container của parent
+                          const repliesContainer = document.getElementById(`replies-for-${data.parent_id}`);
+                          repliesContainer.insertAdjacentHTML('beforeend', data.comment_html);
+                          // Ẩn form reply đi sau khi gửi
+                          form.closest('.reply-form-container').style.display = 'none';
+                      } else {
+                          // Nếu là comment gốc, chèn vào danh sách chính
+                          const commentList = form.closest('.comments-section').querySelector('.comment-list');
+                          commentList.insertAdjacentHTML('beforeend', data.comment_html);
+                      }
+                      // Xóa trắng ô input
+                      contentInput.value = '';
+                  } else {
+                      alert(data.message);
+                  }
+              })
+              .catch(error => console.error('Error:', error));
+          }
         });
       });
     </script>
@@ -306,169 +538,453 @@
 
     {% block extra_js %}{% endblock %}
 
-        {# ============== BẮT ĐẦU PHẦN WIDGET CHAT NỔI (PHIÊN BẢN NÂNG CẤP) ============== #}
-        {% if user.is_authenticated %}
-        <style>
-            .chat-widget-container { position: fixed; bottom: 25px; right: 25px; z-index: 1050; }
-            .chat-open-button { background-color: #0d6efd; color: white; padding: 16px; border: none; cursor: pointer; border-radius: 50%; width: 60px; height: 60px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
-            .chat-popup { display: none; position: absolute; bottom: 80px; right: 0; width: 320px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); background-color: white; flex-direction: column; }
-            .chat-popup-header { background-color: #0d6efd; color: white; padding: 10px 15px; border-top-left-radius: 10px; border-top-right-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
-            .chat-popup-header h4 { margin: 0; font-size: 1.1rem; }
-            .chat-popup-header .header-buttons { display: flex; align-items: center; gap: 10px; }
-            .chat-popup-body { padding: 0; max-height: 400px; overflow-y: auto; }
-            .chat-popup-body .conversation-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; text-decoration: none; color: #212529; transition: background-color 0.2s; }
-            .chat-popup-body .conversation-item:last-child { border-bottom: none; }
-            .chat-popup-body .conversation-item:hover { background-color: #f1f1f1; }
-            .chat-popup-body .conversation-item .last-message { font-size: 0.85rem; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .chat-action-btn { background: none; border: none; color: white; cursor: pointer; padding: 0; font-size: 1.2rem; }
-            #search-users-view .search-header { padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
-            #search-users-view input { border-radius: 20px; }
-        </style>
-    
-        <div class="chat-widget-container">
-            <!-- Cửa sổ Popup (ẩn mặc định) -->
-            <div class="chat-popup" id="chatPopup">
-                <div class="chat-popup-header">
-                    <h4 id="chat-popup-title">Tin nhắn</h4>
-                    <div class="header-buttons">
-                        <button type="button" class="chat-action-btn" id="newMessageBtn" title="Tin nhắn mới">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
-                        </button>
-                        <button type="button" class="chat-action-btn" id="closeChatBtn" style="font-size: 1.5rem; line-height: 1;">&times;</button>
-                    </div>
-                </div>
-                <div class="chat-popup-body">
-                    <!-- Màn hình 1: Danh sách tin nhắn gần đây (mặc định) -->
-                    <div id="recent-conversations-view">
-                        <div id="chatPopupBodyContent" class="p-3 text-center text-muted">Đang tải...</div>
-                    </div>
-    
-                    <!-- Màn hình 2: Tạo tin nhắn mới (ẩn) -->
-                    <div id="search-users-view" style="display: none;">
-                        <div class="search-header">
-                            <button class="btn btn-light btn-sm" id="backToRecentBtn">&larr;</button>
-                            <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm người dùng...">
-                        </div>
-                        <div id="searchResultsList"></div>
-                    </div>
-                </div>
-            </div>
-    
-            <!-- Nút Tròn để mở Popup -->
-            <button class="chat-open-button" id="openChatBtn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-chat-dots-fill" viewBox="0 0 16 16"><path d="M16 8c0 3.866-3.582 7-8 7a9.06 9.06 0 0 1-2.347-.306c-.584.296-1.925.864-4.181 1.234-.2.032-.352-.176-.273-.362.354-.836.674-1.95.77-2.966C.744 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7zM5 8a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
-            </button>
-        </div>
-    
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const openChatBtn = document.getElementById('openChatBtn');
-            const closeChatBtn = document.getElementById('closeChatBtn');
-            const chatPopup = document.getElementById('chatPopup');
-            const chatPopupBodyContent = document.getElementById('chatPopupBodyContent');
-            const chatPopupTitle = document.getElementById('chat-popup-title');
-    
-            // Các element cho màn hình mới
-            const newMessageBtn = document.getElementById('newMessageBtn');
-            const backToRecentBtn = document.getElementById('backToRecentBtn');
-            const recentConversationsView = document.getElementById('recent-conversations-view');
-            const searchUsersView = document.getElementById('search-users-view');
-            const searchInput = document.getElementById('searchInput');
-            const searchResultsList = document.getElementById('searchResultsList');
-    
-            let conversationsLoaded = false;
-    
-            // Mở/đóng popup
-            openChatBtn.addEventListener('click', function() {
-                chatPopup.style.display = 'flex';
-                if (!conversationsLoaded) { loadConversations(); }
-            });
-            closeChatBtn.addEventListener('click', function() { chatPopup.style.display = 'none'; });
-    
-            // Chuyển đổi giữa các màn hình
-            newMessageBtn.addEventListener('click', function() {
-                recentConversationsView.style.display = 'none';
-                searchUsersView.style.display = 'block';
-                chatPopupTitle.innerText = 'Tin nhắn mới';
-                searchInput.focus();
-            });
-            backToRecentBtn.addEventListener('click', function() {
-                searchUsersView.style.display = 'none';
-                recentConversationsView.style.display = 'block';
-                chatPopupTitle.innerText = 'Tin nhắn';
-                searchInput.value = '';
-                searchResultsList.innerHTML = '';
-            });
-    
-            // Hàm tải danh sách cuộc trò chuyện
-            function loadConversations() {
-                fetch("{% url 'chat:api_get_conversations' %}")
-                    .then(response => response.json())
-                    .then(data => {
-                        chatPopupBodyContent.innerHTML = ''; // Xóa "Đang tải..."
-                        chatPopupBodyContent.className = ''; // Xóa class padding
-                        if (data.conversations && data.conversations.length > 0) {
-                            data.conversations.forEach(conv => {
-                                chatPopupBodyContent.innerHTML += `
-                                    <a href="${conv.detail_url}" class="conversation-item">
-                                        <div class="flex-shrink-0 me-3">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-person-circle text-secondary" viewBox="0 0 16 16"><path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/></svg>
-                                        </div>
-                                        <div class="w-100" style="overflow: hidden;">
-                                            <strong>${conv.other_participant.username}</strong>
-                                            <p class="last-message mb-0">${conv.last_message || 'Bắt đầu trò chuyện'}</p>
-                                        </div>
-                                    </a>`;
-                            });
-                        } else {
-                            chatPopupBodyContent.innerHTML = '<p class="text-center text-muted p-3">Không có cuộc trò chuyện nào.</p>';
-                        }
-                        conversationsLoaded = true;
-                    }).catch(error => {
-                        console.error('Lỗi khi tải tin nhắn:', error);
-                        chatPopupBodyContent.innerHTML = '<p class="text-center text-danger p-3">Không thể tải tin nhắn.</p>';
-                    });
+    <!-- =================== SCRIPT CHUNG =================== -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // === COOKIE CSRF ===
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === name + "=") {
+                cookieValue = decodeURIComponent(
+                  cookie.substring(name.length + 1)
+                );
+                break;
+              }
             }
-            
-            // Logic tìm kiếm người dùng
-            let searchTimeout;
-            searchInput.addEventListener('keyup', function() {
-                clearTimeout(searchTimeout);
-                const query = searchInput.value.trim();
-    
-                if (query.length < 2) {
-                    searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Nhập ít nhất 2 ký tự để tìm kiếm.</p>';
-                    return;
-                }
-    
-                searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Đang tìm...</p>';
-    
-                // Debounce: Chờ 300ms sau khi người dùng ngừng gõ mới gửi request
-                searchTimeout = setTimeout(() => {
-                    fetch(`{% url 'chat:api_search_users' %}?q=${encodeURIComponent(query)}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            searchResultsList.innerHTML = '';
-                            if (data.users && data.users.length > 0) {
-                                data.users.forEach(user => {
-                                    searchResultsList.innerHTML += `
-                                        <a href="${user.start_conversation_url}" class="conversation-item">
-                                            <div class="flex-shrink-0 me-3">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-person-circle text-secondary" viewBox="0 0 16 16"><path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/></svg>
-                                            </div>
-                                            <div class="w-100"><strong>${user.full_name}</strong></div>
-                                        </a>`;
-                                });
-                            } else {
-                                searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Không tìm thấy người dùng nào.</p>';
-                            }
-                        });
-                }, 300);
-            });
-            
-        });
-        </script>
+          }
+          return cookieValue;
+        }
+        const csrftoken = getCookie("csrftoken");
+
+        // === NOTIFICATION POLLING ===
+        function loadNotifications() {
+          fetch("/notifications/api/")
+            .then((resp) => resp.json())
+            .then((data) => {
+              const list = document.getElementById("notif-list");
+              const count = document.getElementById("notif-count");
+              list.innerHTML = "";
+
+              if (!data.notifications || data.notifications.length === 0) {
+                list.innerHTML =
+                  '<li><span class="dropdown-item">Không có thông báo</span></li>';
+                count.innerText = 0;
+                return;
+              }
+
+              count.innerText = data.notifications.length;
+              data.notifications.forEach((n) => {
+                list.insertAdjacentHTML(
+                  "beforeend",
+                  `
+                  <li>
+                    <a class="dropdown-item" href="${n.link}">
+                      <strong>${n.sender}</strong> — ${n.type}<br>
+                      <small class="text-muted">${n.timestamp}</small>
+                    </a>
+                  </li>
+                `
+                );
+              });
+            })
+            .catch((err) => console.error("Load notifications error", err));
+        }
+        {% if user.is_authenticated %}
+        loadNotifications();
+        setInterval(loadNotifications, 10000);
         {% endif %}
-        {# ============== KẾT THÚC PHẦN WIDGET CHAT NỔI ============== #}
+
+        function handleCommentReaction(event) {
+            event.preventDefault();
+            const button = event.target.closest('.comment-reaction-btn, .comment-reaction-choice-btn');
+            if (!button) return;
+
+            const commentId = button.dataset.commentId;
+            const reactionType = button.dataset.reactionType;
+            const url = `/comment/${commentId}/react/`;
+
+            if (!commentId) {
+                console.error("Không tìm thấy comment ID!");
+                return;
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reaction_type: reactionType })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    // === PHẦN NÂNG CẤP: CẬP NHẬT UI KHÔNG CẦN RELOAD ===
+                    
+                    // 1. Cập nhật khu vực thống kê reaction
+                    const statsContainer = document.getElementById(`comment-reaction-stats-${commentId}`);
+                    if (statsContainer) {
+                        if (data.total_reactions > 0) {
+                            let iconsHTML = '';
+                            if (data.reaction_stats.LIKE) iconsHTML += '<span>👍</span>';
+                            if (data.reaction_stats.LOVE) iconsHTML += '<span>❤️</span>';
+                            if (data.reaction_stats.HAHA) iconsHTML += '<span>😂</span>';
+                            if (data.reaction_stats.WOW) iconsHTML += '<span>😮</span>';
+                            if (data.reaction_stats.SAD) iconsHTML += '<span>😢</span>';
+                            if (data.reaction_stats.ANGRY) iconsHTML += '<span>😡</span>';
+                            statsContainer.innerHTML = `<span class="ms-1">${iconsHTML} ${data.total_reactions}</span>`;
+                        } else {
+                            statsContainer.innerHTML = ''; // Ẩn đi nếu không có reaction
+                        }
+                    }
+
+                    // 2. Cập nhật nút "Thích" chính
+                    const mainReactionButton = document.querySelector(`.comment-reaction-btn[data-comment-id='${commentId}']`);
+                    if (mainReactionButton) {
+                        if (data.current_user_reaction) {
+                            mainReactionButton.classList.add('text-primary', 'fw-bold');
+                            mainReactionButton.classList.remove('text-muted');
+                            let reactionText = 'Thích';
+                            if (data.current_user_reaction === 'LIKE') reactionText = '👍 Thích';
+                            else if (data.current_user_reaction === 'LOVE') reactionText = '❤️ Yêu thích';
+                            else if (data.current_user_reaction === 'HAHA') reactionText = '😂 Haha';
+                            else if (data.current_user_reaction === 'WOW') reactionText = '😮 Wow';
+                            else if (data.current_user_reaction === 'SAD') reactionText = '😢 Buồn';
+                            else if (data.current_user_reaction === 'ANGRY') reactionText = '😡 Phẫn nộ';
+                            mainReactionButton.innerHTML = reactionText;
+                        } else {
+                            mainReactionButton.classList.remove('text-primary', 'fw-bold');
+                            mainReactionButton.classList.add('text-muted');
+                            mainReactionButton.innerHTML = 'Thích';
+                        }
+                    }
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Comment Reaction Error:', error));
+        }
+        // Gắn sự kiện cho cả nút "Thích" chính và các nút trong popup
+        document.body.addEventListener('click', function(event) {
+            if (event.target.classList.contains('comment-reaction-btn') || event.target.classList.contains('comment-reaction-choice-btn')) {
+                handleCommentReaction(event);
+            }
+        });
+      });
+    </script>
+
+    <!-- =================== CHAT WIDGET NỔI =================== -->
+    {% if user.is_authenticated %}
+    <style>
+      .chat-widget-container {
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        z-index: 1050;
+      }
+      .chat-open-button {
+        background-color: #0d6efd;
+        color: white;
+        padding: 16px;
+        border: none;
+        cursor: pointer;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .chat-popup {
+        display: none;
+        position: absolute;
+        bottom: 80px;
+        right: 0;
+        width: 320px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        background-color: white;
+        flex-direction: column;
+      }
+      .chat-popup-header {
+        background-color: #0d6efd;
+        color: white;
+        padding: 10px 15px;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .chat-popup-header h4 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+      .chat-popup-header .header-buttons {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .chat-popup-body {
+        padding: 0;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .chat-popup-body .conversation-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        text-decoration: none;
+        color: #212529;
+        transition: background-color 0.2s;
+      }
+      .chat-popup-body .conversation-item:last-child {
+        border-bottom: none;
+      }
+      .chat-popup-body .conversation-item:hover {
+        background-color: #f1f1f1;
+      }
+      .chat-popup-body .conversation-item .last-message {
+        font-size: 0.85rem;
+        color: #6c757d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .chat-action-btn {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        font-size: 1.2rem;
+      }
+      #search-users-view .search-header {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      #search-users-view input {
+        border-radius: 20px;
+      }
+      .comment-reaction-container {
+        position: relative; /* Container làm gốc cho việc định vị popup */
+        padding-top: 1rem;  /* TẠO VÙNG ĐỆM VÔ HÌNH Ở TRÊN */
+        margin-top: -1rem; /* KÉO CONTAINER VỀ VỊ TRÍ CŨ ĐỂ KHÔNG PHÁ VỠ BỐ CỤC */
+      }
+      .comment-reaction-popup {
+          display: none; /* Mặc định ẩn popup */
+          position: absolute;
+          bottom: 1.8rem; /* Vị trí của popup, ngay trên nút "Thích" */
+          left: -10px;
+          background-color: white;
+          border-radius: 20px;
+          padding: 5px 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          white-space: nowrap;
+          z-index: 10;
+          gap: 5px; /* Khoảng cách giữa các icon */
+      }
+      /* Khi di chuột vào container, hiển thị popup dưới dạng flex */
+      .comment-reaction-container:hover .comment-reaction-popup {
+          display: flex; 
+      }
+      .comment-reaction-popup .btn {
+          font-size: 1.5rem;
+          padding: 0;
+          border: none;
+          background: none;
+          transition: transform 0.1s;
+      }
+      .comment-reaction-popup .btn:hover {
+          transform: scale(1.2); /* Hiệu ứng phóng to khi di chuột vào icon */
+      }
+      .comment-reaction-container { position: relative; }
+    </style>
+
+    <div class="chat-widget-container">
+      <!-- Cửa sổ Popup -->
+      <div class="chat-popup" id="chatPopup">
+        <div class="chat-popup-header">
+          <h4 id="chat-popup-title">Tin nhắn</h4>
+          <div class="header-buttons">
+            <button
+              type="button"
+              class="chat-action-btn"
+              id="newMessageBtn"
+              title="Tin nhắn mới"
+            >
+              ✏️
+            </button>
+            <button
+              type="button"
+              class="chat-action-btn"
+              id="closeChatBtn"
+              style="font-size: 1.5rem; line-height: 1"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+        <div class="chat-popup-body">
+          <!-- View 1 -->
+          <div id="recent-conversations-view">
+            <div
+              id="chatPopupBodyContent"
+              class="p-3 text-center text-muted"
+            >
+              Đang tải...
+            </div>
+          </div>
+
+          <!-- View 2 -->
+          <div id="search-users-view" style="display: none">
+            <div class="search-header">
+              <button class="btn btn-light btn-sm" id="backToRecentBtn">
+                &larr;
+              </button>
+              <input
+                type="text"
+                class="form-control"
+                id="searchInput"
+                placeholder="Tìm kiếm người dùng..."
+              />
+            </div>
+            <div id="searchResultsList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nút tròn mở chat -->
+      <button class="chat-open-button" id="openChatBtn">💬</button>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const openChatBtn = document.getElementById("openChatBtn");
+        const closeChatBtn = document.getElementById("closeChatBtn");
+        const chatPopup = document.getElementById("chatPopup");
+        const chatPopupBodyContent = document.getElementById(
+          "chatPopupBodyContent"
+        );
+        const chatPopupTitle = document.getElementById("chat-popup-title");
+
+        const newMessageBtn = document.getElementById("newMessageBtn");
+        const backToRecentBtn = document.getElementById("backToRecentBtn");
+        const recentConversationsView = document.getElementById(
+          "recent-conversations-view"
+        );
+        const searchUsersView = document.getElementById("search-users-view");
+        const searchInput = document.getElementById("searchInput");
+        const searchResultsList =
+          document.getElementById("searchResultsList");
+
+        let conversationsLoaded = false;
+
+        openChatBtn.addEventListener("click", function () {
+          chatPopup.style.display = "flex";
+          if (!conversationsLoaded) {
+            loadConversations();
+          }
+        });
+        closeChatBtn.addEventListener("click", function () {
+          chatPopup.style.display = "none";
+        });
+
+        newMessageBtn.addEventListener("click", function () {
+          recentConversationsView.style.display = "none";
+          searchUsersView.style.display = "block";
+          chatPopupTitle.innerText = "Tin nhắn mới";
+          searchInput.focus();
+        });
+        backToRecentBtn.addEventListener("click", function () {
+          searchUsersView.style.display = "none";
+          recentConversationsView.style.display = "block";
+          chatPopupTitle.innerText = "Tin nhắn";
+          searchInput.value = "";
+          searchResultsList.innerHTML = "";
+        });
+
+        function loadConversations() {
+          fetch("{% url 'chat:api_get_conversations' %}")
+            .then((response) => response.json())
+            .then((data) => {
+              chatPopupBodyContent.innerHTML = "";
+              chatPopupBodyContent.className = "";
+              if (data.conversations && data.conversations.length > 0) {
+                data.conversations.forEach((conv) => {
+                  chatPopupBodyContent.innerHTML += `
+                    <a href="${conv.detail_url}" class="conversation-item">
+                      <div class="flex-shrink-0 me-3">
+                        👤
+                      </div>
+                      <div class="w-100" style="overflow: hidden;">
+                        <strong>${conv.other_participant.username}</strong>
+                        <p class="last-message mb-0">${
+                          conv.last_message || "Bắt đầu trò chuyện"
+                        }</p>
+                      </div>
+                    </a>`;
+                });
+              } else {
+                chatPopupBodyContent.innerHTML =
+                  '<p class="text-center text-muted p-3">Không có cuộc trò chuyện nào.</p>';
+              }
+              conversationsLoaded = true;
+            })
+            .catch((error) => {
+              console.error("Lỗi khi tải tin nhắn:", error);
+              chatPopupBodyContent.innerHTML =
+                '<p class="text-center text-danger p-3">Không thể tải tin nhắn.</p>';
+            });
+        }
+
+        let searchTimeout;
+        searchInput.addEventListener("keyup", function () {
+          clearTimeout(searchTimeout);
+          const query = searchInput.value.trim();
+
+          if (query.length < 2) {
+            searchResultsList.innerHTML =
+              '<p class="text-center text-muted p-3">Nhập ít nhất 2 ký tự để tìm kiếm.</p>';
+            return;
+          }
+
+          searchResultsList.innerHTML =
+            '<p class="text-center text-muted p-3">Đang tìm...</p>';
+
+          searchTimeout = setTimeout(() => {
+            fetch(
+              `{% url 'chat:api_search_users' %}?q=${encodeURIComponent(
+                query
+              )}`
+            )
+              .then((response) => response.json())
+              .then((data) => {
+                searchResultsList.innerHTML = "";
+                if (data.users && data.users.length > 0) {
+                  data.users.forEach((user) => {
+                    searchResultsList.innerHTML += `
+                      <a href="${user.start_conversation_url}" class="conversation-item">
+                        <div class="flex-shrink-0 me-3">👤</div>
+                        <div class="w-100"><strong>${user.full_name}</strong></div>
+                      </a>`;
+                  });
+                } else {
+                  searchResultsList.innerHTML =
+                    '<p class="text-center text-muted p-3">Không tìm thấy người dùng nào.</p>';
+                }
+              });
+          }, 300);
+        });
+      });
+    </script>
+    {% endif %}
+    <!-- =================== HẾT CHAT WIDGET =================== -->
   </body>
-</html>
+</html> 
