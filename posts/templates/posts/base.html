@@ -168,23 +168,27 @@
       .post-reaction-popup .btn:hover {
           transform: scale(1.2);
       }
+      /* Nút mở chat chính (hình tròn) */
       .chat-open-button {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background-color: #007bff; /* Ví dụ màu */
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        font-size: 1.5rem;
-        display: flex; /* Đảm bảo nút hiển thị */
-        justify-content: center;
-        align-items: center;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        cursor: pointer;
-        z-index: 1000;
+          position: fixed;
+          bottom: 25px;
+          right: 25px;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 60px;
+          height: 60px;
+          font-size: 2rem;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          cursor: pointer;
+          z-index: 1040;
+          transition: transform 0.2s ease-in-out;
+      }
+      .chat-open-button:hover {
+          transform: scale(1.1);
       }
       /* === CSS cho Chat Widget (BỊ THIẾU) === */
       .chat-widget-container {
@@ -193,46 +197,74 @@
           right: 25px;
           z-index: 1050;
       }
+      /* Khung popup chính */
       .chat-popup {
           display: none; /* Mặc định ẩn */
-          position: absolute;
-          bottom: 80px; /* Vị trí phía trên nút mở */
-          right: 0;
-          width: 320px;
-          border-radius: 10px;
-          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+          position: fixed; /* Cố định so với màn hình */
+          bottom: 25px;
+          right: 25px;
+          width: 350px; /* Rộng hơn một chút */
+          height: 500px; /* Chiều cao cố định */
+          border-radius: 12px;
+          box-shadow: 0 5px 20px rgba(0,0,0,0.2);
           background-color: white;
-          flex-direction: column; /* Sắp xếp header, body, footer theo chiều dọc */
+          flex-direction: column;
+          z-index: 1050;
       }
+      /* Header của popup */
       .chat-popup-header {
-          background-color: #0d6efd;
-          color: white;
-          padding: 10px 15px;
-          border-top-left-radius: 10px;
-          border-top-right-radius: 10px;
+          background-color: white;
+          color: #000; /* Chữ màu đen */
+          padding: 15px;
+          border-top-left-radius: 12px;
+          border-top-right-radius: 12px;
           display: flex;
           justify-content: space-between;
           align-items: center;
+          border-bottom: 1px solid #dbdbdb; /* Đường kẻ mỏng */
+          flex-shrink: 0; /* Không cho header co lại */
       }
       .chat-popup-header h4 {
           margin: 0;
           font-size: 1.1rem;
+          font-weight: 600; /* Chữ đậm hơn */
       }
       .chat-popup-header .header-buttons {
           display: flex;
           align-items: center;
           gap: 10px;
       }
+      /* Phần thân (chứa danh sách chat) */
       .chat-popup-body {
-          padding: 0;
-          max-height: 400px; /* Giới hạn chiều cao và cho phép cuộn */
-          overflow-y: auto;
+          padding: 8px 0; /* Bỏ padding ngang, thêm padding dọc */
+          flex-grow: 1; /* Lấp đầy không gian còn lại */
+          overflow-y: auto; /* Tự động có thanh cuộn nếu cần */
+          position: relative; /* Làm gốc cho nút soạn tin */
       }
+      /* Nút soạn tin nhắn mới (nổi bên trong) */
+      .chat-compose-btn {
+          position: absolute;
+          bottom: 15px;
+          right: 15px;
+          background-color: #f0f2f5;
+          border: none;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          font-size: 1.5rem;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+          cursor: pointer;
+          color: #000;
+      }
+
+      /* Từng mục hội thoại */
       .chat-popup-body .conversation-item {
           display: flex;
           align-items: center;
-          padding: 10px;
-          border-bottom: 1px solid #eee;
+          padding: 8px 15px;
           text-decoration: none;
           color: #212529;
           transition: background-color 0.2s;
@@ -241,7 +273,21 @@
           border-bottom: none;
       }
       .chat-popup-body .conversation-item:hover {
-          background-color: #f1f1f1;
+          background-color: #f9f9f9;
+      }
+      .conversation-item .avatar {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          object-fit: cover; /* Đảm bảo ảnh không bị méo */
+          margin-right: 12px;
+      }
+      .conversation-item .message-details {
+          overflow: hidden;
+      }
+      .conversation-item .username {
+          font-weight: 600;
+          margin: 0;
       }
       .chat-popup-body .conversation-item .last-message {
           font-size: 0.85rem;
@@ -250,13 +296,22 @@
           overflow: hidden;
           text-overflow: ellipsis;
       }
+      .conversation-item .last-message {
+          font-size: 0.875rem;
+          color: #8e8e8e; /* Màu xám của Instagram */
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          margin: 0;
+      }
       .chat-action-btn {
           background: none;
           border: none;
-          color: white;
+          color: #000; /* Icon màu đen */
           cursor: pointer;
           padding: 0;
-          font-size: 1.2rem;
+          font-size: 1.5rem;
+          line-height: 1;
       }
       #search-users-view .search-header {
           padding: 10px;
@@ -370,18 +425,21 @@
     <!-- =================== CHAT WIDGET NỔI =================== -->
     {% if user.is_authenticated %}
     <div class="chat-widget-container">
+      <!-- Cửa sổ popup chat -->
       <div class="chat-popup" id="chatPopup">
+        <!-- Header -->
         <div class="chat-popup-header">
-          <h4 id="chat-popup-title">Tin nhắn</h4>
-          <div class="header-buttons">
-            <button type="button" class="chat-action-btn" id="newMessageBtn" title="Tin nhắn mới">✏️</button>
-            <button type="button" class="chat-action-btn" id="closeChatBtn" style="font-size: 1.5rem; line-height: 1">&times;</button>
-          </div>
+          <h4>Tin nhắn</h4>
+          <!-- Nút đóng (X) -->
+          <button type="button" class="chat-action-btn" id="closeChatBtn">&times;</button>
         </div>
+        <!-- Phần thân -->
         <div class="chat-popup-body">
+          <!-- View hiển thị các cuộc hội thoại gần đây -->
           <div id="recent-conversations-view">
-            <div id="chatPopupBodyContent" class="p-3 text-center text-muted">Đang tải...</div>
+            <div id="chatPopupBodyContent" class="text-center text-muted p-5">Đang tải...</div>
           </div>
+          <!-- View tìm kiếm người dùng mới (giữ nguyên) -->
           <div id="search-users-view" style="display: none">
             <div class="search-header">
               <button class="btn btn-light btn-sm" id="backToRecentBtn">&larr;</button>
@@ -389,6 +447,7 @@
             </div>
             <div id="searchResultsList"></div>
           </div>
+          <button class="chat-compose-btn" id="newMessageBtn" title="Tin nhắn mới">✏️</button>
         </div>
       </div>
       <button class="chat-open-button" id="openChatBtn">💬</button>
@@ -786,11 +845,16 @@
 
         openChatBtn.addEventListener("click", function () {
           chatPopup.style.display = "flex";
+          openChatBtn.style.display = "none";
           if (!conversationsLoaded) {
             loadConversations();
           }
         });
-        closeChatBtn.addEventListener("click", () => { chatPopup.style.display = "none"; });
+
+        closeChatBtn.addEventListener("click", () => { 
+          chatPopup.style.display = "none"; 
+          openChatBtn.style.display = "flex";
+        });
 
         newMessageBtn.addEventListener("click", () => {
           recentConversationsView.style.display = "none";
@@ -810,27 +874,29 @@
           fetch("{% url 'chat:api_get_conversations' %}")
             .then((response) => response.json())
             .then((data) => {
-              chatPopupBodyContent.innerHTML = "";
-              chatPopupBodyContent.className = "";
+              chatPopupBodyContent.innerHTML = ""; // Xóa nội dung cũ
               if (data.conversations && data.conversations.length > 0) {
                 data.conversations.forEach((conv) => {
+                  // LƯU Ý: API của bạn cần trả về `conv.other_participant.avatar_url`
+                  const avatarUrl = conv.other_participant.avatar_url || '/static/default_avatar.png'; // Dự phòng nếu không có avatar
+                  
                   chatPopupBodyContent.innerHTML += `
                     <a href="${conv.detail_url}" class="conversation-item">
-                      <div class="flex-shrink-0 me-3">👤</div>
-                      <div class="w-100" style="overflow: hidden;">
-                        <strong>${conv.other_participant.username}</strong>
-                        <p class="last-message mb-0">${conv.last_message || "Bắt đầu trò chuyện"}</p>
+                      <img src="${avatarUrl}" class="avatar" alt="${conv.other_participant.username}">
+                      <div class="message-details">
+                        <p class="username">${conv.other_participant.username}</p>
+                        <p class="last-message">${conv.last_message || "Bắt đầu trò chuyện"}</p>
                       </div>
                     </a>`;
                 });
               } else {
-                chatPopupBodyContent.innerHTML = '<p class="text-center text-muted p-3">Không có cuộc trò chuyện nào.</p>';
+                chatPopupBodyContent.innerHTML = '<p class="text-center text-muted p-5">Không có cuộc trò chuyện nào.</p>';
               }
               conversationsLoaded = true;
             })
             .catch((error) => {
               console.error("Lỗi khi tải tin nhắn:", error);
-              chatPopupBodyContent.innerHTML = '<p class="text-center text-danger p-3">Không thể tải tin nhắn.</p>';
+              chatPopupBodyContent.innerHTML = '<p class="text-center text-danger p-5">Không thể tải tin nhắn.</p>';
             });
         }
 

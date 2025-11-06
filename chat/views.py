@@ -299,6 +299,7 @@ def api_get_conversations(request):
             'conversation_id': conv.id,
             'other_participant': {
                 'username': other_participant.username,
+                'avatar_url': other_participant.avatar.url if other_participant.avatar else None,
             },
             'last_message': last_message_text,
             'last_message_timestamp': last_message_ts,
