@@ -386,3 +386,21 @@ def react_to_message_api(request, message_id):
         'reaction_stats': stats_dict,
         'current_user_reaction': current_user_reaction
     })
+
+@login_required
+def api_get_messages(request, conversation_id):
+    # Đảm bảo người dùng hiện tại là một phần của cuộc hội thoại này để bảo mật
+    conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+    
+    # SỬA LỖI:
+    # 1. Truy vấn đúng trường 'sender_id'.
+    # 2. Dùng annotate() để đổi tên 'sender_id' thành 'author_id' ngay trong câu lệnh query.
+    #    Đây là cách hiệu quả nhất.
+    messages = conversation.messages.order_by('timestamp').annotate(
+        author_id=F('sender_id')
+    ).values('author_id', 'text', 'timestamp')
+    
+    # Chuyển QuerySet thành list of dicts
+    messages_data = list(messages)
+    
+    return JsonResponse({'messages': messages_data})

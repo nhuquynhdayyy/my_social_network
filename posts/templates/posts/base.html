@@ -210,6 +210,7 @@
           background-color: white;
           flex-direction: column;
           z-index: 1050;
+          overflow: hidden;
       }
       /* Header của popup */
       .chat-popup-header {
@@ -236,10 +237,39 @@
       }
       /* Phần thân (chứa danh sách chat) */
       .chat-popup-body {
-          padding: 8px 0; /* Bỏ padding ngang, thêm padding dọc */
-          flex-grow: 1; /* Lấp đầy không gian còn lại */
-          overflow-y: auto; /* Tự động có thanh cuộn nếu cần */
-          position: relative; /* Làm gốc cho nút soạn tin */
+          padding: 0; /* Xóa padding mặc định */
+          flex-grow: 1;
+          overflow: hidden; /* Quan trọng: để các view con tự cuộn */
+          position: relative;
+      }
+      .chat-view {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: white;
+          transition: transform 0.3s ease-in-out;
+          display: flex;
+          flex-direction: column;
+      }
+      #recent-conversations-view {
+          transform: translateX(0);
+      }
+      #chat-detail-view, #search-view {
+          transform: translateX(100%); /* Mặc định ẩn bên phải */
+      }
+      .chat-popup.show-detail #recent-conversations-view,
+      .chat-popup.show-search #recent-conversations-view {
+          transform: translateX(-100%); /* Trượt sang trái và ẩn đi */
+      }
+      .chat-popup.show-detail #chat-detail-view, .chat-popup.show-search #search-view {
+          transform: translateX(0); /* Trượt vào từ phải */
+      }
+      .conversations-list {
+          overflow-y: auto;
+          flex-grow: 1;
+          padding: 8px 0;
       }
       /* Nút soạn tin nhắn mới (nổi bên trong) */
       .chat-compose-btn {
@@ -259,7 +289,13 @@
           cursor: pointer;
           color: #000;
       }
-
+      
+      .conversation-item {
+          display: flex; align-items: center; padding: 8px 15px; text-decoration: none;
+          color: #212529; transition: background-color 0.2s;
+      }
+      .conversation-item:hover { background-color: #f9f9f9; }
+      .conversation-item .avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-right: 12px; }
       /* Từng mục hội thoại */
       .chat-popup-body .conversation-item {
           display: flex;
@@ -313,6 +349,10 @@
           font-size: 1.5rem;
           line-height: 1;
       }
+      /* View tìm kiếm */
+      .search-header { display: flex; align-items: center; padding: 10px 15px; border-bottom: 1px solid #dbdbdb; flex-shrink: 0; }
+      #search-view-input { flex-grow: 1; border: 1px solid #dbdbdb; border-radius: 20px; padding: 8px 15px; }
+      .search-results-list { flex-grow: 1; overflow-y: auto; }
       #search-users-view .search-header {
           padding: 10px;
           border-bottom: 1px solid #eee;
@@ -323,6 +363,69 @@
       #search-users-view input {
           border-radius: 20px;
       }
+        .chat-detail-header {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #dbdbdb;
+            flex-shrink: 0;
+        }
+        .chat-back-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .chat-detail-header .avatar {
+            width: 32px;
+            height: 32px;
+        }
+        .chat-detail-header .username {
+            font-weight: 600;
+        }
+
+        .message-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .message-bubble {
+            max-width: 70%;
+            padding: 8px 12px;
+            border-radius: 18px;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+        .message-sent {
+            background-color: #0095f6;
+            color: white;
+            align-self: flex-end; /* Tin nhắn của mình nằm bên phải */
+        }
+        .message-received {
+            background-color: #efefef;
+            color: #000;
+            align-self: flex-start; /* Tin nhắn của người khác nằm bên trái */
+        }
+
+        .message-form {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #dbdbdb;
+            flex-shrink: 0;
+        }
+        .message-form input {
+            flex-grow: 1;
+            border: 1px solid #dbdbdb;
+            border-radius: 20px;
+            padding: 8px 15px;
+            margin-right: 10px;
+        }
+        .message-form button {
+            border-radius: 5px;
+        }
     </style>
   </head>
   <body>
@@ -425,29 +528,43 @@
     <!-- =================== CHAT WIDGET NỔI =================== -->
     {% if user.is_authenticated %}
     <div class="chat-widget-container">
-      <!-- Cửa sổ popup chat -->
       <div class="chat-popup" id="chatPopup">
-        <!-- Header -->
+        <!-- Header chung -->
         <div class="chat-popup-header">
-          <h4>Tin nhắn</h4>
-          <!-- Nút đóng (X) -->
+          <h4 id="chat-view-title">Tin nhắn</h4>
           <button type="button" class="chat-action-btn" id="closeChatBtn">&times;</button>
         </div>
-        <!-- Phần thân -->
+
+        <!-- Body chứa các view -->
         <div class="chat-popup-body">
-          <!-- View hiển thị các cuộc hội thoại gần đây -->
-          <div id="recent-conversations-view">
-            <div id="chatPopupBodyContent" class="text-center text-muted p-5">Đang tải...</div>
-          </div>
-          <!-- View tìm kiếm người dùng mới (giữ nguyên) -->
-          <div id="search-users-view" style="display: none">
-            <div class="search-header">
-              <button class="btn btn-light btn-sm" id="backToRecentBtn">&larr;</button>
-              <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm người dùng..."/>
+          
+          <!-- VIEW 1: DANH SÁCH HỘI THOẠI -->
+          <div class="chat-view" id="recent-conversations-view">
+            <div class="conversations-list" id="chatPopupBodyContent">
+                <p class="text-center text-muted p-5">Đang tải...</p>
             </div>
-            <div id="searchResultsList"></div>
+            <button class="chat-compose-btn" id="newMessageBtn" title="Tin nhắn mới">✏️</button>
           </div>
-          <button class="chat-compose-btn" id="newMessageBtn" title="Tin nhắn mới">✏️</button>
+
+          <!-- VIEW 2: CHI TIẾT CUỘC HỘI THOẠI -->
+          <div class="chat-view" id="chat-detail-view">
+            <div id="chat-detail-header" class="chat-detail-header"></div>
+            <div id="message-list" class="message-list"></div>
+            <form id="message-form" class="message-form">
+              <input type="text" id="message-input" placeholder="Nhập tin nhắn..." autocomplete="off">
+              <button type="submit" class="btn btn-primary btn-sm">Gửi</button>
+            </form>
+          </div>
+
+          <!-- VIEW 3: TÌM KIẾM NGƯỜI DÙNG MỚI -->
+          <div class="chat-view" id="search-view">
+            <div class="search-header">
+              <button class="chat-back-btn" id="back-from-search-btn">←</button>
+              <input type="text" id="search-view-input" placeholder="Tìm kiếm người dùng..." autocomplete="off">
+            </div>
+            <div class="search-results-list" id="searchResultsList"></div>
+          </div>
+
         </div>
       </div>
       <button class="chat-open-button" id="openChatBtn">💬</button>
@@ -826,62 +943,154 @@
         {% endif %}
         
         // =======================================================
-        // === LOGIC WIDGET TRÒ CHUYỆN (CHAT)
+        // === LOGIC WIDGET TRÒ CHUYỆN (PHIÊN BẢN HOÀN CHỈNH) ===
         // =======================================================
         {% if user.is_authenticated %}
         const openChatBtn = document.getElementById("openChatBtn");
         const closeChatBtn = document.getElementById("closeChatBtn");
         const chatPopup = document.getElementById("chatPopup");
         const chatPopupBodyContent = document.getElementById("chatPopupBodyContent");
-        const chatPopupTitle = document.getElementById("chat-popup-title");
         const newMessageBtn = document.getElementById("newMessageBtn");
-        const backToRecentBtn = document.getElementById("backToRecentBtn");
-        const recentConversationsView = document.getElementById("recent-conversations-view");
-        const searchUsersView = document.getElementById("search-users-view");
-        const searchInput = document.getElementById("searchInput");
-        const searchResultsList = document.getElementById("searchResultsList");
+        const backFromSearchBtn = document.getElementById("back-from-search-btn");
+        const searchInput = document.getElementById('search-view-input');
+        const searchResultsList = document.getElementById('searchResultsList');
+        const messageForm = document.getElementById('message-form');
+        const messageInput = document.getElementById('message-input');
+        const messageList = document.getElementById('message-list');
 
         let conversationsLoaded = false;
+        let currentConversationId = null;
 
-        openChatBtn.addEventListener("click", function () {
+        // --- Mở/Đóng Widget ---
+        openChatBtn.addEventListener("click", () => {
           chatPopup.style.display = "flex";
           openChatBtn.style.display = "none";
-          if (!conversationsLoaded) {
-            loadConversations();
-          }
+          if (!conversationsLoaded) loadConversations();
         });
 
         closeChatBtn.addEventListener("click", () => { 
           chatPopup.style.display = "none"; 
           openChatBtn.style.display = "flex";
+          switchToView('list'); // SỬA LỖI: Reset về view ban đầu khi đóng
+          currentConversationId = null;
+        });
+        
+        function switchToView(viewName) {
+            chatPopup.classList.remove('show-detail', 'show-search');
+            if (viewName === 'detail') {
+                chatPopup.classList.add('show-detail');
+            } else if (viewName === 'search') {
+                chatPopup.classList.add('show-search');
+                searchInput.value = ''; // Xóa input cũ
+                searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Nhập ít nhất 2 ký tự.</p>';
+                searchInput.focus();
+            }
+            // Nếu viewName là 'list' hoặc không có, nó sẽ tự động quay về list
+        }
+
+        newMessageBtn.addEventListener("click", () => switchToView('search'));
+        backFromSearchBtn.addEventListener("click", () => switchToView('list'));
+
+        // --- Mở cuộc hội thoại chi tiết ---
+        chatPopupBodyContent.addEventListener('click', (event) => {
+            const conversationItem = event.target.closest('.conversation-item');
+            if (conversationItem) {
+                event.preventDefault();
+                const convId = conversationItem.dataset.conversationId;
+                const username = conversationItem.dataset.username;
+                const avatarUrl = conversationItem.dataset.avatarUrl;
+                openConversation(convId, username, avatarUrl);
+            }
         });
 
-        newMessageBtn.addEventListener("click", () => {
-          recentConversationsView.style.display = "none";
-          searchUsersView.style.display = "block";
-          chatPopupTitle.innerText = "Tin nhắn mới";
-          searchInput.focus();
-        });
-        backToRecentBtn.addEventListener("click", () => {
-          searchUsersView.style.display = "none";
-          recentConversationsView.style.display = "block";
-          chatPopupTitle.innerText = "Tin nhắn";
-          searchInput.value = "";
-          searchResultsList.innerHTML = "";
+        function openConversation(convId, username, avatarUrl) {
+            currentConversationId = convId;
+            switchToView('detail'); // Dùng hàm quản lý view
+
+            const detailHeader = document.getElementById('chat-detail-header');
+            detailHeader.innerHTML = `
+                <button class="chat-back-btn" id="chat-back-btn">←</button>
+                <img src="${avatarUrl}" class="avatar" alt="${username}">
+                <span class="username ms-2">${username}</span>
+            `;
+            loadMessages(convId);
+
+            // Gắn sự kiện cho nút back mới được tạo ra
+            detailHeader.querySelector('#chat-back-btn').addEventListener('click', () => {
+                switchToView('list');
+                currentConversationId = null;
+            }, { once: true });
+        }
+
+        function loadMessages(convId) {
+            const messageList = document.getElementById('message-list');
+            messageList.innerHTML = '<p class="text-center text-muted p-3">Đang tải tin nhắn...</p>';
+            
+            fetch(`/chat/api/conversation/${convId}/messages/`) 
+            .then(res => res.json())
+            .then(data => {
+                messageList.innerHTML = '';
+
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.forEach(msg => {
+                        appendMessage(msg.text, msg.author_id);
+                    });
+                } else {
+                    messageList.innerHTML = '<p class="text-center text-muted p-3">Chưa có tin nhắn nào. <br> Hãy bắt đầu cuộc trò chuyện!</p>';
+                }
+                scrollToBottom();
+            })
+            .catch(error => {
+                console.error("Lỗi tải tin nhắn:", error);
+                messageList.innerHTML = '<p class="text-center text-danger p-3">Không thể tải tin nhắn.</p>';
+            });
+        }
+        
+        function appendMessage(text, authorId) {
+            const noMessagesP = messageList.querySelector('p');
+            if (noMessagesP) noMessagesP.remove();
+
+            const bubbleClass = authorId === {{ user.id }} ? 'message-sent' : 'message-received';
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message-bubble', bubbleClass);
+            messageDiv.textContent = text; // Dùng textContent để an toàn hơn
+            messageList.appendChild(messageDiv);
+        }
+
+        function scrollToBottom() {
+            messageList.scrollTop = messageList.scrollHeight;
+        }
+        
+        // Gắn sự kiện click cho cả danh sách hội thoại
+        chatPopupBodyContent.addEventListener('click', (event) => {
+            const conversationItem = event.target.closest('.conversation-item');
+            if (conversationItem) {
+                event.preventDefault();
+                const convId = conversationItem.dataset.conversationId;
+                const username = conversationItem.dataset.username;
+                const avatarUrl = conversationItem.dataset.avatarUrl;
+                if (convId) {
+                    openConversation(convId, username, avatarUrl);
+                }
+            }
         });
 
+        // --- Load danh sách hội thoại ban đầu ---
         function loadConversations() {
           fetch("{% url 'chat:api_get_conversations' %}")
-            .then((response) => response.json())
-            .then((data) => {
-              chatPopupBodyContent.innerHTML = ""; // Xóa nội dung cũ
+            .then(res => res.json())
+            .then(data => {
+              chatPopupBodyContent.innerHTML = "";
               if (data.conversations && data.conversations.length > 0) {
-                data.conversations.forEach((conv) => {
-                  // LƯU Ý: API của bạn cần trả về `conv.other_participant.avatar_url`
-                  const avatarUrl = conv.other_participant.avatar_url || '/static/default_avatar.png'; // Dự phòng nếu không có avatar
+                data.conversations.forEach(conv => {
+                  const avatarUrl = conv.other_participant.avatar_url || '/static/images/default_avatar.png'; // Thay bằng đường dẫn ảnh mặc định của bạn
                   
+                  // SỬA DÒNG "data-conversation-id" BÊN DƯỚI
                   chatPopupBodyContent.innerHTML += `
-                    <a href="${conv.detail_url}" class="conversation-item">
+                    <a href="#" class="conversation-item" 
+                      data-conversation-id="${conv.conversation_id}" 
+                      data-username="${conv.other_participant.username}"
+                      data-avatar-url="${avatarUrl}">
                       <img src="${avatarUrl}" class="avatar" alt="${conv.other_participant.username}">
                       <div class="message-details">
                         <p class="username">${conv.other_participant.username}</p>
@@ -893,42 +1102,66 @@
                 chatPopupBodyContent.innerHTML = '<p class="text-center text-muted p-5">Không có cuộc trò chuyện nào.</p>';
               }
               conversationsLoaded = true;
-            })
-            .catch((error) => {
-              console.error("Lỗi khi tải tin nhắn:", error);
-              chatPopupBodyContent.innerHTML = '<p class="text-center text-danger p-5">Không thể tải tin nhắn.</p>';
             });
         }
 
+        // --- Bổ sung logic gửi tin nhắn (quan trọng) ---
+        messageForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const text = messageInput.value.trim();
+            if (!text || !currentConversationId) return;
+
+            const formData = new FormData();
+            formData.append('text', text);
+
+            fetch(`/chat/api/message/send/${currentConversationId}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    appendMessage(data.text, {{ user.id }});
+                    scrollToBottom();
+                    messageInput.value = '';
+                } else {
+                    alert("Gửi tin nhắn thất bại.");
+                }
+            })
+            .catch(err => console.error("Lỗi gửi tin nhắn:", err));
+        });
+        
+        // ... (Phần code tìm kiếm người dùng và gửi tin nhắn giữ nguyên)
         let searchTimeout;
         searchInput.addEventListener("keyup", function () {
-          clearTimeout(searchTimeout);
-          const query = searchInput.value.trim();
-
-          if (query.length < 2) {
-            searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Nhập ít nhất 2 ký tự.</p>';
-            return;
-          }
-          searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Đang tìm...</p>';
-
-          searchTimeout = setTimeout(() => {
-            fetch(`{% url 'chat:api_search_users' %}?q=${encodeURIComponent(query)}`)
-              .then((response) => response.json())
-              .then((data) => {
-                searchResultsList.innerHTML = "";
-                if (data.users && data.users.length > 0) {
-                  data.users.forEach((user) => {
-                    searchResultsList.innerHTML += `
-                      <a href="${user.start_conversation_url}" class="conversation-item">
-                        <div class="flex-shrink-0 me-3">👤</div>
-                        <div class="w-100"><strong>${user.full_name}</strong></div>
-                      </a>`;
-                  });
-                } else {
-                  searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Không tìm thấy người dùng.</p>';
-                }
-              });
-          }, 300);
+            clearTimeout(searchTimeout);
+            const query = searchInput.value.trim();
+            if (query.length < 2) {
+                searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Nhập ít nhất 2 ký tự.</p>';
+                return;
+            }
+            searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Đang tìm...</p>';
+            searchTimeout = setTimeout(() => {
+                fetch(`{% url 'chat:api_search_users' %}?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    searchResultsList.innerHTML = "";
+                    if (data.users && data.users.length > 0) {
+                        data.users.forEach(user => {
+                            searchResultsList.innerHTML += `
+                                <a href="${user.start_conversation_url}" class="conversation-item">
+                                    <img src="${user.avatar_url || '/static/images/default_avatar.png'}" class="avatar" alt="${user.username}">
+                                    <div class="message-details">
+                                        <p class="username">${user.full_name}</p>
+                                    </div>
+                                </a>`;
+                        });
+                    } else {
+                        searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Không tìm thấy người dùng.</p>';
+                    }
+                });
+            }, 300);
         });
         {% endif %}
         
