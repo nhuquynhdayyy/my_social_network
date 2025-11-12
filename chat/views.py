@@ -374,7 +374,11 @@ def react_to_message_api(request, message_id):
             reaction_type=reaction_type
         ) # React mới
         current_user_reaction = reaction_type
-
+        if request.user != message.sender:
+            Notification.objects.create(
+                recipient=message.sender, sender=request.user, notification_type='MESSAGE_REACTION',
+                target_content_type=content_type, target_object_id=message.id
+            )
     # Lấy lại thống kê reaction cho tin nhắn này
     reaction_stats = message.reactions.values('reaction_type').annotate(count=Count('id'))
     stats_dict = {item['reaction_type']: item['count'] for item in reaction_stats}

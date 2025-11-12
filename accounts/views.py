@@ -11,6 +11,7 @@ from .models import User, Friendship
 # SỬA Ở ĐÂY: Thêm 'Comment' vào import
 from posts.models import Post, Reaction, Comment 
 from django.contrib.contenttypes.models import ContentType
+from notifications.models import Notification
 
 class SignUpView(CreateView):
     form_class = CustomUserCreationForm
@@ -165,9 +166,21 @@ class FriendRequestListView(LoginRequiredMixin, ListView):
 @login_required
 def accept_friend_request(request, request_id):
     friend_request = get_object_or_404(Friendship, id=request_id)
+    # Đảm bảo chỉ người nhận mới có thể chấp nhận
     if friend_request.to_user == request.user:
         friend_request.status = 'ACCEPTED'
         friend_request.save()
+
+        # Tạo thông báo cho người đã gửi lời mời
+        Notification.objects.create(
+            recipient=friend_request.from_user,  # Người nhận thông báo là người gửi lời mời
+            sender=request.user,                   # Người gửi thông báo là người chấp nhận
+            notification_type='FRIEND_ACCEPT',
+            # Target là người bạn mới, để khi click vào sẽ tới trang cá nhân của họ
+            target_content_type=ContentType.objects.get_for_model(request.user),
+            target_object_id=request.user.id
+        )
+
     return redirect('accounts:friend_requests')
 
 @login_required

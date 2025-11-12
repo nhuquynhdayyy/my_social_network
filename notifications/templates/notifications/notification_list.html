@@ -21,6 +21,8 @@
                             <!-- Hiển thị nội dung thông báo một cách thân thiện -->
                             {% if notif.notification_type == 'FRIEND_REQUEST' %}
                                 đã gửi cho bạn một lời mời kết bạn.
+                            {% elif notif.notification_type == 'FRIEND_ACCEPT' %}
+                                đã chấp nhận lời mời kết bạn của bạn.
                             {% elif notif.notification_type == 'POST_REACTION' %}
                                 đã bày tỏ cảm xúc về bài viết của bạn.
                             {% elif notif.notification_type == 'POST_COMMENT' %}
@@ -29,6 +31,8 @@
                                 đã bày tỏ cảm xúc về bình luận của bạn.
                             {% elif notif.notification_type == 'MESSAGE' %}
                                 đã gửi cho bạn một tin nhắn mới.
+                            {% elif notif.notification_type == 'MESSAGE_REACTION' %} <!-- THÊM VÀO ĐÂY -->
+                                đã bày tỏ cảm xúc về tin nhắn của bạn.
                             {% endif %}
                         </p>
                         <small>{{ notif.timestamp|timesince }} trước</small>

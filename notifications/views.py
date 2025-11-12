@@ -7,11 +7,13 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.contenttypes.models import ContentType
 from django.template.defaultfilters import truncatewords
+from django.contrib.auth import get_user_model
 
 from .models import Notification
 from chat.models import Message
 from posts.models import Comment, Post
 
+User = get_user_model()
 # ==============================================================================
 # VIEW: Trang hiển thị TẤT CẢ thông báo (Giữ nguyên)
 # ==============================================================================
@@ -72,17 +74,24 @@ def get_notifications(request):
     for n in other_notifications:
         notif_text = ""
         target_content = ""
-        if n.target and hasattr(n.target, 'content'):
-            target_content = truncatewords(n.target.content, 7)
+        if n.target:
+            if hasattr(n.target, 'content'): # Dành cho Post, Comment
+                target_content = truncatewords(n.target.content, 7)
+            elif hasattr(n.target, 'text'): # Dành cho Message
+                target_content = truncatewords(n.target.text, 7)
             
         if n.notification_type == 'FRIEND_REQUEST':
             notif_text = "đã gửi cho bạn một lời mời kết bạn."
+        elif n.notification_type == 'FRIEND_ACCEPT': # <-- THÊM VÀO ĐÂY
+            notif_text = "đã chấp nhận lời mời kết bạn của bạn."
         elif n.notification_type == 'POST_REACTION':
             notif_text = f"đã bày tỏ cảm xúc về bài viết của bạn: \"{target_content}...\""
         elif n.notification_type == 'POST_COMMENT':
             notif_text = f"đã bình luận về bài viết của bạn: \"{target_content}...\""
         elif n.notification_type == 'COMMENT_REACTION':
             notif_text = f"đã bày tỏ cảm xúc về bình luận của bạn: \"{target_content}...\""
+        elif n.notification_type == 'MESSAGE_REACTION': # <-- THÊM VÀO ĐÂY
+            notif_text = f"đã bày tỏ cảm xúc về tin nhắn của bạn: \"{target_content}...\""
         
         notifications_data.append({
             'id': n.id,
@@ -126,6 +135,10 @@ def redirect_notification(request, pk):
 
     if notif.notification_type == "FRIEND_REQUEST":
         return redirect("accounts:friend_requests")
+    
+    if notif.notification_type == "FRIEND_ACCEPT" and notif.target:
+        new_friend = notif.target # Target chính là user đã chấp nhận lời mời
+        return redirect("accounts:profile", username=new_friend.username)
 
     if notif.notification_type in ["POST_REACTION", "POST_COMMENT"] and notif.target:
         post = notif.target
@@ -137,5 +150,9 @@ def redirect_notification(request, pk):
         post = comment.post
         profile_url = reverse("accounts:profile", kwargs={'username': post.author.username})
         return redirect(f"{profile_url}#post-{post.id}")
-        
+    
+    if notif.notification_type == "MESSAGE_REACTION" and notif.target:
+        message = notif.target
+        return redirect("chat:conversation_detail", conversation_id=message.conversation_id)    
+    
     return redirect("home")
