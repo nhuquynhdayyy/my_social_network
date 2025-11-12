@@ -1,9 +1,9 @@
 <!-- posts/templates/posts/_post_interactive_section.html -->
 {% load post_extras %}
 <!-- Phần Reaction -->
-<hr>
+
 <!-- Vùng hiển thị thống kê (số lượng và icon) -->
-<div class="d-flex justify-content-between align-items-center mb-2">
+<div class="d-flex justify-content-between align-items-center my-2">
     <div id="reaction-stats-{{ post.id }}" class="d-flex align-items-center" style="font-size: 0.9rem;">
         {% with stats=post.get_reaction_stats %}
             {% if stats %}
@@ -17,41 +17,14 @@
                 </div>
                 <span id="reactions-count-{{ post.id }}">{{ post.reactions.count }}</span>
             {% else %}
-                <span id="reactions-count-{{ post.id }}" class="text-muted">Chưa có cảm xúc</span>
+                <span id="reactions-count-{{ post.id }}" class="text-muted"></span>
             {% endif %}
         {% endwith %}
     </div>
 </div>
-{% comment %} <!-- Vùng các nút bấm reaction -->
-<div class="reaction-buttons-container border-top border-bottom py-1">
-    <div class="d-flex justify-content-around">
-        {% with user_reaction=user_reactions_map|get_item:post.id %}
-            <button 
-                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'LIKE' %}fw-bold text-primary{% endif %}" 
-                data-post-id="{{ post.id }}" data-reaction-type="LIKE">👍 Thích</button>
-            <button 
-                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'LOVE' %}fw-bold text-primary{% endif %}" 
-                data-post-id="{{ post.id }}" data-reaction-type="LOVE">❤️ Yêu thích</button>
-            <button 
-                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'HAHA' %}fw-bold text-primary{% endif %}" 
-                data-post-id="{{ post.id }}" data-reaction-type="HAHA">😂 Haha</button>
-            <button 
-                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'WOW' %}fw-bold text-primary{% endif %}" 
-                data-post-id="{{ post.id }}" data-reaction-type="WOW">😮 Wow</button>
-            <button 
-                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'SAD' %}fw-bold text-primary{% endif %}" 
-                data-post-id="{{ post.id }}" data-reaction-type="SAD">😢 Buồn</button>
-            <button 
-                class="btn btn-light reaction-btn flex-fill {% if user_reaction == 'ANGRY' %}fw-bold text-primary{% endif %}" 
-                data-post-id="{{ post.id }}" data-reaction-type="ANGRY">😡 Phẫn nộ</button>
-        {% endwith %}
-    </div>
-</div>
-<!-- Kết thúc phần Reaction --> {% endcomment %}
- <!-- posts/templates/posts/_post_interactive_section.html (ĐÃ CẬP NHẬT) -->
 
-<!-- Vùng các nút bấm tương tác (Thích, Bình luận, Chia sẻ) -->
-<div class="d-flex justify-content-around border-top mt-2 pt-1">
+<!-- Vùng các nút bấm tương tác (Thích, Bình luận, Chia sẻ) - ĐÃ XÓA BORDER-TOP -->
+<div class="d-flex justify-content-around">
     
     <!-- Nút Thích (Container chính cho popup) -->
     <div class="post-reaction-container flex-fill text-center">
@@ -103,7 +76,6 @@
 <!-- Phần Bình luận -->
 <div class="comments-section mt-3" id="comments-section-{{ post.id }}">
     <!-- Danh sách các bình luận đã có -->
-    <!-- THAY THẾ BẰNG ĐOẠN NÀY -->
     <div class="comment-list">
         {% for comment in post.get_initial_comments %}
             {% include 'posts/_single_comment.html' with comment=comment post=post comment_user_reactions_map=comment_user_reactions_map %}

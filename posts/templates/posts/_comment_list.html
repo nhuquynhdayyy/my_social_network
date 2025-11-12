@@ -1,0 +1,5 @@
+<!-- posts/templates/posts/_comment_list.html -->
+
+{% for comment in comments %}
+    {% include 'posts/_single_comment.html' with comment=comment %}
+{% endfor %}

@@ -1,6 +1,7 @@
-<div class="card mb-3" id="post-{{ post.id }}">
+<!-- posts/templates/posts/_single_post.html -->
+<div class="mb-4" id="post-{{ post.id }}">
     <!-- === PHẦN 1: HEADER CỦA BÀI VIẾT (Tác giả, thời gian, nút Sửa/Xóa) === -->
-    <div class="card-header bg-white border-bottom-0">
+    <div class="p-2">
         <div class="d-flex align-items-center">
             <!-- Avatar -->
             <a href="{% url 'accounts:profile' username=post.author.username %}">
@@ -22,20 +23,21 @@
     </div>
 
     <!-- === PHẦN 2: NỘI DUNG BÀI VIẾT (Text) === -->
-    <div class="card-body pt-0">
+    <div class="px-2 mb-2">
         <p class="card-text">{{ post.content|linebreaksbr }}</p>
     </div>
 
     <!-- === PHẦN 3: MEDIA (Ảnh/Video) === -->
     {% if post.media.all %}
-        <div id="carouselPost{{ post.id }}" class="carousel slide" data-bs-ride="carousel">
+        <div id="carouselPost{{ post.id }}" class="carousel slide">
             <div class="carousel-inner">
                 {% for media_item in post.media.all %}
                 <div class="carousel-item {% if forloop.first %}active{% endif %}">
                     {% if media_item.media_type == 'IMAGE' %}
-                    <img src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 500px; object-fit: contain; background-color: #f0f2f5;" alt="Post image">
+                    <!-- THAY ĐỔI STYLE CỦA HÌNH ẢNH Ở ĐÂY -->
+                    <img src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; object-fit: cover; border-radius: 8px;" alt="Post image">
                     {% elif media_item.media_type == 'VIDEO' %}
-                    <video src="{{ media_item.file.url }}" class="d-block w-100" controls></video>
+                    <video src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; border-radius: 8px;" controls></video>
                     {% endif %}
                 </div>
                 {% endfor %}
@@ -54,5 +56,7 @@
     {% endif %}
 
     <!-- === PHẦN 4: TƯƠNG TÁC (Reaction, Comment) === -->
-    {% include 'posts/_post_interactive_section.html' %}
+    <div class="px-2">
+      {% include 'posts/_post_interactive_section.html' %}
+    </div>
 </div>
