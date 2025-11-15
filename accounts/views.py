@@ -5,10 +5,11 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, UpdateView, DeleteView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q 
+from django.db.models import Q
+
+from notifications.models import Notification 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from .models import User, Friendship 
-# SỬA Ở ĐÂY: Thêm 'Comment' vào import
 from posts.models import Post, Reaction, Comment 
 from django.contrib.contenttypes.models import ContentType
 
@@ -17,7 +18,6 @@ class SignUpView(CreateView):
     success_url = reverse_lazy('accounts:login') 
     template_name = 'accounts/register.html'
 
-# === BẮT ĐẦU PHẦN CHỈNH SỬA CHÍNH ===
 class ProfileView(DetailView):
     model = User
     template_name = 'accounts/profile.html'
@@ -32,7 +32,6 @@ class ProfileView(DetailView):
         profile_user = self.get_object()
         visitor = self.request.user
 
-        # Logic cũ để lọc bài viết (GIỮ NGUYÊN)
         if visitor.is_authenticated and visitor == profile_user:
             queryset = Post.objects.filter(author=profile_user)
         else:
@@ -50,13 +49,10 @@ class ProfileView(DetailView):
 
         context['posts'] = queryset.order_by('-created_at')
         
-        # Logic lấy reaction (GIỮ NGUYÊN VÀ BỔ SUNG)
         if self.request.user.is_authenticated:
-            # Lấy ID các bài viết đã được lọc ở trên
             posts_on_page = context['posts']
             post_ids = [post.id for post in posts_on_page]
             
-            # 1. Lấy reaction cho BÀI VIẾT (đã có, giữ nguyên)
             post_content_type = ContentType.objects.get_for_model(Post)
             user_post_reactions = Reaction.objects.filter(
                 user=self.request.user, 
@@ -69,7 +65,6 @@ class ProfileView(DetailView):
                 for reaction in user_post_reactions
             }
 
-            # 2. SỬA Ở ĐÂY: Thêm logic lấy reaction cho COMMENT
             comment_ids = Comment.objects.filter(post_id__in=post_ids).values_list('id', flat=True)
             comment_content_type = ContentType.objects.get_for_model(Comment)
             
@@ -85,10 +80,8 @@ class ProfileView(DetailView):
             }
 
         return context
-# === KẾT THÚC PHẦN CHỈNH SỬA CHÍNH ===
 
 
-# Các View còn lại (ProfileUpdateView, ProfileDeleteView, ...) giữ nguyên không thay đổi
 class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = User
     form_class = CustomUserChangeForm
@@ -168,6 +161,17 @@ def accept_friend_request(request, request_id):
     if friend_request.to_user == request.user:
         friend_request.status = 'ACCEPTED'
         friend_request.save()
+
+        # Tạo thông báo cho người đã gửi lời mời
+        Notification.objects.create(
+            recipient=friend_request.from_user,  # Người nhận thông báo là người gửi lời mời
+            sender=request.user,                   # Người gửi thông báo là người chấp nhận
+            notification_type='FRIEND_ACCEPT',
+            # Target là người bạn mới, để khi click vào sẽ tới trang cá nhân của họ
+            target_content_type=ContentType.objects.get_for_model(request.user),
+            target_object_id=request.user.id
+        )
+        
     return redirect('accounts:friend_requests')
 
 @login_required

@@ -6,10 +6,12 @@ from django.contrib.contenttypes.models import ContentType
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
         ('FRIEND_REQUEST', 'Yêu cầu kết bạn'),
+        ('FRIEND_ACCEPT', 'Chấp nhận lời mời kết bạn'),
         ('POST_LIKE', 'Thích bài viết'),
         ('POST_COMMENT', 'Bình luận bài viết'),
         ('COMMENT_REACTION', 'Bày tỏ cảm xúc về bình luận'), 
         ('MESSAGE', 'Tin nhắn mới'),
+        ('MESSAGE_REACTION', 'Bày tỏ cảm xúc về tin nhắn'), 
     ]
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
