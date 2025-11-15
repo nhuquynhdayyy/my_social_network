@@ -17,9 +17,24 @@ User = get_user_model()
 
 @login_required
 def notification_list_view(request):
+    # Bước 1: Lấy ID của các thông báo CHƯA ĐỌC trước khi thay đổi bất cứ điều gì.
+    unread_ids = set(
+        Notification.objects.filter(recipient=request.user, is_read=False).values_list('id', flat=True)
+    )
+
+    # Bước 2: Lấy toàn bộ danh sách thông báo để hiển thị.
     notifications = Notification.objects.filter(recipient=request.user)
-    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
-    return render(request, 'notifications/notification_list.html', {'notifications': notifications})
+
+    # Bước 3: Bây giờ mới thực hiện việc đánh dấu là đã đọc.
+    # Việc này không ảnh hưởng đến biến 'notifications' đã lấy ở trên.
+    Notification.objects.filter(id__in=unread_ids).update(is_read=True)
+    
+    # Bước 4: Truyền cả danh sách thông báo và danh sách ID chưa đọc vào template.
+    context = {
+        'notifications': notifications,
+        'unread_ids': unread_ids
+    }
+    return render(request, 'notifications/notification_list.html', context)
 
 @login_required
 def get_notifications(request):
