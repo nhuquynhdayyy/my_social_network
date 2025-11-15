@@ -117,6 +117,24 @@
         border-radius: 8px;
       }
       /* === KẾT THÚC CSS MỚI === */
+
+      /* === CSS CHO HUY HIỆU THÔNG BÁO (BỊ THIẾU) === */
+        .notification-badge {
+            position: absolute;
+            top: 10px;
+            left: 28px; /* Điều chỉnh vị trí cho phù hợp với icon */
+            background-color: #fa383e; /* Màu đỏ của Facebook */
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: none; /* Mặc định ẩn đi */
+            justify-content: center;
+            align-items: center;
+            border: 2px solid white; /* Tạo viền trắng giống Facebook */
+        }
       
       /* === CSS CHO REACTION TRÊN BÌNH LUẬN (ĐÃ BỊ THIẾU) === */
       .comment-reaction-container {
@@ -493,9 +511,10 @@
             </a>
           </li>
           <li>
-             <a href="{% url 'notifications:notification_list' %}">
+              <a href="{% url 'notifications:notification_list' %}" class="position-relative">
               <svg class="nav-icon" aria-label="Notifications" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 6.4a5.25 5.25 0 0 0-10.5 0 5.25 5.25 0 0 0 1.5 3.65A11.43 11.43 0 0 1 12 21.9a11.43 11.43 0 0 1 4.5-11.85A5.25 5.25 0 0 0 16.5 6.4Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"></path></svg>
               <span>Thông báo</span>
+              <span class="notification-badge" id="notif-count"></span>
             </a>
           </li>
            <li>
@@ -924,52 +943,39 @@
         // === LOGIC THÔNG BÁO (NOTIFICATION) - ĐÃ CẬP NHẬT
         // =======================================================
         {% if user.is_authenticated %}
-        function loadNotifications() {
-          fetch("/notifications/api/")
+        function updateNotificationBadge() {
+        // URL của API, sử dụng template tag của Django để an toàn hơn
+        const apiUrl = "{% url 'notifications:get_notifications' %}"; 
+
+        fetch(apiUrl)
             .then((resp) => resp.json())
             .then((data) => {
-              const list = document.getElementById("notif-list");
-              const countBadge = document.getElementById("notif-count");
-              
-              // Xóa các thông báo cũ một cách an toàn
-              const dividerLi = list.querySelector('.dropdown-divider').parentElement;
-              let current = list.firstChild;
-              while (current && current !== dividerLi) {
-                  let next = current.nextSibling;
-                  list.removeChild(current);
-                  current = next;
-              }
+            const countBadge = document.getElementById("notif-count");
+            
+            if (!countBadge) return; // Dừng lại nếu không tìm thấy element
 
-              if (!data.notifications || data.notifications.length === 0) {
-                const noNotifItem = '<li><span class="dropdown-item text-muted">Không có thông báo nào</span></li>';
-                dividerLi.insertAdjacentHTML('beforebegin', noNotifItem);
-                
-                countBadge.innerText = 0;
-                countBadge.style.display = 'none';
-              } else {
-                countBadge.innerText = data.total_unread;
-                countBadge.style.display = data.total_unread > 0 ? 'block' : 'none';
+            const unreadCount = data.total_unread;
 
-                data.notifications.forEach((n) => {
-                  // Phân biệt class cho thông báo đã đọc (nền xám) và chưa đọc (chấm xanh)
-                  const statusClass = n.is_read ? 'notification-read' : 'notification-unread';
-                  
-                  const notifHtml = `
-                    <li>
-                      <a class="dropdown-item text-wrap ${statusClass}" style="white-space: normal;" href="${n.link}">
-                        <strong>${n.sender}</strong> ${n.type}<br>
-                        <small class="text-muted">${n.timestamp}</small>
-                      </a>
-                    </li>`;
-                  dividerLi.insertAdjacentHTML('beforebegin', notifHtml);
-                });
-              }
+            if (unreadCount > 0) {
+                // Nếu có thông báo chưa đọc
+                countBadge.innerText = unreadCount > 9 ? '9+' : unreadCount;
+                countBadge.style.display = 'flex'; // Hiển thị huy hiệu
+            } else {
+                // Nếu không có thông báo chưa đọc
+                countBadge.style.display = 'none'; // Ẩn huy hiệu đi
+            }
             })
-            .catch((err) => console.error("Load notifications error", err));
+            .catch((err) => console.error("Lỗi khi tải thông báo:", err));
         }
-        
-        loadNotifications();
-        setInterval(loadNotifications, 10000);
+
+        // Chạy hàm lần đầu khi trang vừa tải xong
+        document.addEventListener("DOMContentLoaded", function() {
+            updateNotificationBadge(); 
+        });
+
+        // Tự động cập nhật số thông báo mỗi 20 giây
+        setInterval(updateNotificationBadge, 20000); 
+
         {% endif %}
         
         // =======================================================
