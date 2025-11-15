@@ -1,0 +1,49 @@
+<!-- posts/templates/posts/_right_sidebar.html -->
+
+<!-- Phần thông tin cá nhân (Giống Instagram) -->
+<div class="d-flex align-items-center mb-4">
+    <a href="{% url 'accounts:profile' username=user.username %}">
+        <img src="{{ user.avatar.url }}" 
+             alt="{{ user.username }}" 
+             width="56" 
+             height="56" 
+             class="rounded-circle me-3" 
+             style="object-fit: cover;">
+    </a>
+    <div class="flex-grow-1">
+        <a href="{% url 'accounts:profile' username=user.username %}" class="text-decoration-none text-dark">
+            <p class="fw-bold mb-0" style="font-size: 0.9rem;">{{ user.username }}</p>
+        </a>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">{{ user.get_full_name }}</p>
+    </div>
+    <!-- Nút "Chuyển" này có thể liên kết tới trang đăng xuất -->
+    <a href="{% url 'accounts:logout' %}" class="text-decoration-none fw-bold" style="font-size: 0.75rem; color: #0095f6;">Đăng xuất</a>
+</div>
+
+<!-- Phần gợi ý hoặc người liên hệ (Giống Facebook) -->
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="fw-bold text-muted" style="font-size: 0.9rem;">Bạn bè</span>
+    <!-- Liên kết tới trang danh sách bạn bè đầy đủ của người dùng hiện tại -->
+    <a href="{% url 'accounts:friend_list' username=user.username %}" class="text-decoration-none text-dark fw-bold" style="font-size: 0.8rem;">Xem tất cả</a>
+</div>
+
+<!-- === BẮT ĐẦU PHẦN NỘI DUNG ĐỘNG === -->
+<ul class="list-unstyled">
+    {% for friend in sidebar_friends_list %}
+    <li class="mb-2">
+        <a href="{% url 'accounts:profile' username=friend.username %}" class="d-flex align-items-center text-decoration-none text-dark contact-item p-1">
+            <div class="position-relative">
+                <img src="{{ friend.avatar.url }}" alt="{{ friend.username }}" width="32" height="32" class="rounded-circle me-3" style="object-fit: cover;">
+                <!-- Giả sử bạn có một trường 'is_online' trên model User để hiển thị chấm xanh -->
+                {# <span class="online-indicator"></span> #}
+            </div>
+            <span class="fw-semibold" style="font-size: 0.85rem;">{{ friend.get_full_name }}</span>
+        </a>
+    </li>
+    {% empty %}
+    <li class="text-muted" style="font-size: 0.85rem;">
+        Bạn chưa có bạn bè nào. Hãy tìm kiếm và kết nối!
+    </li>
+    {% endfor %}
+</ul>
+<!-- === KẾT THÚC PHẦN NỘI DUNG ĐỘNG === -->

@@ -84,10 +84,40 @@
         {% else %}
         margin-left: 0;
         {% endif %}
-        padding: 20px;
+        padding: 20px 0;
         transition: margin-left 0.3s ease;
         position: relative;
       }
+
+      /* === BẮT ĐẦU CSS MỚI CHO SIDEBAR BÊN PHẢI === */
+      .right-sidebar {
+        position: fixed; /* Cố định khi cuộn */
+        top: 0;
+        /* Vị trí của nó sẽ được tính toán bởi Bootstrap grid, 
+           nhưng chúng ta cần top: 0 và height: 100vh để nó chiếm toàn bộ chiều cao */
+        height: 100vh;
+        padding-top: 30px; /* Thêm khoảng đệm ở trên */
+        padding-left: 30px; /* Thêm khoảng đệm bên trái */
+        width: 320px; /* Đặt chiều rộng cố định */
+      }
+      
+      .online-indicator {
+        position: absolute;
+        bottom: 0;
+        right: 12px;
+        width: 10px;
+        height: 10px;
+        background-color: #31a24c; /* Màu xanh online của Facebook */
+        border-radius: 50%;
+        border: 2px solid #ffffff;
+      }
+      
+      .contact-item:hover {
+        background-color: #f2f2f2;
+        border-radius: 8px;
+      }
+      /* === KẾT THÚC CSS MỚI === */
+      
       /* === CSS CHO REACTION TRÊN BÌNH LUẬN (ĐÃ BỊ THIẾU) === */
       .comment-reaction-container {
           /* Đây là dòng quan trọng nhất, biến container thành khung tham chiếu */

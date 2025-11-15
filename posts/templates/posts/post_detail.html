@@ -2,11 +2,24 @@
 {% extends "posts/base.html" %}
 
 {% block content %}
-  <div class="container">
-    <div class="row">
-      <div class="col-md-8 offset-md-2">
-        {% include 'posts/_single_post.html' %}
+<div class="container-fluid">
+  <!-- Xóa 'justify-content-center' -->
+  <div class="row">
+
+    <!-- Thêm class offset -->
+    <div class="col-lg-7 offset-lg-1 col-md-10 offset-md-1">
+      {% include 'posts/_single_post.html' %}
+    </div>
+
+    <!-- Cột phải giữ nguyên -->
+    <div class="col-lg-4 d-none d-lg-block">
+      <div class="right-sidebar">
+        {% if user.is_authenticated %}
+          {% include 'posts/_right_sidebar.html' %}
+        {% endif %}
       </div>
     </div>
+    
   </div>
+</div>
 {% endblock content %}

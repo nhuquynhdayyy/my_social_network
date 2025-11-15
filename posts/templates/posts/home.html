@@ -1,48 +1,55 @@
 <!-- posts/templates/posts/home.html -->
-{% extends "posts/base.html" %} {% block content %}
-<div class="row">
-  <div class="col-md-8 offset-md-2">
-    {% comment %} {% if user.is_authenticated %}
-    <div class="card mb-3">
-      <div class="card-body">
-        <h5 class="card-title">Tạo bài viết</h5>
-        <p class="card-text">Chào {{ user.first_name }}, bạn đang nghĩ gì?</p>
-        <a href="{% url 'post_create' %}" class="btn btn-primary"
-          >Viết bài mới</a
-        >
-      </div>
-    </div>
-    {% endif %} {% endcomment %}
-    {% if user.is_authenticated %}
-    <div class="card mb-4 shadow-sm border-0">
-      <div class="card-body d-flex align-items-center">
-        <!-- Avatar -->
-        <img src="{{ user.avatar.url }}" alt="avatar" 
-            class="rounded-circle me-3" style="width:40px; height:40px; object-fit:cover;">
-        
-        <!-- Nội dung gợi ý viết bài -->
-        <div class="flex-grow-1">
-          <p class="mb-2 text-muted">
-            Chào <strong>{{ user.first_name }}</strong>, bạn đang nghĩ gì?
-          </p>
-          <a href="{% url 'posts:post_create' %}" class="btn btn-outline-primary btn-sm">
-            ✍️ Viết bài mới
-          </a>
+{% extends "posts/base.html" %} 
+
+{% block content %}
+<div class="container-fluid">
+  <!-- BƯỚC 1: Xóa 'justify-content-center' -->
+  <div class="row">
+
+    <!-- BƯỚC 2: Thêm class offset để tạo khoảng trống bên trái,
+         đồng thời điều chỉnh cho màn hình vừa (md) -->
+    <div class="col-lg-7 offset-lg-1 col-md-10 offset-md-1">
+      
+      <!-- Phần tạo bài viết (Không thay đổi) -->
+      {% if user.is_authenticated %}
+      <div class="card mb-4 shadow-sm border-0">
+        <div class="card-body d-flex align-items-center">
+          <img src="{{ user.avatar.url }}" alt="avatar" 
+              class="rounded-circle me-3" style="width:40px; height:40px; object-fit:cover;">
+          <div class="flex-grow-1">
+            <p class="mb-2 text-muted">
+              Chào <strong>{{ user.first_name }}</strong>, bạn đang nghĩ gì?
+            </p>
+            <a href="{% url 'posts:post_create' %}" class="btn btn-outline-primary btn-sm">
+              ✍️ Viết bài mới
+            </a>
+          </div>
         </div>
       </div>
+      {% endif %}
+
+      <!-- Danh sách bài viết (Không thay đổi) -->
+      {% for post in posts %}
+        {% include 'posts/_single_post.html' %}
+      {% empty %}
+        <div class="card">
+            <div class="card-body">
+                <p class="text-center text-muted">Chưa có bài viết nào.</p>
+            </div>
+        </div>
+      {% endfor %}
+
     </div>
-    {% endif %}
 
-
-    {% for post in posts %}
-      {% include 'posts/_single_post.html' %}
-    {% empty %}
-      <div class="card">
-          <div class="card-body">
-              <p class="text-center text-muted">Chưa có bài viết nào.</p>
-          </div>
+    <!-- Cột phải: Giữ nguyên, không thay đổi -->
+    <div class="col-lg-4 d-none d-lg-block">
+      <div class="right-sidebar">
+        {% if user.is_authenticated %}
+          {% include 'posts/_right_sidebar.html' %}
+        {% endif %}
       </div>
-    {% endfor %}
+    </div>
+
   </div>
 </div>
 {% endblock content %}
