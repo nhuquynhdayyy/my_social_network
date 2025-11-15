@@ -4,7 +4,6 @@ from urllib import request
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-# SỬA Ở ĐÂY: Thêm DetailView
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView, DetailView
 from django.db.models import Q, Count
 from .models import Post, PostMedia, Reaction, Comment
@@ -252,9 +251,8 @@ def reaction_detail(request, pk):
 @require_POST
 def add_comment(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    form = CommentCreateForm(request.POST)
-
-    # === KIỂM TRA QUYỀN BÌNH LUẬN (Tương tự Reaction) ===
+    
+    # === KIỂM TRA QUYỀN BÌNH LUẬN (Giữ nguyên logic của bạn) ===
     viewer = request.user
     author = post.author
     can_comment = False
@@ -271,52 +269,64 @@ def add_comment(request, post_id):
     if not can_comment:
         return JsonResponse({'status': 'error', 'message': 'Không có quyền bình luận'}, status=403)
 
-    if form.is_valid():
-        comment = form.save(commit=False)
-        comment.author = request.user
-        comment.post = post
+    # === SỬA LỖI LOGIC TẠO COMMENT ===
+    content = request.POST.get('content')
+    # SỬA Ở ĐÂY: Lấy đúng tên trường 'parent' từ form
+    parent_id = request.POST.get('parent') 
 
-        # === PHẦN NÂNG CẤP: XỬ LÝ COMMENT TRẢ LỜI ===
-        parent_id = request.POST.get('parent_id')
-        if parent_id:
-            try:
-                parent_comment = Comment.objects.get(id=parent_id)
-                comment.parent = parent_comment
-            except Comment.DoesNotExist:
-                # Nếu parent comment không tồn tại, bỏ qua
-                pass
-        # === KẾT THÚC PHẦN NÂNG CẤP ===
+    if not content or not content.strip():
+        return JsonResponse({'status': 'error', 'message': 'Nội dung bình luận không được để trống.'}, status=400)
 
-        comment.save()
+    parent_comment = None
+    if parent_id:
+        try:
+            parent_comment = Comment.objects.get(id=parent_id)
+        except Comment.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Bình luận cha không tồn tại.'}, status=404)
 
-        # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO CHO BÌNH LUẬN MỚI ===
-        if request.user != post.author:
-            Notification.objects.create(
-                recipient=post.author,
-                sender=request.user,
-                notification_type='POST_COMMENT',
-                target_content_type=ContentType.objects.get_for_model(post),
-                target_object_id=post.id
-            )
-        # === KẾT THÚC SỬA ===
+    new_comment = Comment.objects.create(
+        post=post,
+        author=request.user,
+        content=content,
+        parent=parent_comment
+    )
 
-        context = {
-            'comment': comment,
-            'post': post, 
-            'user': request.user # Truyền user để các điều kiện trong template hoạt động
-        }
-        comment_html = render_to_string('posts/_single_comment.html', context, request=request)
-        
-        # Trả về ID của parent để JS biết chèn reply vào đâu
-        response_data = {
-            'status': 'ok',
-            'comment_html': comment_html,
-            'is_reply': bool(parent_id),
-            'parent_id': parent_id
-        }
-        return JsonResponse(response_data)
-    else:
-        return JsonResponse({'status': 'error', 'message': 'Bình luận không hợp lệ'}, status=400)
+    # === TẠO THÔNG BÁO (Giữ nguyên logic của bạn) ===
+    if request.user != post.author:
+        Notification.objects.create(
+            recipient=post.author,
+            sender=request.user,
+            notification_type='POST_COMMENT',
+            target_content_type=ContentType.objects.get_for_model(post),
+            target_object_id=post.id
+        )
+    # Thông báo cho người được trả lời (nếu có và không phải là chính mình)
+    if parent_comment and request.user != parent_comment.author:
+         Notification.objects.create(
+            recipient=parent_comment.author,
+            sender=request.user,
+            notification_type='POST_COMMENT', # Bạn có thể tạo type mới 'COMMENT_REPLY' nếu muốn
+            target_content_type=ContentType.objects.get_for_model(parent_comment),
+            target_object_id=parent_comment.id
+        )
+
+    # SỬA Ở ĐÂY: Tạo context đầy đủ để render HTML
+    context = {
+        'comment': new_comment,
+        'post': post,
+        'user': request.user,
+        'comment_user_reactions_map': {}  # Comment mới chưa có ai reaction, nên truyền vào map rỗng
+    }
+    comment_html = render_to_string('posts/_single_comment.html', context, request=request)
+    
+    # SỬA Ở ĐÂY: Trả về JSON response với thông tin chính xác
+    response_data = {
+        'status': 'ok',
+        'comment_html': comment_html,
+        'is_reply': new_comment.parent is not None,
+        'parent_id': parent_id if parent_id else None
+    }
+    return JsonResponse(response_data)
 
 @login_required
 @require_POST

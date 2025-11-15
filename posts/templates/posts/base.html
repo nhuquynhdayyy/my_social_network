@@ -150,6 +150,36 @@
         }
       
       /* === CSS CHO REACTION TRÊN BÌNH LUẬN (ĐÃ BỊ THIẾU) === */
+      .comment-bubble {
+          display: inline-block; /* Đây là thuộc tính quan trọng nhất! */
+          background-color: #f0f2f5; /* Màu nền xám nhạt của Facebook */
+          padding: 8px 12px;
+          border-radius: 18px; /* Bo tròn các góc */
+          max-width: 100%; /* Đảm bảo không vượt quá chiều rộng của thẻ cha */
+          word-wrap: break-word; /* Tự động xuống dòng với các từ dài */
+      }
+
+      .comment-author {
+          font-weight: 600;
+          font-size: 0.85rem;
+          color: #050505;
+          text-decoration: none;
+      }
+      .comment-author:hover {
+        text-decoration: underline;
+      }
+
+      .comment-content-text {
+        color: #050505;
+        font-size: 0.9rem;
+        line-height: 1.3;
+      }
+
+      .comment-actions {
+        padding-left: 12px;
+        font-size: 0.8rem;
+      }
+      
       .comment-reaction-container {
           /* Đây là dòng quan trọng nhất, biến container thành khung tham chiếu */
           position: relative;
