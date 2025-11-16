@@ -33,6 +33,20 @@
           fill: currentColor; /* Icon sẽ có màu xám giống chữ bên cạnh */
       }
 
+      .carousel-counter {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background-color: rgba(0, 0, 0, 0.6); /* Nền đen mờ */
+          color: white;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 0.8rem;
+          font-weight: 500;
+          z-index: 10; /* Đảm bảo nó nổi lên trên ảnh */
+          pointer-events: none; /* Tránh việc nó cản trở click vào các nút khác */
+      }
+
       .sidebar {
         position: fixed;
         top: 0;
@@ -680,6 +694,20 @@
       document.addEventListener("DOMContentLoaded", function () {
         const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
         const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+        
+        const allCarousels = document.querySelectorAll('.carousel.slide');
+        allCarousels.forEach(function(carousel) {
+            carousel.addEventListener('slide.bs.carousel', function (event) {
+                // 'event.target' là carousel đang hoạt động
+                // 'event.to' là chỉ số (index) của slide sắp được hiển thị (bắt đầu từ 0)
+                const counter = event.target.querySelector('.current-slide-number');
+                if (counter) {
+                    // Cập nhật số hiển thị (cộng thêm 1 vì index bắt đầu từ 0)
+                    counter.textContent = event.to + 1;
+                }
+            });
+        });
+        
         // === HÀM TIỆN ÍCH: LẤY COOKIE CSRF ===
         function getCookie(name) {
           let cookieValue = null;

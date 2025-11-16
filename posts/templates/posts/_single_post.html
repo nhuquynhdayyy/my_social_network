@@ -15,7 +15,6 @@
                         {{ post.created_at|timesince }} trước
                         <span class="mx-1">·</span>
                         
-                        <!-- === BẮT ĐẦU PHẦN THÊM MỚI: ICON RIÊNG TƯ === -->
                         {% if post.privacy == 'PUBLIC' %}
                             <span class="privacy-icon" data-bs-toggle="tooltip" data-bs-title="Công khai">
                                 <svg fill="currentColor" viewBox="0 0 16 16" width="1em" height="1em"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM2.04 4.326c.325 1.329 2.532 2.54 3.717 3.19.48.263.793.434.743.484-.08.08-.162.158-.242.234-.416.416-.682.707-.682 1.014 0 .309.266.599.682 1.015.08.075.162.153.242.234.05.05.263.22.743.484.354.193.638.36.924.527.287.166.568.34.84.53.397.282.826.61.924.962.098.353-.146.549-.358.61a.81.81 0 0 1-.458.053l-.014-.002c-.416-.043-.86-.2-1.218-.42a.81.81 0 0 1-.444-.724v-.455a.81.81 0 0 1 .444-.724l.01-.005.004-.002a.81.81 0 0 1 .444-.724l.01-.005.004-.002a.81.81 0 0 1 .444-.724l.01-.005.004-.002zM12.873 11.2c-.173.282-.52.434-.82.434-.416 0-.75-.334-.75-.75 0-.415.334-.75.75-.75.299 0 .646.152.82.434.173.283.173.717 0 1Z"></path></svg>
@@ -29,7 +28,6 @@
                                 <svg fill="currentColor" viewBox="0 0 16 16" width="1em" height="1em"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM5 8h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path></svg>
                             </span>
                         {% endif %}
-                        <!-- === KẾT THÚC PHẦN THÊM MỚI === -->
                     </small>
                 </p>
             </div>
@@ -50,12 +48,21 @@
 
     <!-- === PHẦN 3: MEDIA (Ảnh/Video) === -->
     {% if post.media.all %}
-        <div id="carouselPost{{ post.id }}" class="carousel slide">
+    <!-- SỬA Ở ĐÂY: Thêm style="position: relative;" -->
+        <div id="carouselPost{{ post.id }}" class="carousel slide" style="position: relative;">
+            
+            <!-- THÊM MỚI: Bộ đếm slide -->
+            {% if post.media.all|length > 1 %}
+            <div class="carousel-counter">
+                <span class="current-slide-number">1</span> / {{ post.media.all|length }}
+            </div>
+            {% endif %}
+            <!-- KẾT THÚC PHẦN THÊM MỚI -->
+
             <div class="carousel-inner">
                 {% for media_item in post.media.all %}
                 <div class="carousel-item {% if forloop.first %}active{% endif %}">
                     {% if media_item.media_type == 'IMAGE' %}
-                    <!-- THAY ĐỔI STYLE CỦA HÌNH ẢNH Ở ĐÂY -->
                     <img src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; object-fit: cover; border-radius: 8px;" alt="Post image">
                     {% elif media_item.media_type == 'VIDEO' %}
                     <video src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; border-radius: 8px;" controls></video>
