@@ -22,6 +22,31 @@
         background-color: #fafafa;
       }
       
+      .comment-input-wrapper {
+          display: flex;
+          align-items: center;
+          padding: 8px 0;
+      }
+
+      .comment-input-ig, .comment-input-ig:focus {
+          border: none;
+          box-shadow: none; /* Loại bỏ hiệu ứng focus màu xanh của Bootstrap */
+          background-color: transparent;
+          padding-left: 0;
+          font-size: 0.9rem;
+      }
+
+      .comment-input-ig::placeholder {
+          color: #737373;
+      }
+
+      .comment-submit-btn {
+          text-decoration: none;
+          font-weight: 600;
+          padding: 0;
+          margin-left: auto; /* Đẩy nút Gửi vềสุดขอบขวา */
+      }
+
       .reaction-tabs-container {
           padding: 0.5rem 1rem;
           border-bottom: 1px solid #dee2e6;
@@ -995,6 +1020,52 @@
                 }
             });
         }
+
+        function handleCommentInputChange(event) {
+            const inputField = event.target;
+            const formWrapper = inputField.closest('.comment-input-wrapper');
+            if (formWrapper) {
+                const submitButton = formWrapper.querySelector('.comment-submit-btn');
+                if (submitButton) {
+                    // Hiển thị nút nếu có text (sau khi đã loại bỏ khoảng trắng)
+                    if (inputField.value.trim().length > 0) {
+                        submitButton.classList.remove('d-none');
+                    } else {
+                        submitButton.classList.add('d-none');
+                    }
+                }
+            }
+        }
+
+        function handleCommentInputKeydown(event) {
+            // Chỉ xử lý khi nhấn Enter và không nhấn Shift
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Ngăn hành vi mặc định của Enter (như xuống dòng)
+                
+                const inputField = event.target;
+                const formWrapper = inputField.closest('.comment-input-wrapper');
+                if (formWrapper) {
+                    const submitButton = formWrapper.querySelector('.comment-submit-btn');
+                    if (submitButton && !submitButton.classList.contains('d-none')) {
+                        // Kích hoạt sự kiện submit của form
+                        inputField.closest('form.comment-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                    }
+                }
+            }
+        }
+
+        // Dùng event delegation để áp dụng cho tất cả các ô bình luận
+        document.body.addEventListener('input', function(event) {
+            if (event.target.matches('.comment-input-ig')) {
+                handleCommentInputChange(event);
+            }
+        });
+
+        document.body.addEventListener('keydown', function(event) {
+            if (event.target.matches('.comment-input-ig')) {
+                handleCommentInputKeydown(event);
+            }
+        });
 
         // === HÀM TIỆN ÍCH: LẤY COOKIE CSRF ===
         function getCookie(name) {

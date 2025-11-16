@@ -510,7 +510,6 @@ def get_reaction_list(request, post_id):
         object_id=post.id
     ).select_related('user').order_by('-id')
 
-    # Lấy ID của tất cả bạn bè của người dùng hiện tại MỘT LẦN DUY NHẤT để tối ưu
     current_user_friends_qs = Friendship.get_friends(request.user)
     current_user_friend_ids = set(current_user_friends_qs.values_list('id', flat=True))
     
@@ -518,15 +517,9 @@ def get_reaction_list(request, post_id):
     for reaction in reactions:
         reactor = reaction.user
         
-        # Bỏ qua nếu người react là chính mình
-        if reactor == request.user:
-            continue
-
-        # 1. Kiểm tra xem có phải là bạn bè không
         is_friend = reactor.id in current_user_friend_ids
         
         conversation_id = None
-        # 2. Nếu là bạn bè, tìm ID cuộc hội thoại
         if is_friend:
             conversation = Conversation.objects.filter(
                 participants=request.user
@@ -536,16 +529,22 @@ def get_reaction_list(request, post_id):
             if conversation:
                 conversation_id = conversation.id
 
+        # Lấy bạn chung (sẽ bằng 0 nếu người react không phải là bạn bè)
+        mutual_friends_count = 0
+        if is_friend:
+            reactor_friends = Friendship.get_friends(reactor)
+            mutual_friends_count = len(set(current_user_friends_qs) & set(reactor_friends))
+
         reactions_data.append({
             'username': reactor.username,
             'full_name': reactor.get_full_name() or reactor.username,
             'avatar_url': reactor.avatar.url,
             'profile_url': reverse('accounts:profile', kwargs={'username': reactor.username}),
             'reaction_type': reaction.reaction_type,
-            
-            # --- DỮ LIỆU MỚI ĐỂ TRUYỀN XUỐNG FRONTEND ---
             'is_friend': is_friend,
-            'conversation_id': conversation_id
+            'conversation_id': conversation_id,
+            # Sửa lại logic bạn chung để nó không bị gọi cho người không phải bạn bè
+            'mutual_friends_count': mutual_friends_count,
         })
         
     reaction_counts = post.get_reaction_stats()

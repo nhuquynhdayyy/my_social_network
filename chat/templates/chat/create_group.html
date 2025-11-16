@@ -1,0 +1,39 @@
+<!-- chat/templates/chat/create_group.html -->
+
+{% extends "posts/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4>Tạo nhóm trò chuyện mới</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <div class="d-grid">
+                             <button type="submit" class="btn btn-primary mt-3">Tạo nhóm</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Thư viện TomSelect giúp ô chọn thành viên đẹp và dễ dùng hơn -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        new TomSelect('select[multiple]', {
+            plugins: ['remove_button'],
+            create: false,
+            placeholder: 'Chọn thành viên...'
+        });
+    });
+</script>
+{% endblock content %}

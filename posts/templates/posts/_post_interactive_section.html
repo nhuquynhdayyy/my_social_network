@@ -30,7 +30,7 @@
     </a>
 </div>
 
-<!-- Vùng các nút bấm tương tác (Thích, Bình luận, Chia sẻ) - ĐÃ XÓA BORDER-TOP -->
+<!-- Vùng các nút bấm tương tác (Thích, Bình luận, Chia sẻ) -->
 <div class="d-flex justify-content-around">
     
     <!-- Nút Thích (Container chính cho popup) -->
@@ -106,12 +106,14 @@
         {% endif %}
     {% endwith %}
     
-    <!-- Form thêm bình luận mới -->
+    <!-- Form thêm bình luận -->
     {% if user.is_authenticated %}
-        <form class="comment-form d-flex mt-2" method="POST" action="{% url 'posts:add_comment' post_id=post.id %}">
+        <form class="comment-form mt-2" method="POST" action="{% url 'posts:add_comment' post_id=post.id %}">
             {% csrf_token %}
-            <input type="text" name="content" class="form-control me-2" id="comment-input-{{ post.id }}" placeholder="Viết bình luận..." autocomplete="off">
-            <button type="submit" class="btn btn-primary btn-sm">Gửi</button>
+            <div class="comment-input-wrapper">
+                <input type="text" name="content" class="form-control comment-input-ig" id="comment-input-{{ post.id }}" placeholder="Thêm bình luận..." autocomplete="off">
+                <button type="submit" class="btn btn-link comment-submit-btn d-none">Gửi</button>
+            </div>
         </form>
     {% endif %}
 </div>
