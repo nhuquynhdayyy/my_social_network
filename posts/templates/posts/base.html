@@ -56,31 +56,53 @@
           padding-left: 28px; /* Tạo không gian cho đường kẻ và các nhánh */
       }
 
-      /* Bước 1: Vẽ đường kẻ dọc ("Thân cây") cho toàn bộ khối replies */
-      .replies-container::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 2px;
-          background-color: #e0e0e0;
+      .replies-container {
+          /* Bỏ position và ::before ở đây, chỉ giữ lại padding/margin */
+          padding-left: 28px;
+          margin-left: 16px; 
       }
 
-      /* Bước 2: Định vị lại từng bình luận con */
+      /* Áp dụng cho TẤT CẢ bình luận con */
       .replies-container > div[id^="comment-"] {
           position: relative;
       }
       
-      /* Bước 3: Vẽ đường kẻ ngang ("Nhánh") cho mỗi bình luận con */
+      /* Bước 1: Vẽ đường kẻ "NHÁNH" ngang cho TẤT CẢ bình luận con */
       .replies-container > div[id^="comment-"]::before {
           content: '';
           position: absolute;
-          top: 16px;      /* Căn giữa với avatar (cao 32px) */
-          left: -28px;    /* Đi ngược ra ngoài để gặp "thân cây" */
-          width: 20px;    /* Độ dài của nhánh */
+          top: 16px;
+          left: -20px;
+          width: 12px;
           height: 2px;
           background-color: #e0e0e0;
+      }
+
+      /* Bước 2: Vẽ đường kẻ "THÂN" dọc cho các bình luận con Ở GIỮA (không phải cái cuối) */
+      .replies-container > div[id^="comment-"]:not(:last-child)::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -20px;
+          width: 2px;
+          height: 100%;
+          background-color: #e0e0e0;
+      }
+
+      /* Bước 3: Vẽ GÓC CONG chữ L cho bình luận con CUỐI CÙNG */
+      .replies-container > div[id^="comment-"]:last-child::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -20px;
+          width: 14px;
+          height: 18px; /* Kéo dài đến giữa avatar */
+          
+          /* Bỏ background và dùng border để vẽ hình chữ L */
+          background-color: transparent; 
+          border-left: 2px solid #e0e0e0;
+          border-bottom: 2px solid #e0e0e0;
+          border-bottom-left-radius: 8px; /* Thuộc tính bo tròn góc */
       }
 
       a.mentioned-user {
