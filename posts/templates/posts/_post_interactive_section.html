@@ -4,7 +4,14 @@
 
 <!-- Vùng hiển thị thống kê (số lượng và icon) -->
 <div class="d-flex justify-content-between align-items-center my-2">
-    <div id="reaction-stats-{{ post.id }}" class="d-flex align-items-center" style="font-size: 0.9rem;">
+    <a href="#" 
+    id="reaction-stats-{{ post.id }}" 
+    class="d-flex align-items-center text-decoration-none text-dark reaction-stats-trigger"
+    style="font-size: 0.9rem;"
+    data-bs-toggle="modal" 
+    data-bs-target="#reactionListModal"
+    data-post-id="{{ post.id }}">
+        
         {% with stats=post.get_reaction_stats %}
             {% if stats %}
                 <div class="me-2">
@@ -20,7 +27,7 @@
                 <span id="reactions-count-{{ post.id }}" class="text-muted"></span>
             {% endif %}
         {% endwith %}
-    </div>
+    </a>
 </div>
 
 <!-- Vùng các nút bấm tương tác (Thích, Bình luận, Chia sẻ) - ĐÃ XÓA BORDER-TOP -->

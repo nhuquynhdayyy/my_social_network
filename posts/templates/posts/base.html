@@ -22,6 +22,38 @@
         background-color: #fafafa;
       }
       
+      .reaction-tabs-container {
+          padding: 0.5rem 1rem;
+          border-bottom: 1px solid #dee2e6;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+      }
+      .reaction-tab {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+          padding: 0.4rem 0.8rem;
+          border: 1px solid transparent;
+          border-radius: 1.5rem; /* Bo tròn */
+          background-color: #e4e6eb;
+          color: #050505;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background-color 0.2s;
+      }
+      .reaction-tab:hover {
+          background-color: #d8dbdf;
+      }
+      .reaction-tab.active {
+          background-color: #e7f3ff;
+          color: #0866ff;
+          border-color: #0866ff;
+      }
+      .reaction-tab .badge {
+          font-size: 0.8em;
+      }
+
       .comment-content-wrapper {
           position: relative; /* Tạo khung tham chiếu cho nút 3 chấm */
           display: inline-flex;
@@ -781,6 +813,28 @@
     {% endif %}
     <!-- =================== HẾT CHAT WIDGET =================== -->
 
+    <!-- =================== MODAL HIỂN THỊ DANH SÁCH REACTION =================== -->
+    <div class="modal fade" id="reactionListModal" ...>
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="reactionListModalLabel">Những người đã bày tỏ cảm xúc</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          
+          <!-- THÊM CONTAINER CHO CÁC TAB -->
+          <div class="reaction-tabs-container" id="reactionTabsContainer">
+              <!-- Các tab sẽ được tạo bằng JavaScript -->
+          </div>
+
+          <!-- ĐỔI TÊN ID ĐỂ DỄ PHÂN BIỆT -->
+          <div class="modal-body" id="reactionUserListContainer">
+            <!-- Nội dung sẽ được tải bằng JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- =================== SCRIPT CHUNG (Đã tối ưu và gộp) =================== -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
@@ -799,6 +853,107 @@
                 }
             });
         });
+
+        // =======================================================
+        // === LOGIC HIỂN THỊ DANH SÁCH REACTION (MODAL)
+        // =======================================================
+        const reactionListModal = document.getElementById('reactionListModal');
+        if (reactionListModal) {
+            let allReactionsData = []; // Biến toàn cục để lưu trữ danh sách đầy đủ
+            const tabsContainer = reactionListModal.querySelector('#reactionTabsContainer');
+            const userListContainer = reactionListModal.querySelector('#reactionUserListContainer');
+
+            // --- Hàm để render danh sách người dùng dựa trên bộ lọc ---
+            function displayFilteredReactions(filterType) {
+                const filteredReactions = filterType === 'ALL' 
+                    ? allReactionsData 
+                    : allReactionsData.filter(r => r.reaction_type === filterType);
+
+                let html = '<ul class="list-unstyled mb-0">';
+                if (filteredReactions.length > 0) {
+                    filteredReactions.forEach(reaction => {
+                        let reactionIcon = '';
+                        if (reaction.reaction_type === 'LIKE') reactionIcon = '👍';
+                        else if (reaction.reaction_type === 'LOVE') reactionIcon = '❤️';
+                        else if (reaction.reaction_type === 'HAHA') reactionIcon = '😂';
+                        else if (reaction.reaction_type === 'WOW') reactionIcon = '😮';
+                        else if (reaction.reaction_type === 'SAD') reactionIcon = '😢';
+                        else if (reaction.reaction_type === 'ANGRY') reactionIcon = '😡';
+                        
+                        html += `
+                            <li class="d-flex align-items-center mb-3">
+                                <div class="position-relative">
+                                    <a href="${reaction.profile_url}"><img src="${reaction.avatar_url}" class="rounded-circle me-3" width="40" height="40" alt="${reaction.username}" style="object-fit: cover;"></a>
+                                    <span class="position-absolute bottom-0 start-0 translate-middle-y bg-white rounded-circle p-1" style="font-size: 0.9rem; line-height: 1;">${reactionIcon}</span>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <a href="${reaction.profile_url}" class="text-decoration-none text-dark fw-bold">${reaction.full_name}</a>
+                                    ${reaction.mutual_friends_count > 0 ? `<div class="text-muted small">${reaction.mutual_friends_count} bạn chung</div>` : ''}
+                                </div>
+                                <button class="btn btn-secondary btn-sm">Nhắn tin</button>
+                            </li>`;
+                    });
+                } else {
+                    html += '<p class="text-center text-muted p-3">Không có ai bày tỏ cảm xúc này.</p>';
+                }
+                html += '</ul>';
+                userListContainer.innerHTML = html;
+            }
+
+            // --- Sự kiện khi Modal bắt đầu được hiển thị ---
+            reactionListModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const postId = button.dataset.postId;
+
+                // Reset và hiển thị spinner
+                tabsContainer.innerHTML = '';
+                userListContainer.innerHTML = `<div class="text-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
+
+                // Gọi API
+                fetch(`/post/${postId}/reactions/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        allReactionsData = data.reactions || [];
+                        const counts = data.reaction_counts || {};
+                        const totalReactions = allReactionsData.length;
+
+                        // 1. Tạo HTML cho các tab
+                        let tabsHtml = `<button class="reaction-tab active" data-reaction-type="ALL">Tất cả <span class="badge bg-secondary rounded-pill">${totalReactions}</span></button>`;
+                        
+                        const reactionOrder = ['LIKE', 'LOVE', 'HAHA', 'WOW', 'SAD', 'ANGRY'];
+                        reactionOrder.forEach(type => {
+                            if (counts[type]) {
+                                let icon = '';
+                                if (type === 'LIKE') icon = '👍'; else if (type === 'LOVE') icon = '❤️'; else if (type === 'HAHA') icon = '😂';
+                                else if (type === 'WOW') icon = '😮'; else if (type === 'SAD') icon = '😢'; else if (type === 'ANGRY') icon = '😡';
+                                tabsHtml += `<button class="reaction-tab" data-reaction-type="${type}">${icon} <span class="badge bg-secondary rounded-pill">${counts[type]}</span></button>`;
+                            }
+                        });
+                        tabsContainer.innerHTML = tabsHtml;
+
+                        // 2. Hiển thị danh sách "Tất cả" ban đầu
+                        displayFilteredReactions('ALL');
+                    })
+                    .catch(error => {
+                        console.error('Lỗi khi tải danh sách reaction:', error);
+                        userListContainer.innerHTML = '<p class="text-center text-danger p-3">Đã có lỗi xảy ra. Vui lòng thử lại.</p>';
+                    });
+            });
+
+            // --- Gắn sự kiện click cho các tab (dùng event delegation) ---
+            tabsContainer.addEventListener('click', function(e) {
+                const clickedTab = e.target.closest('.reaction-tab');
+                if (clickedTab) {
+                    // Xóa class 'active' khỏi tất cả các tab
+                    tabsContainer.querySelectorAll('.reaction-tab').forEach(tab => tab.classList.remove('active'));
+                    // Thêm class 'active' cho tab vừa được click
+                    clickedTab.classList.add('active');
+                    // Lấy loại reaction và lọc danh sách
+                    const filterType = clickedTab.dataset.reactionType;
+                    displayFilteredReactions(filterType);
+                }
+            });
+        }
 
         // === HÀM TIỆN ÍCH: LẤY COOKIE CSRF ===
         function getCookie(name) {

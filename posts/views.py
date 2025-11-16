@@ -2,7 +2,7 @@
 
 from urllib import request
 from django.shortcuts import render, get_object_or_404
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView, DetailView
 from django.db.models import Q, Count
@@ -498,3 +498,38 @@ def load_more_comments(request, pk):
     has_more = post.comment_count > new_offset
 
     return JsonResponse({'html': html, 'has_more': has_more, 'new_offset': new_offset})
+
+@login_required
+def get_reaction_list(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    content_type = ContentType.objects.get_for_model(Post)
+    
+    reactions = Reaction.objects.filter(
+        content_type=content_type,
+        object_id=post.id
+    ).select_related('user').order_by('-id')
+
+    current_user_friends = Friendship.get_friends(request.user)
+    
+    # 1. Lấy danh sách chi tiết những người đã react (giữ nguyên)
+    reactions_data = []
+    for reaction in reactions:
+        reactor_friends = Friendship.get_friends(reaction.user)
+        mutual_friends_count = len(set(current_user_friends) & set(reactor_friends))
+        reactions_data.append({
+            'username': reaction.user.username,
+            'full_name': reaction.user.get_full_name() or reaction.user.username,
+            'avatar_url': reaction.user.avatar.url,
+            'profile_url': reverse('accounts:profile', kwargs={'username': reaction.user.username}),
+            'reaction_type': reaction.reaction_type,
+            'mutual_friends_count': mutual_friends_count,
+        })
+        
+    # 2. Lấy số liệu thống kê cho từng loại reaction (THÊM MỚI)
+    reaction_counts = post.get_reaction_stats()
+
+    # 3. Trả về cả hai trong một JSON response duy nhất
+    return JsonResponse({
+        'reactions': reactions_data,
+        'reaction_counts': reaction_counts
+    })

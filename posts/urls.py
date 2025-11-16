@@ -4,7 +4,7 @@ from django.urls import path
 # SỬA Ở ĐÂY: Thêm PostDetailView vào import
 from .views import (
     HomePageView, PostCreateView, PostDeleteView, PostUpdateView, PostDetailView,
-    react_to_post, add_comment, delete_comment, get_comment_edit_form, edit_comment, load_more_comments
+    react_to_post, add_comment, delete_comment, get_comment_edit_form, edit_comment, load_more_comments, get_reaction_list
 )
 from . import views
 
@@ -27,4 +27,5 @@ urlpatterns = [
     path('comment/<int:comment_id>/get-edit-form/', get_comment_edit_form, name='get_comment_edit_form'),
     path('comment/<int:comment_id>/react/', views.react_to_comment, name='react_to_comment'), 
     path('post/<int:pk>/load-comments/', load_more_comments, name='load_more_comments'),
+    path('post/<int:post_id>/reactions/', get_reaction_list, name='get_reaction_list'),
 ]
