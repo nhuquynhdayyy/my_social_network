@@ -21,6 +21,76 @@
       body {
         background-color: #fafafa;
       }
+      
+      .comment-content-wrapper {
+          position: relative; /* Tạo khung tham chiếu cho nút 3 chấm */
+          display: inline-flex;
+          align-items: center; /* Căn giữa các item theo chiều dọc */
+          max-width: 100%;
+      }
+
+      .comment-options-dropdown {
+          position: absolute; /* Lấy wrapper làm tham chiếu */
+          top: 50%;
+          left: 100%; /* Đặt nút ở bên ngoài bong bóng 1 chút */
+          margin-left: 8px; /* Tạo khoảng cách giữa nút và bong bóng */
+          transform: translateY(-50%); /* Căn giữa theo chiều dọc */
+          
+          z-index: 10; /* Đảm bảo nút nổi lên trên các phần tử khác */
+          /* Mặc định ẩn nút đi */
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+      }
+
+      /* KHI HOVER VÀO TOÀN BỘ KHU VỰC BÌNH LUẬN */
+      div[id^="comment-"]:hover .comment-options-dropdown {
+          /* Hiện nút 3 chấm lên */
+          opacity: 1;
+          visibility: visible;
+      }
+
+      .replies-container {
+          position: relative; /* Bắt buộc để làm khung tham chiếu cho đường kẻ dọc */
+          margin-left: 24px;  /* Đẩy khối reply vào trong */
+          padding-left: 28px; /* Tạo không gian cho đường kẻ và các nhánh */
+      }
+
+      /* Bước 1: Vẽ đường kẻ dọc ("Thân cây") cho toàn bộ khối replies */
+      .replies-container::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 2px;
+          background-color: #e0e0e0;
+      }
+
+      /* Bước 2: Định vị lại từng bình luận con */
+      .replies-container > div[id^="comment-"] {
+          position: relative;
+      }
+      
+      /* Bước 3: Vẽ đường kẻ ngang ("Nhánh") cho mỗi bình luận con */
+      .replies-container > div[id^="comment-"]::before {
+          content: '';
+          position: absolute;
+          top: 16px;      /* Căn giữa với avatar (cao 32px) */
+          left: -28px;    /* Đi ngược ra ngoài để gặp "thân cây" */
+          width: 20px;    /* Độ dài của nhánh */
+          height: 2px;
+          background-color: #e0e0e0;
+      }
+
+      a.mentioned-user {
+          font-weight: 600; /* Tô đậm */
+          color: #050505;   /* Màu chữ đen (hoặc màu bạn thích) */
+          text-decoration: none;
+      }
+      a.mentioned-user:hover {
+          text-decoration: underline;
+      }
 
       .privacy-icon {
           display: inline-block;
@@ -707,7 +777,7 @@
                 }
             });
         });
-        
+
         // === HÀM TIỆN ÍCH: LẤY COOKIE CSRF ===
         function getCookie(name) {
           let cookieValue = null;
@@ -913,14 +983,32 @@
             // --- MỞ/ĐÓNG FORM TRẢ LỜI ---
             if (event.target.classList.contains('reply-btn')) {
                 event.preventDefault();
-                const commentId = event.target.dataset.commentId;
+                const button = event.target;
+                const commentId = button.dataset.commentId;
                 const replyFormContainer = document.getElementById(`reply-form-for-${commentId}`);
                 
                 if (replyFormContainer) {
                     const isHidden = replyFormContainer.style.display === 'none' || !replyFormContainer.style.display;
                     replyFormContainer.style.display = isHidden ? 'block' : 'none';
+
                     if (isHidden) {
-                        replyFormContainer.querySelector('input[name="content"]').focus();
+                        const replyInput = replyFormContainer.querySelector('input[name="content"]');
+                        
+                        // === BẮT ĐẦU PHẦN THÊM MỚI ===
+                        // Tìm thẻ div của bình luận cha
+                        const parentCommentDiv = button.closest('div[id^="comment-"]');
+                        if (parentCommentDiv) {
+                            // Tìm tên tác giả trong bình luận cha
+                            const authorLink = parentCommentDiv.querySelector('.comment-author');
+                            if(authorLink) {
+                                const username = authorLink.textContent.trim();
+                                // Điền @username vào ô trả lời
+                                replyInput.value = `@${username} `;
+                            }
+                        }
+                        // === KẾT THÚC PHẦN THÊM MỚI ===
+                        
+                        replyInput.focus();
                     }
                 }
             }

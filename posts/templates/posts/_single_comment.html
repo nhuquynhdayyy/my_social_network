@@ -14,9 +14,25 @@
             <div class="comment-bubble">
                 <a href="{% url 'accounts:profile' username=comment.author.username %}" class="comment-author">{{ comment.author.username }}</a>
                 <div class="comment-content-text mt-1">
-                    {{ comment.content|linebreaksbr }}
+                    {{ comment.content|linkify_mentions|linebreaksbr }}
                 </div>
             </div>
+
+            <!-- NÚT 3 CHẤM ĐÃ ĐƯỢC DI CHUYỂN VÀO ĐÂY -->
+            {% if user.is_authenticated and user == comment.author %}
+                <div class="dropdown comment-options-dropdown">
+                    <button class="btn btn-link text-muted btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
+                            <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+                        </svg>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item edit-comment-btn" href="#" data-comment-id="{{ comment.id }}">Sửa bình luận</a></li>
+                        <li><a class="dropdown-item text-danger delete-comment-btn" href="#" data-comment-id="{{ comment.id }}">Xóa bình luận</a></li>
+                    </ul>
+                </div>
+            {% endif %}
+
             {% with stats=comment.get_reaction_stats %}
                 {% if stats %}
                     <span id="comment-reaction-stats-{{ comment.id }}" class="comment-reaction-stats">
@@ -61,13 +77,6 @@
             <a href="#" class="text-muted text-decoration-none reply-btn" data-comment-id="{{ comment.id }}">Trả lời</a>
             <span class="mx-1">·</span>
             <small>{{ comment.created_at|timesince }}</small>
-            
-            {% if user.is_authenticated and user == comment.author %}
-                <span class="mx-1">·</span>
-                <a href="#" class="text-muted text-decoration-none edit-comment-btn" data-comment-id="{{ comment.id }}">Sửa</a>
-                <span class="mx-1">·</span>
-                <a href="#" class="text-danger text-decoration-none delete-comment-btn" data-comment-id="{{ comment.id }}">Xóa</a>
-            {% endif %}
         </div>
 
         <div class="reply-form-container mt-2" id="reply-form-for-{{ comment.id }}" style="display: none;">
