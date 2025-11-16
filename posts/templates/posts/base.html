@@ -22,6 +22,17 @@
         background-color: #fafafa;
       }
 
+      .privacy-icon {
+          display: inline-block;
+          vertical-align: middle; /* Căn giữa icon với dòng chữ */
+          margin-left: 4px; /* Tạo khoảng cách nhỏ */
+      }
+      .privacy-icon svg {
+          width: 12px;
+          height: 12px;
+          fill: currentColor; /* Icon sẽ có màu xám giống chữ bên cạnh */
+      }
+
       .sidebar {
         position: fixed;
         top: 0;
@@ -667,6 +678,8 @@
     <!-- =================== SCRIPT CHUNG (Đã tối ưu và gộp) =================== -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
         // === HÀM TIỆN ÍCH: LẤY COOKIE CSRF ===
         function getCookie(name) {
           let cookieValue = null;
