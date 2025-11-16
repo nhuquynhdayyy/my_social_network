@@ -1,14 +1,16 @@
+# chat/views.py
+
 from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.db.models import Q, Count
+from django.db.models import Q, Count, F
 from django.contrib.auth import get_user_model
-from django.db.models import OuterRef, Subquery, F
 from django.contrib.contenttypes.models import ContentType
 from notifications.models import Notification
 from .models import Conversation, Message
-from .forms import MessageForm
+# SỬA Ở ĐÂY: Import cả hai form
+from .forms import MessageForm, GroupCreationForm
 import json
 from posts.models import Reaction
 from django.urls import reverse
@@ -16,14 +18,38 @@ from django.urls import reverse
 User = get_user_model()
 
 
-# ------------------- VIEW TRANG DANH SÁCH -------------------
+# ------------------- VIEW MỚI ĐỂ TẠO NHÓM -------------------
+@login_required
+def create_group_view(request):
+    if request.method == 'POST':
+        # Truyền user hiện tại vào form để loại bỏ họ khỏi danh sách lựa chọn
+        form = GroupCreationForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            group = form.save(commit=False)
+            group.type = 'GROUP' # Đánh dấu đây là một nhóm chat
+            group.admin = request.user # Người tạo là quản trị viên
+            group.save() # Lưu lại để có ID
+
+            # Lấy danh sách thành viên đã chọn từ form
+            participants = form.cleaned_data['participants']
+            # Thêm người tạo và các thành viên đã chọn vào nhóm
+            group.participants.add(request.user, *participants)
+            
+            # Chuyển hướng đến phòng chat của nhóm vừa tạo
+            return redirect('chat:conversation_detail', conversation_id=group.id)
+    else:
+        form = GroupCreationForm(user=request.user)
+    return render(request, 'chat/create_group.html', {'form': form})
+
+
+# ------------------- VIEW TRANG DANH SÁCH (Không thay đổi) -------------------
 @login_required
 def conversation_list_view(request):
     conversations = request.user.conversations.order_by('-updated_at')
     return render(request, 'chat/conversation_list.html', {'conversations': conversations})
 
 
-# ------------------- BẮT ĐẦU CONVERSATION -------------------
+# ------------------- BẮT ĐẦU CONVERSATION (Cập nhật) -------------------
 @login_required
 def start_conversation_view(request, user_id):
     other_user = get_object_or_404(User, id=user_id)
@@ -31,42 +57,29 @@ def start_conversation_view(request, user_id):
     if other_user == request.user:
         return redirect('chat:conversation_list')
 
+    # Chỉ tìm trong các cuộc trò chuyện CÁ NHÂN đã có
     conversation = Conversation.objects.filter(
-        participants=request.user
-    ).filter(
-        participants=other_user
-    ).first()
+        type='PRIVATE', participants=request.user
+    ).filter(participants=other_user).first()
 
     if not conversation:
-        conversation = Conversation.objects.create()
+        # Khi tạo mới, ghi rõ type là PRIVATE
+        conversation = Conversation.objects.create(type='PRIVATE')
         conversation.participants.add(request.user, other_user)
 
     return redirect('chat:conversation_detail', conversation_id=conversation.id)
 
 
-# # ------------------- HIỂN THỊ CHI TIẾT -------------------
-# @login_required
-# def conversation_detail_view(request, conversation_id):
-#     conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
-#     messages = conversation.messages.all()
-#     form = MessageForm()
-
-#     other_participant = conversation.participants.exclude(id=request.user.id).first()
-
-#     context = {
-#         'conversation': conversation,
-#         'messages': messages,
-#         'form': form,
-#         'other_participant': other_participant
-#     }
-#     return render(request, 'chat/conversation_detail.html', context)
-# ------------------- HIỂN THỊ CHI TIẾT (CẦN SỬA) -------------------
+# ------------------- HIỂN THỊ CHI TIẾT (Cập nhật) -------------------
 @login_required
 def conversation_detail_view(request, conversation_id):
     conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
-    other_participant = conversation.participants.exclude(id=request.user.id).first()
+    
+    other_participant = None
+    # Chỉ lấy thông tin người còn lại nếu đây là chat cá nhân
+    if conversation.type == 'PRIVATE':
+        other_participant = conversation.participants.exclude(id=request.user.id).first()
 
-    # Xử lý khi người dùng gửi tin nhắn mới
     if request.method == "POST":
         form = MessageForm(request.POST)
         if form.is_valid():
@@ -74,18 +87,12 @@ def conversation_detail_view(request, conversation_id):
             message.conversation = conversation
             message.sender = request.user
             message.save()
-            # ... (Logic tạo notification giữ nguyên) ...
             return redirect('chat:conversation_detail', conversation_id=conversation.id)
 
-    # --- Logic chuẩn bị dữ liệu cho GET request ---
-    messages = conversation.messages.all()
+    messages = conversation.messages.select_related('sender').all()
     form = MessageForm()
 
-    # Chuẩn bị sẵn dữ liệu reaction cho từng tin nhắn (đã sửa ở bước trước)
-    for message in messages:
-        message.reaction_stats = message.reactions.values('reaction_type').annotate(count=Count('id'))
-
-    # Lấy reaction của người dùng hiện tại (logic quan trọng bị thiếu)
+    # Logic lấy reaction cho tin nhắn (giữ nguyên)
     message_ids = [msg.id for msg in messages]
     message_content_type = ContentType.objects.get_for_model(Message)
     user_reactions = Reaction.objects.filter(
@@ -100,99 +107,13 @@ def conversation_detail_view(request, conversation_id):
         'messages': messages,
         'form': form,
         'other_participant': other_participant,
-        'user_reactions_map': user_reactions_map # <-- Biến quan trọng đã được thêm vào
+        'user_reactions_map': user_reactions_map,
+        'is_group_admin': conversation.admin == request.user 
     }
     return render(request, 'chat/conversation_detail.html', context)
 
 
-# ------------------- GỬI TIN NHẮN (TRANG HTML) -------------------
-# @login_required
-# def conversation_detail(request, conversation_id):
-#     conversation = get_object_or_404(Conversation, id=conversation_id)
-
-#     if request.method == "POST":
-#         form = MessageForm(request.POST)
-#         if form.is_valid():
-#             message = form.save(commit=False)
-#             message.conversation = conversation
-#             message.sender = request.user
-#             message.save()
-
-#             # Cập nhật last_message cho conversation
-#             conversation.last_message = message
-#             conversation.updated_at = timezone.now()
-#             conversation.save()
-
-#             # === Xác định receiver (người còn lại) ===
-#             receivers = conversation.participants.exclude(id=request.user.id)
-
-#             ct = ContentType.objects.get_for_model(message)
-#             for receiver in receivers:
-#                 Notification.objects.create(
-#                     recipient=receiver,
-#                     sender=request.user,
-#                     notification_type='MESSAGE',
-#                     target_content_type=ct,
-#                     target_object_id=message.id
-#                 )
-
-#             return redirect('chat:conversation_detail', conversation_id=conversation.id)
-
-#     messages = conversation.messages.all()
-#     form = MessageForm()
-#     return render(request, "chat/conversation_detail.html", {
-#         "conversation": conversation,
-#         "messages": messages,
-#         "form": form
-#     })
-# @login_required
-# def conversation_detail(request, conversation_id):
-#     conversation = get_object_or_404(Conversation, id=conversation_id)
-
-#     if request.method == "POST":
-#         # ... logic xử lý POST request giữ nguyên ...
-#         form = MessageForm(request.POST)
-#         if form.is_valid():
-#             message = form.save(commit=False)
-#             message.conversation = conversation
-#             message.sender = request.user
-#             message.save()
-
-#             conversation.last_message = message
-#             conversation.updated_at = timezone.now()
-#             conversation.save()
-
-#             receivers = conversation.participants.exclude(id=request.user.id)
-#             ct = ContentType.objects.get_for_model(message)
-#             for receiver in receivers:
-#                 Notification.objects.create(
-#                     recipient=receiver,
-#                     sender=request.user,
-#                     notification_type='MESSAGE',
-#                     target_content_type=ct,
-#                     target_object_id=message.id
-#                 )
-
-#             return redirect('chat:conversation_detail', conversation_id=conversation.id)
-
-#     # === BẮT ĐẦU PHẦN SỬA LOGIC GET REQUEST ===
-#     messages = conversation.messages.all()
-    
-#     # Chuẩn bị sẵn dữ liệu reaction cho từng tin nhắn
-#     for message in messages:
-#         # Thực hiện query ở view và gán kết quả vào một thuộc tính mới
-#         message.reaction_stats = message.reactions.values('reaction_type').annotate(count=Count('id'))
-
-#     form = MessageForm()
-#     return render(request, "chat/conversation_detail.html", {
-#         "conversation": conversation,
-#         "messages": messages, # List 'messages' này giờ đã chứa sẵn 'reaction_stats'
-#         "form": form
-#     })
-#     # === KẾT THÚC PHẦN SỬA LOGIC GET REQUEST ===
-
-
-# ------------------- API GỬI TIN NHẮN (AJAX) -------------------
+# ------------------- API GỬI TIN NHẮN (Không thay đổi) -------------------
 @login_required
 def send_message_api(request, conversation_id):
     if request.method == 'POST':
@@ -203,13 +124,9 @@ def send_message_api(request, conversation_id):
             message.conversation = conversation
             message.sender = request.user
             message.save()
-
-            # Cập nhật last_message
             conversation.last_message = message
             conversation.updated_at = timezone.now()
             conversation.save()
-
-            # === Notification ===
             receivers = conversation.participants.exclude(id=request.user.id)
             ct = ContentType.objects.get_for_model(message)
             for receiver in receivers:
@@ -220,10 +137,8 @@ def send_message_api(request, conversation_id):
                     target_content_type=ct,
                     target_object_id=message.id
                 )
-
             local_ts = timezone.localtime(message.timestamp)
             formatted_ts = local_ts.strftime('%H:%M, %d-%m-%Y')
-
             return JsonResponse({
                 'status': 'ok',
                 'message_id': message.id,
@@ -234,36 +149,31 @@ def send_message_api(request, conversation_id):
         return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
 
 
-# ------------------- API XÓA TIN NHẮN -------------------
+# ------------------- API XÓA TIN NHẮN (Không thay đổi) -------------------
 @login_required
 def delete_message_api(request, message_id):
     if request.method == 'POST':
         message = get_object_or_404(Message, id=message_id)
-
         if message.sender != request.user:
             return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
-
         message.delete()
         return JsonResponse({'status': 'ok', 'message_id': message_id})
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 
-# ------------------- API SỬA TIN NHẮN -------------------
+# ------------------- API SỬA TIN NHẮN (Không thay đổi) -------------------
 @login_required
 def edit_message_api(request, message_id):
     if request.method == 'POST':
         message = get_object_or_404(Message, id=message_id)
-
         if message.sender != request.user:
             return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
-
         try:
             data = json.loads(request.body)
             new_text = data.get('text', '')
             if new_text:
                 message.text = new_text
                 message.save()
-
                 return JsonResponse({
                     'status': 'ok',
                     'message_id': message_id,
@@ -273,77 +183,77 @@ def edit_message_api(request, message_id):
                 return JsonResponse({'status': 'error', 'message': 'Text cannot be empty'}, status=400)
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
-
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 
-# ------------------- API LẤY CONVERSATIONS -------------------
+# ------------------- API LẤY CONVERSATIONS (Cập nhật) -------------------
 @login_required
 def api_get_conversations(request):
-    conversations = request.user.conversations.order_by('-updated_at')[:10]
-
+    conversations = request.user.conversations.order_by('-updated_at')[:15]
     data = []
     for conv in conversations:
-        other_participant = conv.participants.exclude(id=request.user.id).first()
-        if not other_participant:
-            continue
+        conv_name = ''
+        conv_avatar_url = ''
 
+        # Logic để lấy đúng tên và ảnh đại diện
+        if conv.type == 'GROUP':
+            conv_name = conv.name
+            conv_avatar_url = conv.avatar.url
+        else: # PRIVATE
+            other_participant = conv.participants.exclude(id=request.user.id).first()
+            if not other_participant: continue
+            conv_name = other_participant.username
+            conv_avatar_url = other_participant.avatar.url
+        
         last_message_text = ''
-        last_message_ts = None
         if conv.last_message:
-            sender_prefix = "Bạn: " if conv.last_message.sender == request.user else ""
+            # Logic để hiển thị đúng người gửi tin nhắn cuối
+            if conv.last_message.sender == request.user:
+                sender_prefix = "Bạn: "
+            elif conv.type == 'GROUP':
+                sender_prefix = f"{conv.last_message.sender.first_name}: "
+            else:
+                sender_prefix = ""
             last_message_text = f"{sender_prefix}{conv.last_message.text}"
-            last_message_ts = timezone.localtime(conv.last_message.timestamp).strftime('%H:%M, %d-%m-%Y')
-
+        
         data.append({
             'conversation_id': conv.id,
-            'other_participant': {
-                'username': other_participant.username,
-                'avatar_url': other_participant.avatar.url if other_participant.avatar else None,
-            },
+            'name': conv_name,
+            'avatar_url': conv_avatar_url,
             'last_message': last_message_text,
-            'last_message_timestamp': last_message_ts,
-            # SỬA DÒNG NÀY: Dùng `reverse` để tạo URL động và chính xác
             'detail_url': reverse('chat:conversation_detail', kwargs={'conversation_id': conv.id})
         })
-
     return JsonResponse({'conversations': data})
 
 
-# ------------------- API TÌM KIẾM USER -------------------
+# ------------------- API TÌM KIẾM USER (Không thay đổi) -------------------
 @login_required
 def api_search_users(request):
     query = request.GET.get('q', '').strip()
-
     if not query:
         return JsonResponse({'users': []})
-
     users = User.objects.filter(
         Q(username__icontains=query) |
         Q(first_name__icontains=query) |
         Q(last_name__icontains=query)
     ).exclude(id=request.user.id)[:10]
-
     data = []
     for user in users:
         data.append({
             'username': user.username,
             'full_name': user.get_full_name() or user.username,
-            'start_conversation_url': f'/chat/start/{user.id}/'
+            'start_conversation_url': reverse('chat:start_conversation', kwargs={'user_id': user.id})
         })
-
     return JsonResponse({'users': data})
 
+# ------------------- API REACTION TIN NHẮN (Không thay đổi) -------------------
 @login_required
 def react_to_message_api(request, message_id):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
-
     message = get_object_or_404(Message, id=message_id)
-    # Kiểm tra xem user có trong cuộc trò chuyện này không để đảm bảo quyền
     if not message.conversation.participants.filter(id=request.user.id).exists():
         return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
-
     try:
         data = json.loads(request.body)
         reaction_type = data.get('reaction_type')
@@ -351,35 +261,22 @@ def react_to_message_api(request, message_id):
             return JsonResponse({'status': 'error', 'message': 'Reaction type is required'}, status=400)
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
-
     content_type = ContentType.objects.get_for_model(Message)
-    existing_reaction = Reaction.objects.filter(
-        user=request.user, content_type=content_type, object_id=message.id
-    ).first()
-
-    current_user_reaction = None
-    if existing_reaction:
+    existing_reaction, created = Reaction.objects.get_or_create(
+        user=request.user, content_type=content_type, object_id=message.id,
+        defaults={'reaction_type': reaction_type}
+    )
+    current_user_reaction = reaction_type
+    if not created:
         if existing_reaction.reaction_type == reaction_type:
-            existing_reaction.delete() # Bỏ react
+            existing_reaction.delete()
             current_user_reaction = None
         else:
             existing_reaction.reaction_type = reaction_type
-            existing_reaction.save() # Thay đổi reaction
-            current_user_reaction = reaction_type
-    else:
-        Reaction.objects.create(
-            user=request.user,
-            content_type=content_type,
-            object_id=message.id,
-            reaction_type=reaction_type
-        ) # React mới
-        current_user_reaction = reaction_type
-
-    # Lấy lại thống kê reaction cho tin nhắn này
+            existing_reaction.save()
     reaction_stats = message.reactions.values('reaction_type').annotate(count=Count('id'))
     stats_dict = {item['reaction_type']: item['count'] for item in reaction_stats}
     total_reactions = message.reactions.count()
-    
     return JsonResponse({
         'status': 'ok',
         'total_reactions': total_reactions,
@@ -387,20 +284,12 @@ def react_to_message_api(request, message_id):
         'current_user_reaction': current_user_reaction
     })
 
+# ------------------- API LẤY TIN NHẮN (Không thay đổi) -------------------
 @login_required
 def api_get_messages(request, conversation_id):
-    # Đảm bảo người dùng hiện tại là một phần của cuộc hội thoại này để bảo mật
     conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
-    
-    # SỬA LỖI:
-    # 1. Truy vấn đúng trường 'sender_id'.
-    # 2. Dùng annotate() để đổi tên 'sender_id' thành 'author_id' ngay trong câu lệnh query.
-    #    Đây là cách hiệu quả nhất.
     messages = conversation.messages.order_by('timestamp').annotate(
         author_id=F('sender_id')
     ).values('author_id', 'text', 'timestamp')
-    
-    # Chuyển QuerySet thành list of dicts
     messages_data = list(messages)
-    
     return JsonResponse({'messages': messages_data})

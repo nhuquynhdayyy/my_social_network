@@ -5,64 +5,74 @@
     <div class="row">
         <div class="col-md-8 offset-md-2">
 
+            <!-- === BẮT ĐẦU PHẦN SỬA: HEADER VỚI CÁC NÚT HÀNH ĐỘNG === -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="mb-0">Tin nhắn</h2>
-                <!-- SỬA Ở ĐÂY: Chuyển từ thẻ <a> sang <button> và thêm id -->
-                <button type="button" class="btn btn-primary" id="compose-new-message-btn">Soạn tin mới</button>
+                <div>
+                    <!-- Nút để tạo nhóm mới -->
+                    <a href="{% url 'chat:create_group' %}" class="btn btn-success">Tạo nhóm mới</a>
+                    <!-- Nút để soạn tin nhắn 1-1 -->
+                    <button type="button" class="btn btn-primary" id="compose-new-message-btn">Soạn tin mới</button>
+                </div>
             </div>
+            <!-- === KẾT THÚC PHẦN SỬA === -->
 
+            <!-- Phần tìm kiếm giữ nguyên -->
             <div class="mb-4">
                 <div class="input-group">
                     <input type="text" id="conversationSearchInput" class="form-control" placeholder="Tìm kiếm người dùng để bắt đầu trò chuyện...">
                     <button class="btn btn-outline-secondary" type="button" id="clear-search-btn" style="display: none;">&times;</button>
                 </div>
             </div>
-
-            <!-- Container cho kết quả tìm kiếm (ẩn mặc định) -->
             <div id="search-results-container" style="display: none;">
-                <div class="list-group" id="searchResultsList">
-                    <!-- Kết quả tìm kiếm sẽ được chèn vào đây -->
-                </div>
+                <div class="list-group" id="searchResultsList"></div>
             </div>
 
-            <!-- Container cho danh sách hội thoại gốc -->
+            <!-- === BẮT ĐẦU PHẦN SỬA: DANH SÁCH HỘI THOẠI THÔNG MINH === -->
             <div id="conversation-list-container">
                 <div class="list-group">
                     {% for conv in conversations %}
-                        {% with other_user=conv.participants.exclude.first %}
-                        <a href="{% url 'chat:conversation_detail' conv.id %}" class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h5 class="mb-1">
-                                    {% for participant in conv.participants.all %}
-                                        {% if participant != request.user %}
-                                            {{ participant.username }}
-                                        {% endif %}
-                                    {% endfor %}
-                                </h5>
-                                <small class="text-muted">{{ conv.updated_at|timesince }} trước</small>
-                            </div>
-                            <p class="mb-1 text-muted">
-                                {% if conv.last_message %}
-                                    <strong>{% if conv.last_message.sender == request.user %}Bạn: {% endif %}</strong>
-                                    {{ conv.last_message.text|truncatechars:50 }}
+                    <a href="{% url 'chat:conversation_detail' conv.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">
+                                <!-- Logic hiển thị tên nhóm hoặc tên người dùng -->
+                                {% if conv.type == 'GROUP' %}
+                                    {{ conv.name }} <span class="badge bg-secondary">Nhóm</span>
                                 {% else %}
-                                    <span class="text-muted">Chưa có tin nhắn nào.</span>
+                                    {% for participant in conv.participants.all %}
+                                        {% if participant != request.user %}{{ participant.username }}{% endif %}
+                                    {% endfor %}
                                 {% endif %}
-                            </p>
-                        </a>
-                        {% endwith %}
+                            </h5>
+                            <small class="text-muted">{{ conv.updated_at|timesince }} trước</small>
+                        </div>
+                        <p class="mb-1 text-muted">
+                            {% if conv.last_message %}
+                                <strong>
+                                    <!-- Logic hiển thị người gửi tin nhắn cuối -->
+                                    {% if conv.last_message.sender == request.user %}Bạn:
+                                    {% elif conv.type == 'GROUP' %}{{ conv.last_message.sender.first_name }}:
+                                    {% endif %}
+                                </strong>
+                                {{ conv.last_message.text|truncatechars:50 }}
+                            {% else %}
+                                <span class="text-muted">Chưa có tin nhắn nào.</span>
+                            {% endif %}
+                        </p>
+                    </a>
                     {% empty %}
                         <p class="text-center text-muted p-3">Bạn chưa có cuộc trò chuyện nào.</p>
                     {% endfor %}
                 </div>
             </div>
+             <!-- === KẾT THÚC PHẦN SỬA === -->
         </div>
     </div>
 </div>
 {% endblock content %}
 
-
 {% block extra_js %}
+<!-- Toàn bộ script trong file này đã chính xác và được giữ nguyên -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('conversationSearchInput');
@@ -70,27 +80,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchResultsList = document.getElementById('searchResultsList');
     const originalListContainer = document.getElementById('conversation-list-container');
     const clearSearchBtn = document.getElementById('clear-search-btn');
-    
-    // THÊM Ở ĐÂY: Lấy nút "Soạn tin mới"
     const composeBtn = document.getElementById('compose-new-message-btn');
-
     let searchTimeout;
 
-    // THÊM Ở ĐÂY: Gắn hành động cho nút "Soạn tin mới"
     composeBtn.addEventListener('click', function() {
-        // 1. Đưa con trỏ vào ô tìm kiếm
         searchInput.focus();
-
-        // 2. Ẩn danh sách cũ và hiện khu vực tìm kiếm
         originalListContainer.style.display = 'none';
         searchResultsContainer.style.display = 'block';
-
-        // 3. Hiển thị một thông báo hướng dẫn
         if (searchInput.value.trim() === '') {
             searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Bắt đầu tìm kiếm bằng cách gõ tên người dùng.</p>';
         }
     });
-
 
     searchInput.addEventListener('keyup', function() {
         clearTimeout(searchTimeout);
@@ -135,9 +135,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     clearSearchBtn.addEventListener('click', function() {
         searchInput.value = '';
-        searchInput.focus(); // Đưa con trỏ trở lại ô tìm kiếm
+        searchInput.focus();
         searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Bắt đầu tìm kiếm bằng cách gõ tên người dùng.</p>';
-        // Không hiện lại danh sách gốc, để người dùng tiếp tục tìm kiếm
     });
 });
 </script>

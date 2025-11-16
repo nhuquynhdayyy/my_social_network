@@ -9,6 +9,7 @@ urlpatterns = [
     # Danh sách các cuộc hội thoại
     path('', views.conversation_list_view, name='conversation_list'),
 
+    path('new-group/', views.create_group_view, name='create_group'),
     # Bắt đầu một cuộc hội thoại mới với một người dùng
     path('start/<int:user_id>/', views.start_conversation_view, name='start_conversation'),
 

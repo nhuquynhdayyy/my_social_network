@@ -3,6 +3,14 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 
 class Conversation(models.Model):
+    CONVERSATION_TYPES = [
+        ('PRIVATE', 'Cá nhân'),
+        ('GROUP', 'Nhóm'),
+    ]
+    type = models.CharField(max_length=10, choices=CONVERSATION_TYPES, default='PRIVATE')
+    name = models.CharField(max_length=128, blank=True, null=True) # Tên cho group chat
+    admin = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_groups')
+    avatar = models.ImageField(upload_to='group_avatars/', default='group_default.png')
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='conversations')
     updated_at = models.DateTimeField(auto_now=True)
     last_message = models.ForeignKey(
