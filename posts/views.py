@@ -9,6 +9,7 @@ from django.db.models import Q, Count
 from .models import Post, PostMedia, Reaction, Comment
 from .forms import PostCreateForm, CommentCreateForm
 from accounts.models import Friendship, User
+from chat.models import Conversation
 import json
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -509,26 +510,46 @@ def get_reaction_list(request, post_id):
         object_id=post.id
     ).select_related('user').order_by('-id')
 
-    current_user_friends = Friendship.get_friends(request.user)
+    # Lấy ID của tất cả bạn bè của người dùng hiện tại MỘT LẦN DUY NHẤT để tối ưu
+    current_user_friends_qs = Friendship.get_friends(request.user)
+    current_user_friend_ids = set(current_user_friends_qs.values_list('id', flat=True))
     
-    # 1. Lấy danh sách chi tiết những người đã react (giữ nguyên)
     reactions_data = []
     for reaction in reactions:
-        reactor_friends = Friendship.get_friends(reaction.user)
-        mutual_friends_count = len(set(current_user_friends) & set(reactor_friends))
+        reactor = reaction.user
+        
+        # Bỏ qua nếu người react là chính mình
+        if reactor == request.user:
+            continue
+
+        # 1. Kiểm tra xem có phải là bạn bè không
+        is_friend = reactor.id in current_user_friend_ids
+        
+        conversation_id = None
+        # 2. Nếu là bạn bè, tìm ID cuộc hội thoại
+        if is_friend:
+            conversation = Conversation.objects.filter(
+                participants=request.user
+            ).filter(
+                participants=reactor
+            ).first()
+            if conversation:
+                conversation_id = conversation.id
+
         reactions_data.append({
-            'username': reaction.user.username,
-            'full_name': reaction.user.get_full_name() or reaction.user.username,
-            'avatar_url': reaction.user.avatar.url,
-            'profile_url': reverse('accounts:profile', kwargs={'username': reaction.user.username}),
+            'username': reactor.username,
+            'full_name': reactor.get_full_name() or reactor.username,
+            'avatar_url': reactor.avatar.url,
+            'profile_url': reverse('accounts:profile', kwargs={'username': reactor.username}),
             'reaction_type': reaction.reaction_type,
-            'mutual_friends_count': mutual_friends_count,
+            
+            # --- DỮ LIỆU MỚI ĐỂ TRUYỀN XUỐNG FRONTEND ---
+            'is_friend': is_friend,
+            'conversation_id': conversation_id
         })
         
-    # 2. Lấy số liệu thống kê cho từng loại reaction (THÊM MỚI)
     reaction_counts = post.get_reaction_stats()
 
-    # 3. Trả về cả hai trong một JSON response duy nhất
     return JsonResponse({
         'reactions': reactions_data,
         'reaction_counts': reaction_counts

@@ -859,11 +859,11 @@
         // =======================================================
         const reactionListModal = document.getElementById('reactionListModal');
         if (reactionListModal) {
-            let allReactionsData = []; // Biến toàn cục để lưu trữ danh sách đầy đủ
+            let allReactionsData = [];
             const tabsContainer = reactionListModal.querySelector('#reactionTabsContainer');
             const userListContainer = reactionListModal.querySelector('#reactionUserListContainer');
 
-            // --- Hàm để render danh sách người dùng dựa trên bộ lọc ---
+            // --- Hàm render danh sách người dùng ---
             function displayFilteredReactions(filterType) {
                 const filteredReactions = filterType === 'ALL' 
                     ? allReactionsData 
@@ -880,6 +880,19 @@
                         else if (reaction.reaction_type === 'SAD') reactionIcon = '😢';
                         else if (reaction.reaction_type === 'ANGRY') reactionIcon = '😡';
                         
+                        // === BẮT ĐẦU SỬA ĐỔI QUAN TRỌNG ===
+                        // Tạo nút "Nhắn tin" chỉ khi is_friend là true
+                        const messageButtonHtml = reaction.is_friend
+                            ? `<a href="#" 
+                                  class="btn btn-secondary btn-sm open-chat-from-modal-btn"
+                                  data-conversation-id="${reaction.conversation_id}"
+                                  data-username="${reaction.username}"
+                                  data-avatar-url="${reaction.avatar_url}">
+                                  Nhắn tin
+                               </a>`
+                            : ''; // Nếu không phải bạn bè, chuỗi rỗng
+                        // === KẾT THÚC SỬA ĐỔI ===
+
                         html += `
                             <li class="d-flex align-items-center mb-3">
                                 <div class="position-relative">
@@ -890,7 +903,7 @@
                                     <a href="${reaction.profile_url}" class="text-decoration-none text-dark fw-bold">${reaction.full_name}</a>
                                     ${reaction.mutual_friends_count > 0 ? `<div class="text-muted small">${reaction.mutual_friends_count} bạn chung</div>` : ''}
                                 </div>
-                                <button class="btn btn-secondary btn-sm">Nhắn tin</button>
+                                ${messageButtonHtml}
                             </li>`;
                     });
                 } else {
@@ -951,6 +964,34 @@
                     // Lấy loại reaction và lọc danh sách
                     const filterType = clickedTab.dataset.reactionType;
                     displayFilteredReactions(filterType);
+                }
+            });
+
+            // === THÊM MỚI: SỰ KIỆN CLICK CHO NÚT "NHẮN TIN" ===
+            userListContainer.addEventListener('click', function(event) {
+                const messageButton = event.target.closest('.open-chat-from-modal-btn');
+                if (messageButton) {
+                    event.preventDefault();
+                    
+                    // Lấy thông tin từ nút bấm
+                    const convId = messageButton.dataset.conversationId;
+                    const username = messageButton.dataset.username;
+                    const avatarUrl = messageButton.dataset.avatarUrl;
+
+                    // 1. Đóng modal reaction
+                    const modalInstance = bootstrap.Modal.getInstance(reactionListModal);
+                    modalInstance.hide();
+                    
+                    // 2. Mở cửa sổ chat (sử dụng lại hàm đã có)
+                    // Đảm bảo hàm openConversation và các biến liên quan (chatPopup, openChatBtn)
+                    // có thể truy cập được từ đây.
+                    if (typeof openConversation === 'function') {
+                        chatPopup.style.display = "flex";
+                        openChatBtn.style.display = "none";
+                        openConversation(convId, username, avatarUrl);
+                    } else {
+                        console.error("Hàm openConversation không tồn tại.");
+                    }
                 }
             });
         }
