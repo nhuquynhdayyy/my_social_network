@@ -1,0 +1,90 @@
+{% extends "posts/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <h2 class="mb-4">Quản lý nhóm: {{ conversation.name }}</h2>
+
+            <!-- Hiển thị thông báo thành công (nếu có) -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Card để bật/tắt chế độ quản trị (chỉ admin thấy) -->
+            {% if is_group_admin %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    Cài đặt quản trị viên
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-check form-switch">
+                            {{ settings_form.admin_only_management }}
+                            <label class="form-check-label" for="{{ settings_form.admin_only_management.id_for_label }}">
+                                {{ settings_form.admin_only_management.label }}
+                            </label>
+                        </div>
+                        <button type="submit" name="toggle_admin_mode" class="btn btn-primary mt-3">Lưu cài đặt</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Card để đổi tên nhóm -->
+            <div class="card mb-4">
+                <div class="card-header">Đổi tên nhóm</div>
+                <div class="card-body">
+                    {% if conversation.admin_only_management and not is_group_admin %}
+                        <p class="text-muted">Chế độ quản trị đang bật. Chỉ quản trị viên mới có thể đổi tên nhóm.</p>
+                    {% else %}
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ rename_form.as_p }}
+                            <button type="submit" name="rename_group" class="btn btn-primary">Lưu thay đổi</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Card để thêm thành viên -->
+            <div class="card">
+                <div class="card-header">Thêm thành viên mới</div>
+                <div class="card-body">
+                     {% if conversation.admin_only_management and not is_group_admin %}
+                        <p class="text-muted">Chế độ quản trị đang bật. Chỉ quản trị viên mới có thể thêm thành viên.</p>
+                    {% else %}
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ add_members_form.as_p }}
+                            <button type="submit" name="add_members" class="btn btn-success">Thêm thành viên</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <a href="{% url 'chat:conversation_detail' conversation.id %}" class="btn btn-secondary">&laquo; Quay lại cuộc trò chuyện</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<!-- Thư viện TomSelect giúp ô chọn thành viên đẹp hơn -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        new TomSelect('select[multiple]', {
+            plugins: ['remove_button'],
+            create: false,
+            placeholder: 'Tìm và chọn thành viên...'
+        });
+    });
+</script>
+{% endblock extra_js %}

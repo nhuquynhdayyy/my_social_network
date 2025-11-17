@@ -3,20 +3,64 @@
 from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.db.models import Q, Count, F
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from notifications.models import Notification
 from .models import Conversation, Message
 # SỬA Ở ĐÂY: Import cả hai form
-from .forms import MessageForm, GroupCreationForm
+from .forms import MessageForm, GroupCreationForm, RenameGroupForm, AddMembersForm, AdminSettingsForm
 import json
 from posts.models import Reaction
 from django.urls import reverse
+from django.contrib import messages
 
 User = get_user_model()
 
+@login_required
+def manage_group_view(request, conversation_id):
+    conversation = get_object_or_404(Conversation, id=conversation_id, type='GROUP')
+    
+    if not conversation.participants.filter(pk=request.user.pk).exists():
+        return HttpResponseForbidden("Bạn không phải là thành viên của nhóm này.")
+
+    if request.method == 'POST':
+        if 'toggle_admin_mode' in request.POST:
+            if request.user != conversation.admin: return HttpResponseForbidden("Chỉ admin có quyền này.")
+            form = AdminSettingsForm(request.POST, instance=conversation)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Đã cập nhật cài đặt nhóm.')
+                return redirect('chat:manage_group', conversation_id=conversation.id)
+        
+        elif 'rename_group' in request.POST:
+            if conversation.admin_only_management and request.user != conversation.admin:
+                return HttpResponseForbidden("Chỉ admin có quyền đổi tên nhóm.")
+            form = RenameGroupForm(request.POST, instance=conversation)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Đã đổi tên nhóm thành công.')
+                return redirect('chat:manage_group', conversation_id=conversation.id)
+        
+        elif 'add_members' in request.POST:
+            if conversation.admin_only_management and request.user != conversation.admin:
+                return HttpResponseForbidden("Chỉ admin có quyền thêm thành viên.")
+            form = AddMembersForm(request.POST, conversation=conversation)
+            if form.is_valid():
+                new_members = form.cleaned_data['new_members']
+                conversation.participants.add(*new_members)
+                messages.success(request, 'Đã thêm thành viên mới.')
+                return redirect('chat:manage_group', conversation_id=conversation.id)
+
+    context = {
+        'conversation': conversation,
+        'settings_form': AdminSettingsForm(instance=conversation),
+        'rename_form': RenameGroupForm(instance=conversation),
+        'add_members_form': AddMembersForm(conversation=conversation),
+        'is_group_admin': request.user == conversation.admin,
+    }
+    return render(request, 'chat/manage_group.html', context)
 
 # ------------------- VIEW MỚI ĐỂ TẠO NHÓM -------------------
 @login_required
@@ -102,13 +146,17 @@ def conversation_detail_view(request, conversation_id):
     ).values('object_id', 'reaction_type')
     user_reactions_map = {item['object_id']: item['reaction_type'] for item in user_reactions}
 
+    participants = conversation.participants.all().order_by('first_name')
+
+
     context = {
         'conversation': conversation,
         'messages': messages,
         'form': form,
         'other_participant': other_participant,
         'user_reactions_map': user_reactions_map,
-        'is_group_admin': conversation.admin == request.user 
+        'is_group_admin': conversation.admin == request.user,
+        'participants': participants # <-- Thêm dòng này
     }
     return render(request, 'chat/conversation_detail.html', context)
 

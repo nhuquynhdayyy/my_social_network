@@ -59,3 +59,29 @@ class GroupCreationForm(forms.ModelForm):
         if self.user:
             # Không cho phép người dùng tự chọn chính mình vào nhóm
             self.fields['participants'].queryset = User.objects.exclude(pk=self.user.pk)
+class AdminSettingsForm(forms.ModelForm):
+    class Meta:
+        model = Conversation
+        fields = ['admin_only_management']
+        labels = { 'admin_only_management': 'Chỉ quản trị viên có thể đổi tên và thêm thành viên' }
+
+class RenameGroupForm(forms.ModelForm):
+    class Meta:
+        model = Conversation
+        fields = ['name']
+        labels = { 'name': 'Tên nhóm mới' }
+        widgets = { 'name': forms.TextInput(attrs={'class': 'form-control'}) }
+
+class AddMembersForm(forms.Form):
+    new_members = forms.ModelMultipleChoiceField(
+        queryset=User.objects.all(),
+        widget=forms.SelectMultiple(attrs={'class': 'form-control'}),
+        label="Chọn thành viên để thêm",
+        required=True
+    )
+    def __init__(self, *args, **kwargs):
+        conversation = kwargs.pop('conversation', None)
+        super().__init__(*args, **kwargs)
+        if conversation:
+            existing_member_ids = conversation.participants.values_list('id', flat=True)
+            self.fields['new_members'].queryset = User.objects.exclude(id__in=existing_member_ids)

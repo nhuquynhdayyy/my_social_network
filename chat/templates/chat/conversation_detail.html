@@ -4,39 +4,45 @@
 {% block content %}
 <div class="container mt-4">
     <div class="card">
-        <div class="card-header d-flex align-items-center">
+        <!-- === HEADER HOÀN CHỈNH: GỒM THÔNG TIN VÀ NÚT CHỨC NĂNG === -->
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <!-- Phần thông tin (bên trái) -->
+            <div class="d-flex align-items-center">
+                <a href="{% url 'chat:conversation_list' %}" class="btn btn-light me-3" title="Quay lại danh sách">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/></svg>
+                </a>
+                {% if conversation.type == 'GROUP' %}
+                    <img src="{{ conversation.avatar.url }}" class="rounded-circle me-3" width="40" height="40" alt="{{ conversation.name }}">
+                    <div>
+                        <h4 class="mb-0">{{ conversation.name }}</h4>
+                    </div>
+                {% else %}
+                    <img src="{{ other_participant.avatar.url }}" class="rounded-circle me-3" width="40" height="40" alt="{{ other_participant.username }}">
+                    <h4 class="mb-0">Trò chuyện với {{ other_participant.first_name }} {{ other_participant.last_name }}</h4>
+                {% endif %}
+            </div>
             
-            <!-- === BẮT ĐẦU PHẦN THÊM MỚI: NÚT QUAY LẠI === -->
-            <a href="{% url 'chat:conversation_list' %}" class="btn btn-light me-3" title="Quay lại danh sách">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
-                  <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
-                </svg>
-            </a>
-            <!-- === KẾT THÚC PHẦN THÊM MỚI === -->
-
-            <!-- Phần header hiển thị thông tin chat (đã có từ trước) -->
-            {% if conversation.type == 'GROUP' %}
-                <!-- Giao diện cho Group Chat -->
-                <img src="{{ conversation.avatar.url }}" class="rounded-circle me-3" width="40" height="40" alt="{{ conversation.name }}">
-                <div>
-                    <h4 class="mb-0">{{ conversation.name }}</h4>
-                    <small class="text-muted">
-                        Thành viên: {% for p in conversation.participants.all %}{{ p.first_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                    </small>
-                </div>
-            {% else %}
-                <!-- Giao diện cho Chat Cá nhân -->
-                <img src="{{ other_participant.avatar.url }}" class="rounded-circle me-3" width="40" height="40" alt="{{ other_participant.username }}">
-                <h4 class="mb-0">Trò chuyện với {{ other_participant.first_name }} {{ other_participant.last_name }}</h4>
-            {% endif %}
+            <!-- Phần nút chức năng (bên phải) -->
+            <div>
+                {% if conversation.type == 'GROUP' %}
+                    <!-- Nút này mở modal xem thành viên -->
+                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#membersModal">
+                        Xem thành viên
+                    </button>
+                    <!-- Nút này dẫn đến trang quản lý (đổi tên, thêm thành viên) -->
+                    <a href="{% url 'chat:manage_group' conversation.id %}" class="btn btn-outline-primary btn-sm">
+                        Tùy chỉnh nhóm
+                    </a>
+                {% endif %}
+            </div>
         </div>
 
+        <!-- Phần thân chat (hiển thị tin nhắn) -->
         <div class="card-body" id="message-container" style="height: 60vh; overflow-y: auto;">
             {% for message in messages %}
                 <div id="message-{{ message.id }}" class="mb-3 d-flex {% if message.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
                     <div class="d-flex align-items-end {% if message.sender == user %}flex-row-reverse{% endif %}">
                         
-                        <!-- Hiển thị Avatar của người gửi (chỉ trong nhóm và không phải tin của mình) -->
                         {% if conversation.type == 'GROUP' and message.sender != user %}
                         <img src="{{ message.sender.avatar.url }}" class="rounded-circle" width="30" height="30" alt="{{ message.sender.username }}" title="{{ message.sender.username }}"
                              style="margin-left: 8px; margin-right: 8px;">
@@ -45,15 +51,12 @@
                         <div class="message-bubble-container">
                             <div class="message-bubble p-2 rounded {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 70%;">
                                 
-                                <!-- Hiển thị Tên người gửi (chỉ trong nhóm và không phải tin của mình) -->
                                 {% if conversation.type == 'GROUP' and message.sender != user %}
                                 <div class="fw-bold" style="font-size: 0.8rem;">{{ message.sender.first_name }}</div>
                                 {% endif %}
 
                                 <p class="mb-0 message-text">{{ message.text }}</p>
-                                <small class="text-muted d-block text-end {% if message.sender == user %}text-white-50{% endif %}">
-                                    {{ message.timestamp|date:"H:i" }}
-                                </small>
+                                <small class="text-muted d-block text-end {% if message.sender == user %}text-white-50{% endif %}">{{ message.timestamp|date:"H:i" }}</small>
                                 
                                 {% if message.sender == user %}
                                 <div class="message-actions">
@@ -68,7 +71,6 @@
                                 {% endif %}
                             </div>
 
-                            <!-- Phần Reaction giữ nguyên -->
                             <div id="message-reaction-stats-{{ message.id }}" class="reaction-stats-display">
                                 {% with stats=message.reactions.values.count %}
                                     {% if stats > 0 %}
@@ -91,6 +93,7 @@
             {% endfor %}
         </div>
 
+        <!-- Phần footer (gửi tin nhắn) -->
         <div class="card-footer">
             <form id="message-form" method="post" action="{% url 'chat:send_message_api' conversation.id %}">
                 {% csrf_token %}
@@ -103,6 +106,42 @@
     </div>
 </div>
 
+<!-- === MODAL HIỂN THỊ DANH SÁCH THÀNH VIÊN === -->
+{% if conversation.type == 'GROUP' %}
+<div class="modal fade" id="membersModal" tabindex="-1" aria-labelledby="membersModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="membersModalLabel">Thành viên ({{ participants.count }})</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group list-group-flush">
+          {% for member in participants %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <img src="{{ member.avatar.url }}" class="rounded-circle me-3" width="40" height="40">
+                    <div>
+                        <a href="{% url 'accounts:profile' username=member.username %}" class="text-decoration-none fw-bold">{{ member.first_name }} {{ member.last_name }}</a>
+                        <div class="text-muted small">@{{ member.username }}</div>
+                    </div>
+                </div>
+                {% if member == conversation.admin %}
+                    <span class="badge bg-primary rounded-pill">Quản trị viên</span>
+                {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Các thẻ <style> và <script> -->
 <style>
     .message-bubble-container { position: relative; }
     .message-bubble-container:hover .reaction-popup { display: flex; }
@@ -119,9 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const messageContainer = document.getElementById('message-container');
     const messageForm = document.getElementById('message-form');
     const csrftoken = getCookie('csrftoken');
-
     messageContainer.scrollTop = messageContainer.scrollHeight;
-
     messageContainer.addEventListener('click', function(event) {
         const button = event.target.closest('.message-reaction-choice-btn');
         if (button) {
@@ -130,15 +167,12 @@ document.addEventListener('DOMContentLoaded', function() {
             reactToMessage(messageId, reactionType);
         }
     });
-
     messageForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const textInput = document.querySelector('[name="text"]');
         const text = textInput.value.trim();
         if (!text) return;
-
         const url = this.action;
-
         fetch(url, {
             method: 'POST',
             headers: {
@@ -157,7 +191,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
-
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -172,7 +205,6 @@ function getCookie(name) {
     }
     return cookieValue;
 }
-
 function reactToMessage(messageId, reactionType) {
     fetch(`/chat/api/message/react/${messageId}/`, {
         method: 'POST',
@@ -184,7 +216,6 @@ function reactToMessage(messageId, reactionType) {
         } else { alert('Lỗi: ' + data.message); }
     });
 }
-
 function updateReactionStatsUI(messageId, stats, total) {
     const statsContainer = document.getElementById(`message-reaction-stats-${messageId}`);
     if (!statsContainer) return;
@@ -201,7 +232,6 @@ function updateReactionStatsUI(messageId, stats, total) {
         statsContainer.innerHTML = '';
     }
 }
-
 function deleteMessage(messageId) {
     if (!confirm('Bạn có chắc muốn xóa tin nhắn này?')) return;
     fetch(`/chat/api/message/delete/${messageId}/`, {
@@ -211,17 +241,14 @@ function deleteMessage(messageId) {
         else { alert('Lỗi: ' + data.message); }
     });
 }
-
 function showEditForm(messageId) {
     document.getElementById(`edit-form-${messageId}`).style.display = 'block';
     document.getElementById(`message-${messageId}`).querySelector('.message-text').style.display = 'none';
 }
-
 function hideEditForm(messageId) {
      document.getElementById(`edit-form-${messageId}`).style.display = 'none';
      document.getElementById(`message-${messageId}`).querySelector('.message-text').style.display = 'block';
 }
-
 function submitEdit(messageId) {
     const newText = document.getElementById(`edit-text-${messageId}`).value;
     fetch(`/chat/api/message/edit/${messageId}/`, {

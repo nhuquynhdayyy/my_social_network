@@ -11,6 +11,7 @@ class Conversation(models.Model):
     name = models.CharField(max_length=128, blank=True, null=True) # Tên cho group chat
     admin = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_groups')
     avatar = models.ImageField(upload_to='group_avatars/', default='group_default.png')
+    admin_only_management = models.BooleanField(default=True)
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='conversations')
     updated_at = models.DateTimeField(auto_now=True)
     last_message = models.ForeignKey(
