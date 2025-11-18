@@ -62,6 +62,56 @@ def manage_group_view(request, conversation_id):
     }
     return render(request, 'chat/manage_group.html', context)
 
+@login_required
+def leave_group_view(request, conversation_id):
+    if request.method == 'POST':
+        conversation = get_object_or_404(Conversation, id=conversation_id, type='GROUP')
+        
+        # Kiểm tra xem người dùng có phải là thành viên của nhóm không
+        if not conversation.participants.filter(pk=request.user.pk).exists():
+            return HttpResponseForbidden("Bạn không phải là thành viên của nhóm này.")
+            
+        user_who_left = request.user
+        user_full_name = user_who_left.get_full_name() or user_who_left.username
+        
+        # Tạo tin nhắn hệ thống thông báo người dùng đã rời đi
+        Message.objects.create(
+            conversation=conversation,
+            sender=None, # sender là NULL cho tin nhắn hệ thống
+            text=f"{user_full_name} đã rời khỏi nhóm."
+        )
+
+        # Trường hợp Quản trị viên rời nhóm
+        if user_who_left == conversation.admin:
+            # Xóa admin khỏi danh sách thành viên trước
+            conversation.participants.remove(user_who_left)
+            
+            # Lấy danh sách tất cả thành viên còn lại
+            remaining_members = conversation.participants.all()
+            
+            # Nếu vẫn còn thành viên trong nhóm
+            if remaining_members.exists():
+                # Bổ nhiệm người dùng có ID nhỏ nhất (người tham gia sớm nhất) làm admin mới
+                new_admin = remaining_members.order_by('pk').first()
+                conversation.admin = new_admin
+                conversation.save()
+                messages.info(request, f"Bạn đã rời nhóm. {new_admin.username} đã được bổ nhiệm làm quản trị viên mới.")
+            # Nếu admin là thành viên cuối cùng
+            else:
+                conversation.delete()
+                messages.success(request, "Bạn là thành viên cuối cùng, nhóm đã được giải tán.")
+                return redirect('chat:conversation_list')
+        
+        # Trường hợp thành viên thường rời nhóm
+        else:
+            conversation.participants.remove(user_who_left)
+            messages.success(request, f"Bạn đã rời khỏi nhóm {conversation.name}.")
+        
+        return redirect('chat:conversation_list')
+    
+    # Nếu không phải là POST request, chuyển hướng
+    return redirect('posts:home')
+
 # ------------------- VIEW MỚI ĐỂ TẠO NHÓM -------------------
 @login_required
 def create_group_view(request):

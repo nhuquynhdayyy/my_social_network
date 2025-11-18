@@ -12,7 +12,7 @@ urlpatterns = [
     # --- THÊM DÒNG NÀY ---
     # URL cho trang quản lý nhóm
     path('<int:conversation_id>/manage/', views.manage_group_view, name='manage_group'),
-    
+    path('<int:conversation_id>/leave/', views.leave_group_view, name='leave_group'),
     path('start/<int:user_id>/', views.start_conversation_view, name='start_conversation'),
     path('<int:conversation_id>/', views.conversation_detail_view, name='conversation_detail'),
     

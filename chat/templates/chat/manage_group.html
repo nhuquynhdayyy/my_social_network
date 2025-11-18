@@ -4,21 +4,13 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-7">
+            <!-- Các card quản lý (đổi tên, thêm thành viên, cài đặt) giữ nguyên -->
             <h2 class="mb-4">Quản lý nhóm: {{ conversation.name }}</h2>
-
-            <!-- Hiển thị thông báo thành công (nếu có) -->
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-success">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-
-            <!-- Card để bật/tắt chế độ quản trị (chỉ admin thấy) -->
+            {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}{% endif %}
+            
             {% if is_group_admin %}
             <div class="card mb-4">
-                <div class="card-header">
-                    Cài đặt quản trị viên
-                </div>
+                <div class="card-header">Cài đặt quản trị viên</div>
                 <div class="card-body">
                     <form method="post">
                         {% csrf_token %}
@@ -33,49 +25,77 @@
                 </div>
             </div>
             {% endif %}
-
-            <!-- Card để đổi tên nhóm -->
+            
             <div class="card mb-4">
                 <div class="card-header">Đổi tên nhóm</div>
                 <div class="card-body">
                     {% if conversation.admin_only_management and not is_group_admin %}
-                        <p class="text-muted">Chế độ quản trị đang bật. Chỉ quản trị viên mới có thể đổi tên nhóm.</p>
+                        <p class="text-muted">Chỉ quản trị viên mới có thể đổi tên nhóm.</p>
                     {% else %}
-                        <form method="post">
-                            {% csrf_token %}
-                            {{ rename_form.as_p }}
-                            <button type="submit" name="rename_group" class="btn btn-primary">Lưu thay đổi</button>
-                        </form>
+                        <form method="post">{% csrf_token %}{{ rename_form.as_p }}<button type="submit" name="rename_group" class="btn btn-primary">Lưu thay đổi</button></form>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- Card để thêm thành viên -->
             <div class="card">
                 <div class="card-header">Thêm thành viên mới</div>
                 <div class="card-body">
                      {% if conversation.admin_only_management and not is_group_admin %}
-                        <p class="text-muted">Chế độ quản trị đang bật. Chỉ quản trị viên mới có thể thêm thành viên.</p>
+                        <p class="text-muted">Chỉ quản trị viên mới có thể thêm thành viên.</p>
                     {% else %}
-                        <form method="post">
-                            {% csrf_token %}
-                            {{ add_members_form.as_p }}
-                            <button type="submit" name="add_members" class="btn btn-success">Thêm thành viên</button>
-                        </form>
+                        <form method="post">{% csrf_token %}{{ add_members_form.as_p }}<button type="submit" name="add_members" class="btn btn-success">Thêm thành viên</button></form>
                     {% endif %}
                 </div>
             </div>
             
-            <div class="mt-4">
+            <!-- === BẮT ĐẦU PHẦN SỬA ĐỔI: TÁCH RIÊNG CÁC NÚT HÀNH ĐỘNG === -->
+            <hr class="my-4">
+            <div class="d-flex justify-content-between">
+                <!-- Nút quay lại (bên trái) -->
                 <a href="{% url 'chat:conversation_detail' conversation.id %}" class="btn btn-secondary">&laquo; Quay lại cuộc trò chuyện</a>
+
+                <!-- Nút rời nhóm (bên phải) -->
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmLeaveModal">
+                    Rời khỏi nhóm
+                </button>
             </div>
+            <!-- === KẾT THÚC PHẦN SỬA ĐỔI === -->
+            
         </div>
     </div>
 </div>
+
+<!-- Pop-up (Modal) xác nhận rời nhóm (giữ nguyên không thay đổi) -->
+<div class="modal fade" id="confirmLeaveModal" tabindex="-1" aria-labelledby="confirmLeaveModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmLeaveModalLabel">Xác nhận rời khỏi nhóm</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Bạn có chắc chắn muốn rời khỏi nhóm **"{{ conversation.name }}"** không? Hành động này không thể hoàn tác.
+        {% if is_group_admin and conversation.participants.count > 1 %}
+            <div class="alert alert-warning mt-3">Lưu ý: Bạn đang là quản trị viên. Sau khi bạn rời đi, quyền quản trị sẽ được chuyển cho một thành viên khác.</div>
+        {% elif is_group_admin and conversation.participants.count == 1 %}
+            <div class="alert alert-danger mt-3">Lưu ý: Bạn là thành viên cuối cùng. Rời đi sẽ giải tán nhóm vĩnh viễn.</div>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <form method="post" action="{% url 'chat:leave_group' conversation.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Rời nhóm</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock content %}
 
 {% block extra_js %}
-<!-- Thư viện TomSelect giúp ô chọn thành viên đẹp hơn -->
+<!-- Script cho TomSelect (giữ nguyên) -->
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <script>
