@@ -292,12 +292,7 @@
       }
 
       .main-content {
-        /* Chỉ thêm margin-left nếu người dùng đã đăng nhập và có sidebar */
-        {% if user.is_authenticated or request.path == '/accounts/login/' or request.path == '/accounts/register/' %}
         margin-left: 244px;
-        {% else %}
-        margin-left: 0;
-        {% endif %}
         padding: 20px 0;
         transition: margin-left 0.3s ease;
         position: relative;
