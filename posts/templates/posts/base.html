@@ -21,6 +21,46 @@
       body {
         background-color: #fafafa;
       }
+
+      .btn-interactive {
+          background-color: transparent;
+          border: none;
+          color: #65676b; /* Màu chữ xám của Facebook */
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px; /* Khoảng cách giữa icon và chữ */
+          border-radius: 6px;
+      }
+      .btn-interactive:hover {
+          background-color: #f2f2f2;
+          color: #65676b;
+      }
+      .interactive-icon {
+          width: 18px;
+          height: 18px;
+          fill: currentColor;
+      }
+
+      /* CSS cho trạng thái đã reaction */
+      .btn-interactive.reaction-active {
+        color: #0866ff; /* Màu xanh khi đã Like */
+      }
+      .btn-interactive.reaction-active .reaction-icon-liked { color: #0866ff; }
+      .btn-interactive.reaction-active .reaction-icon-loved { color: #f33e58; }
+      .btn-interactive.reaction-active .reaction-icon-haha { color: #f7b125; }
+      .btn-interactive.reaction-active .reaction-icon-wow { color: #f7b125; }
+      .btn-interactive.reaction-active .reaction-icon-sad { color: #f7b125; }
+      .btn-interactive.reaction-active .reaction-icon-angry { color: #e9710f; }
+      
+      /* Cập nhật màu cho text khi đã reaction */
+      .reaction-active[data-reaction-type="LIKE"] { color: #0866ff; } /* Like - Xanh */
+      .reaction-active[data-reaction-type="LOVE"] { color: #f33e58; } /* Love - Đỏ */
+      .reaction-active[data-reaction-type="HAHA"],
+      .reaction-active[data-reaction-type="WOW"],
+      .reaction-active[data-reaction-type="SAD"] { color: #f7b125; } /* Haha, Wow, Sad - Vàng */
+      .reaction-active[data-reaction-type="ANGRY"] { color: #e9710f; } /* Angry - Cam */
       
       .comment-input-wrapper {
           display: flex;
