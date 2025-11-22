@@ -1303,13 +1303,22 @@
         // === LOGIC CRUD & REPLY CHO BÌNH LUẬN (COMMENT)
         // =======================================================
         document.body.addEventListener('submit', function(event) {
-            // --- THÊM BÌNH LUẬN & TRẢ LỜI BÌNH LUẬN ---
+            // --- THÊM BÌNH LUẬN & TRẢ LỜI BÌNH LUẬN (ĐÃ CẬP NHẬT CHO MODAL) ---
             if (event.target.classList.contains('comment-form')) {
                 event.preventDefault();
                 const form = event.target;
                 const url = form.action;
                 const formData = new FormData(form);
                 const contentInput = form.querySelector('input[name=content]');
+
+                // Lấy Post ID từ attribute data-post-id mà ta vừa thêm ở Bước 1
+                // Nếu không có (trường hợp ở trang chủ cũ), ta thử lấy từ ID của input
+                let postId = form.dataset.postId; 
+                if (!postId && contentInput.id) {
+                    // Fallback: tách ID từ chuỗi "comment-input-123"
+                    const parts = contentInput.id.split('-');
+                    postId = parts[parts.length - 1];
+                }
 
                 fetch(url, {
                     method: 'POST',
@@ -1319,47 +1328,52 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'ok') {
+                        
+                        // === TRƯỜNG HỢP 1: LÀ REPLY (TRẢ LỜI BÌNH LUẬN CON) ===
                         if (data.is_reply) {
-                            // Nếu là reply, chèn vào container của parent
                             const repliesContainer = document.getElementById(`replies-for-${data.parent_id}`);
-                            repliesContainer.insertAdjacentHTML('beforeend', data.comment_html);
-                            // Ẩn form reply đi sau khi gửi
-                            form.closest('.reply-form-container').style.display = 'none';
-                        } else {
-                            // Nếu là comment gốc, chèn vào danh sách chính
-                            const commentList = form.closest('.comments-section').querySelector('.comment-list');
-                            commentList.insertAdjacentHTML('beforeend', data.comment_html);
+                            if (repliesContainer) {
+                                repliesContainer.insertAdjacentHTML('beforeend', data.comment_html);
+                                form.closest('.reply-form-container').style.display = 'none';
+                            }
+                        } 
+                        // === TRƯỜNG HỢP 2: LÀ BÌNH LUẬN GỐC (ROOT COMMENT) ===
+                        else {
+                            // A. Xử lý hiển thị trên MODAL (Nếu đang mở)
+                            // Tìm container trong modal dựa vào ID ta đã đặt
+                            const modalCommentList = document.getElementById(`modal-comments-list-${postId}`);
+                            if (modalCommentList) {
+                                modalCommentList.insertAdjacentHTML('beforeend', data.comment_html);
+                                
+                                // Tự động cuộn xuống bình luận mới nhất trong Modal
+                                modalCommentList.scrollTo({
+                                    top: modalCommentList.scrollHeight,
+                                    behavior: 'smooth'
+                                });
+                            }
+
+                            // B. Xử lý hiển thị trên TRANG CHỦ (Home Feed) - Để đồng bộ dữ liệu
+                            // Logic cũ: tìm theo class cha
+                            const homeSection = document.getElementById(`comments-section-${postId}`); 
+                            // Hoặc tìm theo cách cũ nếu bạn chưa đặt ID cho section trang chủ
+                            const oldStyleList = form.closest('.comments-section')?.querySelector('.comment-list');
+                            
+                            if (homeSection) {
+                                const list = homeSection.querySelector('.comment-list');
+                                if(list) list.insertAdjacentHTML('beforeend', data.comment_html);
+                            } else if (oldStyleList) {
+                                oldStyleList.insertAdjacentHTML('beforeend', data.comment_html);
+                            }
                         }
-                        // Xóa trắng ô input
+                        
+                        // Xóa trắng ô input sau khi gửi thành công
                         contentInput.value = '';
+                        
                     } else {
                         alert(data.message);
                     }
                 })
                 .catch(error => console.error('Error:', error));
-            }
-
-            // --- LƯU CHỈNH SỬA BÌNH LUẬN ---
-            if (event.target.classList.contains('edit-comment-form')) {
-                event.preventDefault();
-                const form = event.target;
-                const url = form.action;
-                const formData = new FormData(form);
-                const commentDiv = form.closest('[id^="comment-"]');
-
-                fetch(url, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': csrftoken },
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'ok') {
-                        commentDiv.outerHTML = data.comment_html;
-                    } else {
-                        alert(data.message);
-                    }
-                });
             }
         });
 

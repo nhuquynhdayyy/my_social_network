@@ -116,7 +116,12 @@
             <hr class="my-2">
 
             <!-- Form nhập bình luận trong Modal -->
-            <form class="comment-form d-flex align-items-center" method="POST" action="{% url 'posts:add_comment' post_id=post.id %}">
+            <!-- Tìm đoạn form ở cuối file và thêm data-post-id="{{ post.id }}" -->
+            <form class="comment-form d-flex align-items-center" 
+                method="POST" 
+                action="{% url 'posts:add_comment' post_id=post.id %}"
+                data-post-id="{{ post.id }}"> <!-- THÊM DÒNG NÀY -->
+                
                 {% csrf_token %}
                 <input type="text" name="content" id="modal-comment-input-{{ post.id }}" class="form-control border-0 p-0 shadow-none" placeholder="Thêm bình luận..." autocomplete="off" style="font-size: 0.9rem;">
                 <button type="submit" class="btn btn-link text-decoration-none fw-bold text-primary p-0 ms-2" style="font-size: 0.9rem;">Đăng</button>
