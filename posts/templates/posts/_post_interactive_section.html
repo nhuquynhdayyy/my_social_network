@@ -74,7 +74,9 @@
 
     <!-- Nút Bình luận -->
     <div class="flex-fill text-center">
-        <button class="btn btn-interactive w-100 comment-button" data-post-id="{{ post.id }}">
+        <!-- Xóa class 'comment-button' cũ nếu nó chỉ dùng để focus input -->
+        <!-- Thêm 'open-post-modal' -->
+        <button class="btn btn-interactive w-100 open-post-modal" data-post-id="{{ post.id }}">
             <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="interactive-icon"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
             Bình luận
         </button>

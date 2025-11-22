@@ -1,4 +1,4 @@
-# posts/views.py (ĐÃ SỬA)
+# posts/views.py
 
 from urllib import request
 from django.shortcuts import render, get_object_or_404
@@ -553,3 +553,26 @@ def get_reaction_list(request, post_id):
         'reactions': reactions_data,
         'reaction_counts': reaction_counts
     })
+
+# View này chỉ trả về một đoạn HTML (Partial) để AJAX nạp vào Modal
+def post_detail_modal(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    
+    # Kiểm tra like của user hiện tại để hiển thị đúng trạng thái nút Like
+    user_reactions_map = {}
+    if request.user.is_authenticated:
+        # Giả sử bạn có logic lấy reaction của user (tương tự view home)
+        # Ví dụ logic đơn giản:
+        user_reaction = post.reactions.filter(user=request.user).first()
+        if user_reaction:
+            user_reactions_map[post.id] = user_reaction.reaction_type
+
+    # Lấy comments (có thể lấy hết hoặc limit tùy bạn)
+    comments = post.comments.filter(parent=None).order_by('-created_at')
+
+    context = {
+        'post': post,
+        'comments': comments,
+        'user_reactions_map': user_reactions_map,
+    }
+    return render(request, 'posts/_post_modal_content.html', context)

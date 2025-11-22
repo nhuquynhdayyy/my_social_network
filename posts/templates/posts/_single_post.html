@@ -67,25 +67,30 @@
 
     <!-- === PHẦN 3: MEDIA (Ảnh/Video) === -->
     {% if post.media.all %}
-    <!-- SỬA Ở ĐÂY: Thêm style="position: relative;" -->
         <div id="carouselPost{{ post.id }}" class="carousel slide" style="position: relative;">
-            
-            <!-- THÊM MỚI: Bộ đếm slide -->
+            <!-- Counter (Giữ nguyên) -->
             {% if post.media.all|length > 1 %}
             <div class="carousel-counter">
                 <span class="current-slide-number">1</span> / {{ post.media.all|length }}
             </div>
             {% endif %}
-            <!-- KẾT THÚC PHẦN THÊM MỚI -->
 
             <div class="carousel-inner">
                 {% for media_item in post.media.all %}
                 <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                    {% if media_item.media_type == 'IMAGE' %}
-                    <img src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; object-fit: cover; border-radius: 8px;" alt="Post image">
-                    {% elif media_item.media_type == 'VIDEO' %}
-                    <video src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; border-radius: 8px;" controls></video>
-                    {% endif %}
+                    <!-- THÊM: Class open-post-modal và data-post-id -->
+                    <a href="#" class="open-post-modal" data-post-id="{{ post.id }}">
+                        {% if media_item.media_type == 'IMAGE' %}
+                            <img src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; object-fit: cover; border-radius: 8px;" alt="Post image">
+                        {% elif media_item.media_type == 'VIDEO' %}
+                            <!-- Video click vào để mở modal thì nên dùng thẻ bao ngoài, hoặc để controls=false để click vào là mở modal -->
+                            <video src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; border-radius: 8px;"></video>
+                            <!-- Icon Play overlay để báo hiệu đây là video -->
+                            <div class="position-absolute top-50 start-50 translate-middle text-white" style="pointer-events: none;">
+                                <svg fill="currentColor" viewBox="0 0 16 16" width="48" height="48"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/></svg>
+                            </div>
+                        {% endif %}
+                    </a>
                 </div>
                 {% endfor %}
             </div>

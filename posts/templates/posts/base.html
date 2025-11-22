@@ -22,6 +22,35 @@
         background-color: #fafafa;
       }
 
+      .modal-fullscreen-custom .modal-dialog {
+            max-width: 90vw; /* Độ rộng tối đa 90% màn hình */
+            width: 90vw;
+            margin: 1.75rem auto; /* Căn giữa */
+        }
+
+        .modal-fullscreen-custom .modal-content {
+            height: 90vh; /* Chiều cao cố định */
+            border-radius: 0 4px 4px 0; /* Bo góc nhẹ */
+            overflow: hidden;
+        }
+
+        .modal-fullscreen-custom .modal-body {
+            padding: 0; /* Bỏ padding mặc định */
+            overflow: hidden; /* Ẩn thanh cuộn ngoài */
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cccccc;
+            border-radius: 4px;
+        }
+        /* Căn media màu đen */
+        .media-column {
+            background-color: black;
+        }
+
       .btn-interactive {
           background-color: transparent;
           border: none;
@@ -895,6 +924,22 @@
       </div>
     </div>
 
+    <!-- Modal Chi Tiết Bài Viết -->
+    <div class="modal fade modal-fullscreen-custom" id="postDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body" id="postDetailModalBody">
+                    <!-- Nội dung sẽ được load qua AJAX -->
+                    <div class="d-flex justify-content-center align-items-center h-100">
+                        <div class="spinner-border text-secondary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- =================== SCRIPT CHUNG (Đã tối ưu và gộp) =================== -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
@@ -912,6 +957,46 @@
                     counter.textContent = event.to + 1;
                 }
             });
+        });
+
+        // === LOGIC MỞ MODAL CHI TIẾT BÀI VIẾT ===
+        const postDetailModal = new bootstrap.Modal(document.getElementById('postDetailModal'));
+        const postDetailModalBody = document.getElementById('postDetailModalBody');
+
+        document.body.addEventListener('click', function(event) {
+            // Tìm xem phần tử được click (hoặc cha của nó) có class trigger modal không
+            const trigger = event.target.closest('.open-post-modal');
+            
+            if (trigger) {
+                event.preventDefault();
+                const postId = trigger.dataset.postId;
+                
+                // 1. Mở modal và hiển thị loading
+                postDetailModal.show();
+                postDetailModalBody.innerHTML = `
+                    <div class="d-flex justify-content-center align-items-center h-100">
+                        <div class="spinner-border text-secondary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>`;
+
+                // 2. Fetch nội dung từ server
+                fetch(`/post/${postId}/modal/`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.text();
+                    })
+                    .then(html => {
+                        postDetailModalBody.innerHTML = html;
+                        
+                        // Khởi tạo lại các thành phần cần thiết trong modal (nếu có)
+                        // Ví dụ: Carousel Bootstrap tự chạy, nhưng nếu cần init thủ công thì làm ở đây
+                    })
+                    .catch(error => {
+                        console.error('Error loading post detail:', error);
+                        postDetailModalBody.innerHTML = '<p class="text-center text-danger mt-5">Không thể tải bài viết.</p>';
+                    });
+            }
         });
 
         // =======================================================

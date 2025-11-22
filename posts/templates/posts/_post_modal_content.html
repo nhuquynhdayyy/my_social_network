@@ -1,0 +1,126 @@
+{% load post_extras %}
+<div class="row g-0 h-100">
+    <!-- CỘT TRÁI: MEDIA (ẢNH/VIDEO) -->
+    <div class="col-lg-7 col-xl-8 bg-black d-flex align-items-center justify-content-center media-column position-relative">
+        {% if post.media.all %}
+            <div id="carouselModal{{ post.id }}" class="carousel slide w-100 h-100 d-flex align-items-center" data-bs-interval="false">
+                
+                {% if post.media.all|length > 1 %}
+                <div class="carousel-indicators">
+                    {% for media in post.media.all %}
+                    <button type="button" data-bs-target="#carouselModal{{ post.id }}" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}"></button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="carousel-inner h-100">
+                    {% for media_item in post.media.all %}
+                    <div class="carousel-item h-100 {% if forloop.first %}active{% endif %}">
+                        <div class="d-flex justify-content-center align-items-center w-100 h-100">
+                            {% if media_item.media_type == 'IMAGE' %}
+                                <img src="{{ media_item.file.url }}" class="img-fluid" style="max-height: 100vh; object-fit: contain;" alt="Post content">
+                            {% elif media_item.media_type == 'VIDEO' %}
+                                <video src="{{ media_item.file.url }}" class="img-fluid" style="max-height: 100vh;" controls autoplay muted></video>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if post.media.all|length > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#carouselModal{{ post.id }}" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carouselModal{{ post.id }}" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                </button>
+                {% endif %}
+            </div>
+        {% else %}
+            <!-- Trường hợp chỉ có text -->
+            <div class="p-5 text-white text-center">
+                <h4>{{ post.content }}</h4>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- CỘT PHẢI: THÔNG TIN & BÌNH LUẬN -->
+    <div class="col-lg-5 col-xl-4 d-flex flex-column bg-white h-100 border-start">
+        
+        <!-- 1. Header: Tác giả -->
+        <div class="p-3 border-bottom d-flex align-items-center justify-content-between flex-shrink-0">
+            <div class="d-flex align-items-center">
+                <a href="{% url 'accounts:profile' username=post.author.username %}">
+                    <img src="{{ post.author.avatar.url }}" class="rounded-circle me-2" width="32" height="32" alt="{{ post.author.username }}" style="object-fit: cover;">
+                </a>
+                <div>
+                    <a href="{% url 'accounts:profile' username=post.author.username %}" class="text-decoration-none text-dark fw-bold small">{{ post.author.username }}</a>
+                    <!-- Nút follow có thể đặt ở đây -->
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- 2. Body: Danh sách bình luận (Cuộn được) -->
+        <div class="flex-grow-1 overflow-auto p-3 custom-scrollbar" id="modal-comments-list-{{ post.id }}">
+            <!-- Hiển thị caption bài viết như comment đầu tiên -->
+            {% if post.content %}
+            <div class="d-flex align-items-start mb-3">
+                <a href="{% url 'accounts:profile' username=post.author.username %}">
+                    <img src="{{ post.author.avatar.url }}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
+                </a>
+                <div>
+                    <span class="fw-bold small">{{ post.author.username }}</span>
+                    <span class="small">{{ post.content|linebreaksbr }}</span>
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ post.created_at|timesince }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Danh sách các comments -->
+            {% for comment in comments %}
+                {% include 'posts/_single_comment.html' with comment=comment post=post %}
+            {% endfor %}
+        </div>
+
+        <!-- 3. Footer: Tương tác & Form nhập -->
+        <div class="border-top p-3 bg-white flex-shrink-0">
+            <!-- Các nút tương tác -->
+            <div class="d-flex justify-content-between mb-2">
+                <div class="d-flex gap-3">
+                    <!-- Sử dụng lại logic nút Like từ file _post_interactive_section.html nhưng bỏ bớt text -->
+                    {% with user_reaction=user_reactions_map|get_item:post.id %}
+                    <button class="btn p-0 border-0 reaction-btn {% if user_reaction %}reaction-active{% endif %}" data-post-id="{{ post.id }}" data-reaction-type="LIKE" style="font-size: 1.5rem;">
+                         {% if user_reaction %}
+                            <span class="reaction-icon-liked">❤️</span> <!-- Đã like thì hiện tim đỏ -->
+                         {% else %}
+                            <svg aria-label="Like" class="x1lliihq x1n2onr6" color="rgb(0, 0, 0)" fill="rgb(0, 0, 0)" height="24" role="img" viewBox="0 0 24 24" width="24"><title>Like</title><path d="M16.792 3.904A4.989 4.989 0 0 1 21.5 9.122c0 3.072-2.652 4.959-5.197 7.222-2.512 2.243-3.865 3.469-4.303 3.752-.477-.309-2.143-1.823-4.303-3.752C5.141 14.072 2.5 12.167 2.5 9.122a4.989 4.989 0 0 1 4.708-5.218 4.21 4.21 0 0 1 3.675 1.941c.84 1.175.98 1.763 1.12 1.763s.278-.588 1.11-1.766a4.17 4.17 0 0 1 3.679-1.938m0-2a6.04 6.04 0 0 0-4.797 2.127 6.052 6.052 0 0 0-4.787-2.127A6.985 6.985 0 0 0 .5 9.122c0 3.61 2.55 5.827 5.015 7.97.283.246.569.494.853.747l1.027.918a44.998 44.998 0 0 0 3.518 3.018 2 2 0 0 0 2.174 0 45.263 45.263 0 0 0 3.626-3.115l.922-.824c.293-.26.59-.519.885-.774 2.334-2.025 4.98-4.32 4.98-7.94a6.985 6.985 0 0 0-6.708-7.218Z"></path></svg>
+                         {% endif %}
+                    </button>
+                    {% endwith %}
+
+                    <button class="btn p-0 border-0" onclick="document.getElementById('modal-comment-input-{{ post.id }}').focus()">
+                        <svg aria-label="Comment" class="x1lliihq x1n2onr6" color="rgb(0, 0, 0)" fill="rgb(0, 0, 0)" height="24" role="img" viewBox="0 0 24 24" width="24"><title>Comment</title><path d="M20.656 17.008a9.993 9.993 0 1 0-3.59 3.615L22 22Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2"></path></svg>
+                    </button>
+                    <button class="btn p-0 border-0">
+                        <svg aria-label="Share Post" class="x1lliihq x1n2onr6" color="rgb(0, 0, 0)" fill="rgb(0, 0, 0)" height="24" role="img" viewBox="0 0 24 24" width="24"><title>Share Post</title><line fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2" x1="22" x2="9.218" y1="3" y2="10.083"></line><polygon fill="none" points="11.698 20.334 22 3.001 2 3.001 9.218 10.084 11.698 20.334" stroke="currentColor" stroke-linejoin="round" stroke-width="2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="fw-bold mb-1" id="reaction-stats-modal-{{ post.id }}">
+                {{ post.reactions.count }} lượt thích
+            </div>
+            <small class="text-muted text-uppercase" style="font-size: 0.7rem;">{{ post.created_at|date:"F j, Y" }}</small>
+            
+            <hr class="my-2">
+
+            <!-- Form nhập bình luận trong Modal -->
+            <form class="comment-form d-flex align-items-center" method="POST" action="{% url 'posts:add_comment' post_id=post.id %}">
+                {% csrf_token %}
+                <input type="text" name="content" id="modal-comment-input-{{ post.id }}" class="form-control border-0 p-0 shadow-none" placeholder="Thêm bình luận..." autocomplete="off" style="font-size: 0.9rem;">
+                <button type="submit" class="btn btn-link text-decoration-none fw-bold text-primary p-0 ms-2" style="font-size: 0.9rem;">Đăng</button>
+            </form>
+        </div>
+    </div>
+</div>
