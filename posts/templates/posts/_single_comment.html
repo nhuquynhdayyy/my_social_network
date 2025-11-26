@@ -33,11 +33,17 @@
                 </div>
             {% endif %}
 
-            <span id="comment-reaction-stats-{{ comment.id }}" class="comment-reaction-stats position-absolute end-0 bottom-0 translate-middle-y bg-white rounded-pill shadow-sm px-1 small" style="z-index: 1; {% if comment.reactions.count == 0 %}display: none;{% endif %}">
+            <a href="#" 
+            id="comment-reaction-stats-{{ comment.id }}" 
+            class="comment-reaction-stats position-absolute end-0 bottom-0 translate-middle-y bg-white rounded-pill shadow-sm px-1 small text-decoration-none text-dark" 
+            style="z-index: 1; {% if comment.reactions.count == 0 %}display: none;{% endif %}"
+            data-bs-toggle="modal" 
+            data-bs-target="#reactionListModal"
+            data-comment-id="{{ comment.id }}"> <!-- QUAN TRỌNG: Thêm data-comment-id -->
+
                 {% with stats=comment.get_reaction_stats %}
                     {% if stats %}
                         <span class="d-flex align-items-center">
-                            <!-- Chỉ hiện các icon tiêu biểu -->
                             {% if 'LIKE' in stats %}<span>👍</span>{% endif %}
                             {% if 'LOVE' in stats %}<span>❤️</span>{% endif %}
                             {% if 'HAHA' in stats %}<span>😂</span>{% endif %}
@@ -48,7 +54,7 @@
                         </span>
                     {% endif %}
                 {% endwith %}
-            </span>
+            </a>
         </div>
         
         <div class="comment-actions d-flex align-items-center text-muted mt-1">

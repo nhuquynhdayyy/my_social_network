@@ -576,3 +576,49 @@ def post_detail_modal(request, post_id):
         'user_reactions_map': user_reactions_map,
     }
     return render(request, 'posts/_post_modal_content.html', context)
+
+def get_comment_reactions(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    reactions = comment.reactions.all().select_related('user')
+    
+    data = []
+    reaction_counts = {}
+    
+    current_user = request.user
+
+    for reaction in reactions:
+        user = reaction.user
+        reaction_type = reaction.reaction_type
+        
+        # Đếm số lượng từng loại reaction
+        reaction_counts[reaction_type] = reaction_counts.get(reaction_type, 0) + 1
+        
+        # Kiểm tra quan hệ bạn bè để hiển thị nút nhắn tin
+        is_friend = False
+        conversation_id = None
+        
+        if current_user.is_authenticated and current_user != user:
+            # Logic kiểm tra bạn bè (tùy chỉnh theo model của bạn)
+            if Friendship.objects.filter(
+                (Q(from_user=current_user, to_user=user) | Q(from_user=user, to_user=current_user)),
+                status='ACCEPTED'
+            ).exists():
+                is_friend = True
+                # Giả sử bạn có logic lấy conversation_id ở đây, nếu chưa có thì để null
+                # conversation_id = ... 
+
+        data.append({
+            'username': user.username,
+            'full_name': user.get_full_name(),
+            'avatar_url': user.avatar.url,
+            'profile_url': f"/user/{user.username}/", # Sửa lại url profile cho đúng với dự án của bạn
+            'reaction_type': reaction_type,
+            'is_friend': is_friend,
+            'conversation_id': conversation_id, # Cần thiết nếu muốn nút nhắn tin hoạt động
+            'mutual_friends_count': 0 # Tính năng nâng cao, để 0 tạm
+        })
+        
+    return JsonResponse({
+        'reactions': data,
+        'reaction_counts': reaction_counts
+    })

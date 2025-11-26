@@ -1,4 +1,4 @@
-<!-- posts/templates/posts/base.html (ĐÃ SỬA LỖI) -->
+<!-- posts/templates/posts/base.html (ĐÃ SỬA LỖI HOÀN CHỈNH) -->
 <!DOCTYPE html>
 <html lang="vi">
   <head>
@@ -1072,18 +1072,27 @@
             reactionListModal.addEventListener('show.bs.modal', function(event) {
                 const button = event.relatedTarget;
                 const postId = button.dataset.postId;
-
+                const commentId = button.dataset.commentId;
                 // Reset và hiển thị spinner
                 tabsContainer.innerHTML = '';
                 userListContainer.innerHTML = `<div class="text-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>`;
-
+                // Xác định URL API cần gọi
+                let apiUrl = '';
+                if (commentId) {
+                    // Nếu có commentId -> Gọi API lấy reaction của comment
+                    apiUrl = `/comment/${commentId}/reactions/`;
+                } else if (postId) {
+                    // Nếu có postId -> Gọi API lấy reaction của post
+                    apiUrl = `/post/${postId}/reactions/`;
+                }
                 // Gọi API
-                fetch(`/post/${postId}/reactions/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        allReactionsData = data.reactions || [];
-                        const counts = data.reaction_counts || {};
-                        const totalReactions = allReactionsData.length;
+                if (apiUrl) {
+                    fetch(apiUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            allReactionsData = data.reactions || [];
+                            const counts = data.reaction_counts || {};
+                            const totalReactions = allReactionsData.length;
 
                         // 1. Tạo HTML cho các tab
                         let tabsHtml = `<button class="reaction-tab active" data-reaction-type="ALL">Tất cả <span class="badge bg-secondary rounded-pill">${totalReactions}</span></button>`;
@@ -1106,6 +1115,7 @@
                         console.error('Lỗi khi tải danh sách reaction:', error);
                         userListContainer.innerHTML = '<p class="text-center text-danger p-3">Đã có lỗi xảy ra. Vui lòng thử lại.</p>';
                     });
+                }
             });
 
             // --- Gắn sự kiện click cho các tab (dùng event delegation) ---
@@ -1544,7 +1554,6 @@
             })
             .catch(error => console.error('Comment Reaction Error:', error));
         }
-
         document.body.addEventListener('click', function(event) {
             if (event.target.closest('.comment-reaction-btn, .comment-reaction-choice-btn')) {
                 handleCommentReaction(event);

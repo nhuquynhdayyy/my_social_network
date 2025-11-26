@@ -29,4 +29,5 @@ urlpatterns = [
     path('post/<int:pk>/load-comments/', load_more_comments, name='load_more_comments'),
     path('post/<int:post_id>/reactions/', get_reaction_list, name='get_reaction_list'),
     path('post/<int:post_id>/modal/', views.post_detail_modal, name='post_detail_modal'),
+    path('comment/<int:comment_id>/reactions/', views.get_comment_reactions, name='comment_reactions'),
 ]
