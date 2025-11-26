@@ -1,3 +1,5 @@
+<!-- chat/templates/chat/manage_group.html -->
+
 {% extends "posts/base.html" %}
 
 {% block content %}
@@ -37,7 +39,7 @@
             </div>
             {% endif %}
 
-            <!-- 2. Danh sách yêu cầu chờ duyệt (Chỉ hiện cho Admin) -->
+            <!-- 2. Danh sách yêu cầu chờ duyệt -->
             {% if is_group_admin and pending_requests %}
             <div class="card mb-4 border-info">
                 <div class="card-header bg-info text-white">
@@ -60,21 +62,18 @@
             </div>
             {% endif %}
             
-            <!-- 3. Cập nhật thông tin nhóm (Tên & Avatar) -->
+            <!-- 3. Cập nhật thông tin nhóm -->
             <div class="card mb-4">
                 <div class="card-header">Thông tin nhóm</div>
                 <div class="card-body">
-                    <!-- Logic hiển thị: Nếu bật Admin Only VÀ User không phải Admin -> Chỉ hiển thị thông báo khóa -->
                     {% if conversation.admin_only_management and not is_group_admin %}
                         <div class="alert alert-secondary mb-0">
                             🔒 Nhóm này đang bật chế độ <strong>chỉ Quản trị viên</strong> mới được thay đổi tên và ảnh đại diện.
                         </div>
                     {% else %}
-                        <!-- enctype="multipart/form-data" là bắt buộc để upload ảnh -->
                         <form method="post" enctype="multipart/form-data">
                             {% csrf_token %}
                             {{ update_info_form.as_p }}
-                            <!-- Lưu ý: name của nút phải là update_group_info -->
                             <button type="submit" name="update_group_info" class="btn btn-primary">Lưu thay đổi</button>
                         </form>
                     {% endif %}
@@ -106,30 +105,42 @@
             </div>
             
             <hr class="my-4">
+            
+            <!-- BUTTONS CUỐI TRANG -->
             <div class="d-flex justify-content-between">
-                <a href="{% url 'chat:conversation_detail' conversation.id %}" class="btn btn-secondary">&laquo; Quay lại</a>
-                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmLeaveModal">
-                    Rời khỏi nhóm
-                </button>
+                <div>
+                    <a href="{% url 'chat:conversation_detail' conversation.id %}" class="btn btn-secondary">&laquo; Quay lại</a>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#confirmLeaveModal">
+                        Rời khỏi nhóm
+                    </button>
+                    
+                    <!-- === NÚT XÓA NHÓM (Chỉ Admin thấy) === -->
+                    {% if is_group_admin %}
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteGroupModal">
+                        🗑️ Xóa nhóm vĩnh viễn
+                    </button>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal xác nhận rời nhóm -->
-<div class="modal fade" id="confirmLeaveModal" tabindex="-1" aria-labelledby="confirmLeaveModalLabel" aria-hidden="true">
+<!-- Modal xác nhận Rời nhóm -->
+<div class="modal fade" id="confirmLeaveModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="confirmLeaveModalLabel">Xác nhận rời khỏi nhóm</h5>
+        <h5 class="modal-title">Xác nhận rời khỏi nhóm</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        Bạn có chắc chắn muốn rời khỏi nhóm **"{{ conversation.name }}"** không? Hành động này không thể hoàn tác.
+        Bạn có chắc chắn muốn rời khỏi nhóm **"{{ conversation.name }}"** không?
         {% if is_group_admin and conversation.participants.count > 1 %}
             <div class="alert alert-warning mt-3">Lưu ý: Bạn đang là quản trị viên. Sau khi bạn rời đi, quyền quản trị sẽ được chuyển cho một thành viên khác.</div>
-        {% elif is_group_admin and conversation.participants.count == 1 %}
-            <div class="alert alert-danger mt-3">Lưu ý: Bạn là thành viên cuối cùng. Rời đi sẽ giải tán nhóm vĩnh viễn.</div>
         {% endif %}
       </div>
       <div class="modal-footer">
@@ -142,8 +153,35 @@
     </div>
   </div>
 </div>
-{% endblock content %}
 
+<!-- === MODAL XÁC NHẬN XÓA NHÓM === -->
+{% if is_group_admin %}
+<div class="modal fade" id="confirmDeleteGroupModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">⚠️ CẢNH BÁO: Xóa nhóm vĩnh viễn</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Bạn đang chuẩn bị xóa nhóm <strong>"{{ conversation.name }}"</strong>.</p>
+        <p class="text-danger fw-bold">Hành động này không thể hoàn tác!</p>
+        <p>Toàn bộ tin nhắn và dữ liệu của nhóm sẽ bị xóa sạch khỏi hệ thống cho tất cả thành viên.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy, tôi ấn nhầm</button>
+        <!-- Form xóa nhóm (name="delete_group") -->
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="delete_group" class="btn btn-danger fw-bold">Tôi chắc chắn, Xóa ngay</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock content %}
 {% block extra_js %}
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>

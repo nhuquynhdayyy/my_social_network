@@ -1,5 +1,4 @@
 <!-- notifications/templates/notifications/notification_list.html -->
-
 {% extends "posts/base.html" %}
 {% load post_extras %}
 
@@ -18,7 +17,6 @@
                         <p class="mb-1">
                             <strong>{{ notif.sender.username }}</strong>
                            
-                            <!-- Logic hiển thị nội dung theo từng loại thông báo -->
                             {% if notif.notification_type == 'FRIEND_REQUEST' %}
                                 đã gửi cho bạn một lời mời kết bạn.
                             {% elif notif.notification_type == 'POST_REACTION' %}
@@ -36,12 +34,21 @@
                                 {% else %}
                                     một nhóm chat.
                                 {% endif %}
+                            
+                            <!-- === THÊM ĐOẠN NÀY === -->
+                            {% elif notif.notification_type == 'GROUP_INVITE_REQUEST' %}
+                                muốn thêm thành viên vào nhóm 
+                                {% if notif.target %}
+                                    <strong>{{ notif.target.name|default:"(Nhóm chưa đặt tên)" }}</strong>.
+                                {% else %}
+                                    nhóm chat của bạn.
+                                {% endif %}
+                            <!-- ===================== -->
                             {% endif %}
                         </p>
                         <small>{{ notif.timestamp|timesince }} trước</small>
                     </div>
 
-                    <!-- Hiển thị một phần nội dung của đối tượng được thông báo (Ví dụ: nội dung comment/post) -->
                     {% if notif.target and notif.target.content %}
                     <p class="mb-1 text-muted border-start border-3 ps-2">
                         <em>"{{ notif.target.content|truncatewords:15 }}"</em>

@@ -26,8 +26,19 @@ def manage_group_view(request, conversation_id):
     is_admin = (request.user == conversation.admin)
 
     if request.method == 'POST':
-        # 1. Cài đặt Admin
-        if 'toggle_admin_mode' in request.POST:
+        # 1. XÓA NHÓM (Chức năng mới)
+        if 'delete_group' in request.POST:
+            if not is_admin:
+                messages.error(request, "Chỉ Admin mới có quyền xóa nhóm.")
+                return redirect('chat:manage_group', conversation_id=conversation.id)
+            
+            group_name = conversation.name
+            conversation.delete()
+            messages.success(request, f"Đã xóa nhóm '{group_name}' thành công.")
+            return redirect('chat:conversation_list')
+
+        # 2. Cài đặt Admin
+        elif 'toggle_admin_mode' in request.POST:
             if not is_admin: 
                 messages.error(request, "Chỉ Admin mới có quyền thay đổi cài đặt này.")
                 return redirect('chat:manage_group', conversation_id=conversation.id)
@@ -38,25 +49,18 @@ def manage_group_view(request, conversation_id):
                 messages.success(request, 'Đã cập nhật cài đặt nhóm.')
                 return redirect('chat:manage_group', conversation_id=conversation.id)
         
-        # 2. Cập nhật thông tin nhóm (Tên + Avatar)
+        # 3. Cập nhật thông tin nhóm
         elif 'update_group_info' in request.POST:
-            # Kiểm tra quyền: Nếu bật chế độ admin_only và user không phải admin -> Chặn
             if conversation.admin_only_management and not is_admin:
                 messages.error(request, "Nhóm đang bật chế độ chỉ Admin được thay đổi thông tin.")
                 return redirect('chat:manage_group', conversation_id=conversation.id)
 
-            # Nhớ truyền request.FILES để xử lý ảnh
             form = GroupUpdateForm(request.POST, request.FILES, instance=conversation)
             if form.is_valid():
-                old_name = conversation.name
                 conversation = form.save()
-                
-                # Tạo thông báo chat hệ thống
                 changes = []
-                if 'name' in form.changed_data:
-                    changes.append(f"đổi tên nhóm thành '{conversation.name}'")
-                if 'avatar' in form.changed_data:
-                    changes.append("đổi ảnh đại diện nhóm")
+                if 'name' in form.changed_data: changes.append(f"đổi tên nhóm thành '{conversation.name}'")
+                if 'avatar' in form.changed_data: changes.append("đổi ảnh đại diện nhóm")
                 
                 if changes:
                     msg_text = f"{request.user.get_full_name()} đã " + " và ".join(changes) + "."
@@ -65,26 +69,37 @@ def manage_group_view(request, conversation_id):
                 messages.success(request, 'Đã cập nhật thông tin nhóm.')
                 return redirect('chat:manage_group', conversation_id=conversation.id)
         
-        # 3. Thêm thành viên
+        # 4. Thêm thành viên
         elif 'add_members' in request.POST:
             form = AddMembersForm(request.POST, conversation=conversation)
             if form.is_valid():
                 new_members = form.cleaned_data['new_members']
                 
-                # Logic: Nếu bật chế độ admin và người thêm không phải admin -> Tạo Request
+                # TH 1: Cần duyệt (User thường + Chế độ admin on)
                 if conversation.admin_only_management and not is_admin:
+                    conv_content_type = ContentType.objects.get_for_model(Conversation)
                     for member in new_members:
                         GroupMembershipRequest.objects.create(
                             conversation=conversation,
                             invited_by=request.user,
                             user_to_add=member
                         )
+                        
+                        # === TẠO THÔNG BÁO CHO ADMIN ===
+                        Notification.objects.create(
+                            recipient=conversation.admin,
+                            sender=request.user,
+                            notification_type='GROUP_INVITE_REQUEST', # Loại thông báo mới
+                            target_content_type=conv_content_type,
+                            target_object_id=conversation.id
+                        )
+                        # ===============================
+
                     messages.info(request, f"Đã gửi yêu cầu thêm {new_members.count()} thành viên. Chờ Admin phê duyệt.")
+                
+                # TH 2: Thêm trực tiếp
                 else:
-                    # Thêm trực tiếp
                     conversation.participants.add(*new_members)
-                    
-                    # Tin nhắn hệ thống chat
                     names = ", ".join([u.get_full_name() or u.username for u in new_members])
                     Message.objects.create(
                         conversation=conversation,
@@ -92,7 +107,6 @@ def manage_group_view(request, conversation_id):
                         text=f"{request.user.get_full_name()} đã thêm {names} vào nhóm."
                     )
 
-                    # === TẠO NOTIFICATION CHO CÁC THÀNH VIÊN ĐƯỢC THÊM ===
                     conv_content_type = ContentType.objects.get_for_model(Conversation)
                     for member in new_members:
                         Notification.objects.create(
@@ -102,13 +116,11 @@ def manage_group_view(request, conversation_id):
                             target_content_type=conv_content_type,
                             target_object_id=conversation.id
                         )
-                    # ========================================================
 
                     messages.success(request, 'Đã thêm thành viên mới.')
 
                 return redirect('chat:manage_group', conversation_id=conversation.id)
 
-    # Lấy danh sách request chờ duyệt (cho admin)
     pending_requests = []
     if is_admin:
         pending_requests = conversation.membership_requests.select_related('invited_by', 'user_to_add').all()
@@ -116,7 +128,7 @@ def manage_group_view(request, conversation_id):
     context = {
         'conversation': conversation,
         'settings_form': AdminSettingsForm(instance=conversation),
-        'update_info_form': GroupUpdateForm(instance=conversation), # Form cập nhật tên/avatar
+        'update_info_form': GroupUpdateForm(instance=conversation),
         'add_members_form': AddMembersForm(conversation=conversation),
         'is_group_admin': is_admin,
         'pending_requests': pending_requests,
@@ -199,6 +211,18 @@ def leave_group_view(request, conversation_id):
 
 @login_required
 def create_group_view(request):
+    # === BẮT ĐẦU SỬA: Lấy ID người muốn thêm từ URL (nếu có) ===
+    initial_data = {}
+    pre_selected_user_id = request.GET.get('with_user')
+    if pre_selected_user_id:
+        try:
+            # Kiểm tra xem user có tồn tại không để tránh lỗi
+            target_user = User.objects.get(pk=pre_selected_user_id)
+            initial_data['participants'] = [target_user.pk]
+        except User.DoesNotExist:
+            pass
+    # === KẾT THÚC SỬA ===
+
     if request.method == 'POST':
         form = GroupCreationForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
@@ -216,7 +240,6 @@ def create_group_view(request):
                 text=f"{request.user.get_full_name()} đã tạo nhóm '{group.name}'."
             )
 
-            # === TẠO NOTIFICATION CHO THÀNH VIÊN BAN ĐẦU ===
             conv_content_type = ContentType.objects.get_for_model(Conversation)
             for member in participants:
                  Notification.objects.create(
@@ -226,12 +249,58 @@ def create_group_view(request):
                     target_content_type=conv_content_type,
                     target_object_id=group.id
                 )
-            # ===============================================
             
             return redirect('chat:conversation_detail', conversation_id=group.id)
     else:
-        form = GroupCreationForm(user=request.user)
+        # === SỬA: Truyền initial_data vào form ===
+        form = GroupCreationForm(user=request.user, initial=initial_data)
+        # ========================================
+        
     return render(request, 'chat/create_group.html', {'form': form})
+
+@login_required
+def remove_member(request, conversation_id, user_id):
+    conversation = get_object_or_404(Conversation, id=conversation_id, type='GROUP')
+    member_to_remove = get_object_or_404(User, id=user_id)
+    
+    # 1. Kiểm tra người thực hiện có trong nhóm không
+    if not conversation.participants.filter(pk=request.user.pk).exists():
+        messages.error(request, "Bạn không phải là thành viên của nhóm này.")
+        return redirect('chat:conversation_detail', conversation_id=conversation.id)
+
+    # 2. Không được xóa chính mình (Dùng chức năng Rời nhóm)
+    if request.user == member_to_remove:
+        messages.warning(request, "Vui lòng dùng nút 'Rời khỏi nhóm'.")
+        return redirect('chat:conversation_detail', conversation_id=conversation.id)
+
+    # 3. Không ai được phép xóa Admin (kể cả Admin khác nếu có logic đa admin sau này)
+    if member_to_remove == conversation.admin:
+        messages.error(request, "Không thể xóa Quản trị viên khỏi nhóm.")
+        return redirect('chat:conversation_detail', conversation_id=conversation.id)
+
+    # === LOGIC PHÂN QUYỀN ===
+    is_admin = (request.user == conversation.admin)
+    
+    # Nếu bật chế độ Admin Only: Chỉ Admin được xóa
+    if conversation.admin_only_management and not is_admin:
+        messages.error(request, "Nhóm đang bật chế độ Quản trị viên. Bạn không có quyền xóa thành viên.")
+        return redirect('chat:conversation_detail', conversation_id=conversation.id)
+    
+    # Nếu tắt chế độ Admin Only: Ai cũng xóa được (trừ việc xóa Admin đã chặn ở trên)
+    # Hoặc nếu là Admin: Luôn được xóa
+    
+    # === THỰC HIỆN XÓA ===
+    conversation.participants.remove(member_to_remove)
+    
+    # Tin nhắn hệ thống báo cho cả nhóm
+    Message.objects.create(
+        conversation=conversation,
+        sender=None,
+        text=f"{request.user.get_full_name()} đã xóa {member_to_remove.get_full_name()} khỏi nhóm."
+    )
+    
+    messages.success(request, f"Đã mời {member_to_remove.username} ra khỏi nhóm.")
+    return redirect('chat:conversation_detail', conversation_id=conversation.id)
 
 # Các view bên dưới (API và list) giữ nguyên không đổi từ file cũ của bạn
 @login_required

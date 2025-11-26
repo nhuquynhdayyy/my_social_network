@@ -77,6 +77,10 @@ def get_notifications(request):
             if n.target:
                 group_name = n.target.name or "Nhóm chưa đặt tên"
             notif_text = f"đã thêm bạn vào nhóm <strong>{group_name}</strong>."
+        elif n.notification_type == 'GROUP_INVITE_REQUEST':
+            group_name = "một nhóm chat"
+            if n.target: group_name = n.target.name or "Nhóm chưa đặt tên"
+            notif_text = f"muốn thêm thành viên vào nhóm <strong>{group_name}</strong>."
         
         notifications_data.append({
             'id': n.id,
@@ -133,5 +137,8 @@ def redirect_notification(request, pk):
     # === CHUYỂN HƯỚNG KHI ĐƯỢC THÊM VÀO NHÓM ===
     if notif.notification_type == 'ADDED_TO_GROUP' and notif.target:
         return redirect('chat:conversation_detail', conversation_id=notif.target.id)
+    
+    if notif.notification_type == 'GROUP_INVITE_REQUEST' and notif.target:
+        return redirect('chat:manage_group', conversation_id=notif.target.id)
         
     return redirect("home")

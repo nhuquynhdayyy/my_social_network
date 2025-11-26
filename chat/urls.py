@@ -14,6 +14,7 @@ urlpatterns = [
     path('<int:conversation_id>/leave/', views.leave_group_view, name='leave_group'),
     path('start/<int:user_id>/', views.start_conversation_view, name='start_conversation'),
     path('<int:conversation_id>/', views.conversation_detail_view, name='conversation_detail'),
+    path('<int:conversation_id>/remove/<int:user_id>/', views.remove_member, name='remove_member'),
     
     # API URLs
     path('api/message/send/<int:conversation_id>/', views.send_message_api, name='send_message_api'),

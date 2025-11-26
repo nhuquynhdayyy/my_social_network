@@ -17,13 +17,24 @@
                     </div>
                 {% else %}
                     <img src="{{ other_participant.avatar.url }}" class="rounded-circle me-3" width="40" height="40" alt="{{ other_participant.username }}">
-                    <h4 class="mb-0">Trò chuyện với {{ other_participant.first_name }} {{ other_participant.last_name }}</h4>
+                    <h4 class="mb-0"> {{ other_participant.first_name }} {{ other_participant.last_name }}</h4>
                 {% endif %}
             </div>
             <div>
                 {% if conversation.type == 'GROUP' %}
                     <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#membersModal">Xem thành viên</button>
                     <a href="{% url 'chat:manage_group' conversation.id %}" class="btn btn-outline-primary btn-sm">Tùy chỉnh nhóm</a>
+                
+                {% elif conversation.type == 'PRIVATE' %}
+                    <!-- Nút tạo nhóm với người này -->
+                    <a href="{% url 'chat:create_group' %}?with_user={{ other_participant.id }}" class="btn btn-outline-primary btn-sm" title="Tạo nhóm với {{ other_participant.first_name }}">
+                        <!-- Icon thêm người/nhóm -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-plus-fill" viewBox="0 0 16 16">
+                          <path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                          <path fill-rule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"/>
+                        </svg>
+                        Tạo nhóm
+                    </a>
                 {% endif %}
             </div>
         </div>
@@ -31,10 +42,9 @@
         <!-- Phần thân chat (hiển thị tin nhắn) -->
         <div class="card-body" id="message-container" style="height: 60vh; overflow-y: auto;">
             
-            <!-- === BẮT ĐẦU PHẦN SỬA: VÒNG LẶP HIỂN THỊ TIN NHẮN THÔNG MINH === -->
             {% for message in messages %}
                 
-                <!-- Trường hợp 1: Đây là tin nhắn hệ thống (không có người gửi) -->
+                <!-- Trường hợp 1: Tin nhắn hệ thống -->
                 {% if not message.sender %}
                 <div class="text-center my-3">
                     <span class="text-muted small px-2 py-1" style="background-color: #f0f2f5; border-radius: 10px;">
@@ -42,7 +52,7 @@
                     </span>
                 </div>
 
-                <!-- Trường hợp 2: Đây là tin nhắn của người dùng bình thường -->
+                <!-- Trường hợp 2: Tin nhắn người dùng -->
                 {% else %}
                 <div id="message-{{ message.id }}" class="mb-3 d-flex {% if message.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
                     <div class="d-flex align-items-end {% if message.sender == user %}flex-row-reverse{% endif %}">
@@ -91,7 +101,6 @@
                 </div>
                 {% endif %}
             {% endfor %}
-            <!-- === KẾT THÚC PHẦN SỬA === -->
         </div>
 
         <!-- Phần footer (gửi tin nhắn) -->
@@ -107,7 +116,7 @@
     </div>
 </div>
 
-<!-- Modal hiển thị danh sách thành viên -->
+<!-- Modal hiển thị danh sách thành viên (ĐÃ CẬP NHẬT NÚT XÓA) -->
 {% if conversation.type == 'GROUP' %}
 <div class="modal fade" id="membersModal" tabindex="-1" aria-labelledby="membersModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -120,16 +129,53 @@
         <ul class="list-group list-group-flush">
           {% for member in participants %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
+                
+                <!-- Bên trái: Avatar + Tên -->
                 <div class="d-flex align-items-center">
-                    <img src="{{ member.avatar.url }}" class="rounded-circle me-3" width="40" height="40">
+                    <img src="{{ member.avatar.url }}" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
                     <div>
-                        <a href="{% url 'accounts:profile' username=member.username %}" class="text-decoration-none fw-bold">{{ member.first_name }} {{ member.last_name }}</a>
+                        <a href="{% url 'accounts:profile' username=member.username %}" class="text-decoration-none fw-bold text-dark">
+                            {{ member.first_name }} {{ member.last_name }}
+                        </a>
                         <div class="text-muted small">@{{ member.username }}</div>
                     </div>
                 </div>
-                {% if member == conversation.admin %}
-                    <span class="badge bg-primary rounded-pill">Quản trị viên</span>
-                {% endif %}
+
+                <!-- Bên phải: Các nút hành động -->
+                <div class="d-flex align-items-center gap-2">
+                    <!-- 1. Nút nhắn tin riêng -->
+                    {% if member != request.user %}
+                        <a href="{% url 'chat:start_conversation' user_id=member.id %}" 
+                           class="btn btn-light btn-sm rounded-circle" 
+                           title="Nhắn tin riêng"
+                           style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chat-dots-fill text-primary" viewBox="0 0 16 16">
+                                <path d="M16 8c0 3.866-3.582 7-8 7a9.06 9.06 0 0 1-2.347-.306c-.584.296-1.925.864-4.181 1.234-.2.032-.352-.176-.273-.362.354-.836.674-1.95.77-2.966C.744 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7zM5 8a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0z"/>
+                            </svg>
+                        </a>
+                    {% endif %}
+
+                    <!-- 2. Logic hiển thị nút XÓA THÀNH VIÊN -->
+                    {% if member != request.user and member != conversation.admin %}
+                        <!-- Nếu mình là Admin HOẶC Chế độ quản trị viên đang TẮT -->
+                        {% if is_group_admin or not conversation.admin_only_management %}
+                            <a href="{% url 'chat:remove_member' conversation_id=conversation.id user_id=member.id %}" 
+                               class="btn btn-light btn-sm rounded-circle" 
+                               title="Xóa khỏi nhóm"
+                               onclick="return confirm('Bạn có chắc muốn mời {{ member.username }} ra khỏi nhóm?');"
+                               style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill text-danger" viewBox="0 0 16 16">
+                                    <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/>
+                                </svg>
+                            </a>
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- 3. Huy hiệu Admin -->
+                    {% if member == conversation.admin %}
+                        <span class="badge bg-primary rounded-pill">Quản trị viên</span>
+                    {% endif %}
+                </div>
             </li>
           {% endfor %}
         </ul>
