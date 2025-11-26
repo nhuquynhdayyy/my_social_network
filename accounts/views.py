@@ -6,14 +6,16 @@ from django.views.generic import CreateView, DetailView, UpdateView, DeleteView,
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-
+from django.contrib.auth import get_user_model
 from notifications.models import Notification 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
+# ĐÃ SỬA: Bỏ FriendRequest khỏi dòng import dưới đây
 from .models import User, Friendship 
 from posts.models import Post, Reaction, Comment 
 from django.contrib.contenttypes.models import ContentType
 
 class SignUpView(CreateView):
+    # ... (Giữ nguyên phần còn lại của file không thay đổi) ...
     form_class = CustomUserCreationForm
     success_url = reverse_lazy('accounts:login') 
     template_name = 'accounts/register.html'
@@ -113,12 +115,24 @@ class UserListView(LoginRequiredMixin, ListView):
     context_object_name = 'users'
 
     def get_queryset(self):
-        return User.objects.exclude(username=self.request.user.username)
+        # 1. Lấy queryset gốc: Loại trừ user hiện tại
+        queryset = User.objects.exclude(id=self.request.user.id)
+        
+        # 2. Xử lý tìm kiếm
+        query = self.request.GET.get('q') # Lấy tham số 'q' từ URL
+        if query:
+            queryset = queryset.filter(
+                Q(username__icontains=query) |       # Tìm theo username
+                Q(first_name__icontains=query) |     # Tìm theo Tên
+                Q(last_name__icontains=query)        # Tìm theo Họ
+            )
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         
+        # --- Logic xác định trạng thái bạn bè (Giữ nguyên code cũ của bạn) ---
         friends_q = Friendship.objects.filter(
             (Q(from_user=user) | Q(to_user=user)) & Q(status='ACCEPTED')
         )
@@ -137,6 +151,9 @@ class UserListView(LoginRequiredMixin, ListView):
         context['friend_ids'] = friend_ids
         context['sent_request_ids'] = sent_request_ids
         context['received_request_ids'] = received_request_ids
+        
+        # --- THÊM: Truyền từ khóa tìm kiếm ra template để giữ lại trong ô input ---
+        context['query'] = self.request.GET.get('q', '') 
         
         return context
 
