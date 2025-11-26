@@ -4,13 +4,24 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-7">
-            <!-- Các card quản lý (đổi tên, thêm thành viên, cài đặt) giữ nguyên -->
-            <h2 class="mb-4">Quản lý nhóm: {{ conversation.name }}</h2>
-            {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}{% endif %}
             
+            <div class="d-flex align-items-center mb-4">
+                <img src="{{ conversation.avatar.url }}" class="rounded-circle me-3 border" width="60" height="60" style="object-fit: cover;">
+                <h2 class="mb-0">Quản lý nhóm: {{ conversation.name }}</h2>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- 1. Cài đặt Admin (Chỉ hiện cho Admin) -->
             {% if is_group_admin %}
-            <div class="card mb-4">
-                <div class="card-header">Cài đặt quản trị viên</div>
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <strong>⚙️ Cài đặt quản trị</strong>
+                </div>
                 <div class="card-body">
                     <form method="post">
                         {% csrf_token %}
@@ -25,47 +36,87 @@
                 </div>
             </div>
             {% endif %}
+
+            <!-- 2. Danh sách yêu cầu chờ duyệt (Chỉ hiện cho Admin) -->
+            {% if is_group_admin and pending_requests %}
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <strong>🔔 Yêu cầu tham gia chờ duyệt ({{ pending_requests|length }})</strong>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for req in pending_requests %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ req.user_to_add.get_full_name }}</strong>
+                            <div class="text-muted small">Mời bởi: {{ req.invited_by.get_full_name }}</div>
+                        </div>
+                        <div>
+                            <a href="{% url 'chat:handle_request' request_id=req.id action='approve' %}" class="btn btn-success btn-sm">Duyệt</a>
+                            <a href="{% url 'chat:handle_request' request_id=req.id action='reject' %}" class="btn btn-outline-danger btn-sm">Từ chối</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
             
+            <!-- 3. Cập nhật thông tin nhóm (Tên & Avatar) -->
             <div class="card mb-4">
-                <div class="card-header">Đổi tên nhóm</div>
+                <div class="card-header">Thông tin nhóm</div>
                 <div class="card-body">
+                    <!-- Logic hiển thị: Nếu bật Admin Only VÀ User không phải Admin -> Chỉ hiển thị thông báo khóa -->
                     {% if conversation.admin_only_management and not is_group_admin %}
-                        <p class="text-muted">Chỉ quản trị viên mới có thể đổi tên nhóm.</p>
+                        <div class="alert alert-secondary mb-0">
+                            🔒 Nhóm này đang bật chế độ <strong>chỉ Quản trị viên</strong> mới được thay đổi tên và ảnh đại diện.
+                        </div>
                     {% else %}
-                        <form method="post">{% csrf_token %}{{ rename_form.as_p }}<button type="submit" name="rename_group" class="btn btn-primary">Lưu thay đổi</button></form>
+                        <!-- enctype="multipart/form-data" là bắt buộc để upload ảnh -->
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {{ update_info_form.as_p }}
+                            <!-- Lưu ý: name của nút phải là update_group_info -->
+                            <button type="submit" name="update_group_info" class="btn btn-primary">Lưu thay đổi</button>
+                        </form>
                     {% endif %}
                 </div>
             </div>
 
+            <!-- 4. Thêm thành viên -->
             <div class="card">
                 <div class="card-header">Thêm thành viên mới</div>
                 <div class="card-body">
-                     {% if conversation.admin_only_management and not is_group_admin %}
-                        <p class="text-muted">Chỉ quản trị viên mới có thể thêm thành viên.</p>
-                    {% else %}
-                        <form method="post">{% csrf_token %}{{ add_members_form.as_p }}<button type="submit" name="add_members" class="btn btn-success">Thêm thành viên</button></form>
+                    {% if conversation.admin_only_management and not is_group_admin %}
+                        <div class="alert alert-warning py-2">
+                            <small>⚠️ Nhóm đang bật kiểm duyệt. Thành viên bạn mời sẽ cần Quản trị viên phê duyệt.</small>
+                        </div>
                     {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ add_members_form.as_p }}
+                        <button type="submit" name="add_members" class="btn btn-success">
+                            {% if conversation.admin_only_management and not is_group_admin %}
+                                Gửi yêu cầu thêm
+                            {% else %}
+                                Thêm thành viên
+                            {% endif %}
+                        </button>
+                    </form>
                 </div>
             </div>
             
-            <!-- === BẮT ĐẦU PHẦN SỬA ĐỔI: TÁCH RIÊNG CÁC NÚT HÀNH ĐỘNG === -->
             <hr class="my-4">
             <div class="d-flex justify-content-between">
-                <!-- Nút quay lại (bên trái) -->
-                <a href="{% url 'chat:conversation_detail' conversation.id %}" class="btn btn-secondary">&laquo; Quay lại cuộc trò chuyện</a>
-
-                <!-- Nút rời nhóm (bên phải) -->
+                <a href="{% url 'chat:conversation_detail' conversation.id %}" class="btn btn-secondary">&laquo; Quay lại</a>
                 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmLeaveModal">
                     Rời khỏi nhóm
                 </button>
             </div>
-            <!-- === KẾT THÚC PHẦN SỬA ĐỔI === -->
-            
         </div>
     </div>
 </div>
 
-<!-- Pop-up (Modal) xác nhận rời nhóm (giữ nguyên không thay đổi) -->
+<!-- Modal xác nhận rời nhóm -->
 <div class="modal fade" id="confirmLeaveModal" tabindex="-1" aria-labelledby="confirmLeaveModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -91,11 +142,9 @@
     </div>
   </div>
 </div>
-
 {% endblock content %}
 
 {% block extra_js %}
-<!-- Script cho TomSelect (giữ nguyên) -->
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <script>

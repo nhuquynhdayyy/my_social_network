@@ -11,14 +11,14 @@
 
             <div class="list-group">
                 {% for notif in notifications %}
-                <a href="{% url 'notifications:redirect' pk=notif.pk %}" 
+                <a href="{% url 'notifications:redirect' pk=notif.pk %}"
                    class="list-group-item list-group-item-action {% if not notif.is_read %}list-group-item-info{% endif %}">
-                    
+                   
                     <div class="d-flex w-100 justify-content-between">
                         <p class="mb-1">
                             <strong>{{ notif.sender.username }}</strong>
-                            
-                            <!-- Hiển thị nội dung thông báo một cách thân thiện -->
+                           
+                            <!-- Logic hiển thị nội dung theo từng loại thông báo -->
                             {% if notif.notification_type == 'FRIEND_REQUEST' %}
                                 đã gửi cho bạn một lời mời kết bạn.
                             {% elif notif.notification_type == 'POST_REACTION' %}
@@ -29,12 +29,19 @@
                                 đã bày tỏ cảm xúc về bình luận của bạn.
                             {% elif notif.notification_type == 'MESSAGE' %}
                                 đã gửi cho bạn một tin nhắn mới.
+                            {% elif notif.notification_type == 'ADDED_TO_GROUP' %}
+                                đã thêm bạn vào nhóm 
+                                {% if notif.target %}
+                                    <strong>{{ notif.target.name|default:"(Nhóm chưa đặt tên)" }}</strong>.
+                                {% else %}
+                                    một nhóm chat.
+                                {% endif %}
                             {% endif %}
                         </p>
                         <small>{{ notif.timestamp|timesince }} trước</small>
                     </div>
 
-                    <!-- Hiển thị một phần nội dung của đối tượng được thông báo -->
+                    <!-- Hiển thị một phần nội dung của đối tượng được thông báo (Ví dụ: nội dung comment/post) -->
                     {% if notif.target and notif.target.content %}
                     <p class="mb-1 text-muted border-start border-3 ps-2">
                         <em>"{{ notif.target.content|truncatewords:15 }}"</em>

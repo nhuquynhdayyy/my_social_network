@@ -1,5 +1,3 @@
-# notifications/views.py
-
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.urls import reverse
@@ -12,36 +10,28 @@ from .models import Notification
 from chat.models import Message
 from posts.models import Comment, Post
 
-# ==============================================================================
-# VIEW: Trang hiển thị TẤT CẢ thông báo (Giữ nguyên)
-# ==============================================================================
 @login_required
 def notification_list_view(request):
     notifications = Notification.objects.filter(recipient=request.user)
     Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
     return render(request, 'notifications/notification_list.html', {'notifications': notifications})
 
-# ==============================================================================
-# API: Lấy thông báo cho dropdown (ĐÃ SỬA)
-# ==============================================================================
 @login_required
 def get_notifications(request):
     user = request.user
     notifications_data = []
 
-    # === BẮT ĐẦU SỬA ===
-    # 1. Lấy 15 thông báo gần đây nhất, bất kể đã đọc hay chưa
+    # 1. Lấy 15 thông báo gần đây nhất
     recent_notifications = Notification.objects.filter(
         recipient=user
     ).select_related('sender', 'target_content_type').order_by('-timestamp')[:15]
 
-    # 2. Đếm riêng tổng số thông báo CHƯA ĐỌC để hiển thị trên huy hiệu
+    # 2. Đếm riêng tổng số thông báo CHƯA ĐỌC
     total_unread = Notification.objects.filter(recipient=user, is_read=False).count()
-    # === KẾT THÚC SỬA ===
 
-    # (Phần xử lý message giữ nguyên, nhưng sẽ chạy trên `recent_notifications`)
     message_groups = {}
     other_notifications = []
+    
     for n in recent_notifications:
         if n.notification_type == 'MESSAGE':
             if not n.target: continue
@@ -49,7 +39,6 @@ def get_notifications(request):
             if conv_id not in message_groups:
                 message_groups[conv_id] = {'latest_notification': n, 'count': 0, 'is_read': n.is_read}
             message_groups[conv_id]['count'] += 1
-            # Nếu có bất kỳ tin nhắn nào chưa đọc, cả nhóm được coi là chưa đọc
             if not n.is_read:
                 message_groups[conv_id]['is_read'] = False
         else:
@@ -65,10 +54,9 @@ def get_notifications(request):
             'sender': n.sender.username,
             'timestamp': timezone.localtime(n.timestamp).strftime('%H:%M %d-%m-%Y'),
             'link': reverse('notifications:redirect', args=[n.id]),
-            'is_read': group_data['is_read'] # Thêm trạng thái đã đọc
+            'is_read': group_data['is_read']
         })
 
-    # === BẮT ĐẦU SỬA: Thêm trạng thái is_read cho các thông báo khác ===
     for n in other_notifications:
         notif_text = ""
         target_content = ""
@@ -83,6 +71,12 @@ def get_notifications(request):
             notif_text = f"đã bình luận về bài viết của bạn: \"{target_content}...\""
         elif n.notification_type == 'COMMENT_REACTION':
             notif_text = f"đã bày tỏ cảm xúc về bình luận của bạn: \"{target_content}...\""
+        # === XỬ LÝ THÔNG BÁO THÊM VÀO NHÓM ===
+        elif n.notification_type == 'ADDED_TO_GROUP':
+            group_name = "một nhóm chat"
+            if n.target:
+                group_name = n.target.name or "Nhóm chưa đặt tên"
+            notif_text = f"đã thêm bạn vào nhóm <strong>{group_name}</strong>."
         
         notifications_data.append({
             'id': n.id,
@@ -90,24 +84,21 @@ def get_notifications(request):
             'sender': n.sender.username,
             'timestamp': timezone.localtime(n.timestamp).strftime('%H:%M %d-%m-%Y'),
             'link': reverse('notifications:redirect', args=[n.id]),
-            'is_read': n.is_read  # <-- THÊM DÒNG NÀY
+            'is_read': n.is_read
         })
-    # === KẾT THÚC SỬA ===
 
     notifications_data.sort(key=lambda x: timezone.datetime.strptime(x['timestamp'], '%H:%M %d-%m-%Y'), reverse=True)
 
     return JsonResponse({
         'notifications': notifications_data,
-        'total_unread': total_unread # Gửi đi số lượng chưa đọc
+        'total_unread': total_unread
     })
 
-# ==============================================================================
-# VIEW: Xử lý chuyển hướng (Giữ nguyên)
-# ==============================================================================
 @login_required
 def redirect_notification(request, pk):
     notif = get_object_or_404(Notification, pk=pk, recipient=request.user)
-    # (Toàn bộ logic của hàm này giữ nguyên như phiên bản trước)
+    
+    # Xử lý tin nhắn (Message)
     if notif.notification_type == "MESSAGE" and notif.target:
         conv_id = notif.target.conversation_id
         message_ct = ContentType.objects.get_for_model(Message)
@@ -120,9 +111,10 @@ def redirect_notification(request, pk):
             is_read=False
         ).update(is_read=True)
         return redirect('chat:conversation_detail', conversation_id=conv_id)
-    else:
-        notif.is_read = True
-        notif.save()
+    
+    # Xử lý chung các loại khác: đánh dấu đã đọc
+    notif.is_read = True
+    notif.save()
 
     if notif.notification_type == "FRIEND_REQUEST":
         return redirect("accounts:friend_requests")
@@ -137,5 +129,9 @@ def redirect_notification(request, pk):
         post = comment.post
         profile_url = reverse("accounts:profile", kwargs={'username': post.author.username})
         return redirect(f"{profile_url}#post-{post.id}")
+        
+    # === CHUYỂN HƯỚNG KHI ĐƯỢC THÊM VÀO NHÓM ===
+    if notif.notification_type == 'ADDED_TO_GROUP' and notif.target:
+        return redirect('chat:conversation_detail', conversation_id=notif.target.id)
         
     return redirect("home")

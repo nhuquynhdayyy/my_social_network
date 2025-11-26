@@ -10,6 +10,7 @@ class Notification(models.Model):
         ('POST_COMMENT', 'Bình luận bài viết'),
         ('COMMENT_REACTION', 'Bày tỏ cảm xúc về bình luận'), 
         ('MESSAGE', 'Tin nhắn mới'),
+        ('ADDED_TO_GROUP', 'Được thêm vào nhóm'),
     ]
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
