@@ -33,21 +33,22 @@
                 </div>
             {% endif %}
 
-            {% with stats=comment.get_reaction_stats %}
-                {% if stats %}
-                    <span id="comment-reaction-stats-{{ comment.id }}" class="comment-reaction-stats">
-                        <span class="ms-1">
+            <span id="comment-reaction-stats-{{ comment.id }}" class="comment-reaction-stats position-absolute end-0 bottom-0 translate-middle-y bg-white rounded-pill shadow-sm px-1 small" style="z-index: 1; {% if comment.reactions.count == 0 %}display: none;{% endif %}">
+                {% with stats=comment.get_reaction_stats %}
+                    {% if stats %}
+                        <span class="d-flex align-items-center">
+                            <!-- Chỉ hiện các icon tiêu biểu -->
                             {% if 'LIKE' in stats %}<span>👍</span>{% endif %}
                             {% if 'LOVE' in stats %}<span>❤️</span>{% endif %}
                             {% if 'HAHA' in stats %}<span>😂</span>{% endif %}
                             {% if 'WOW' in stats %}<span>😮</span>{% endif %}
                             {% if 'SAD' in stats %}<span>😢</span>{% endif %}
                             {% if 'ANGRY' in stats %}<span>😡</span>{% endif %}
-                            {{ comment.reactions.count }}
+                            <span class="ms-1 text-muted" style="font-size: 0.8rem;">{{ comment.reactions.count }}</span>
                         </span>
-                    </span>
-                {% endif %}
-            {% endwith %}
+                    {% endif %}
+                {% endwith %}
+            </span>
         </div>
         
         <div class="comment-actions d-flex align-items-center text-muted mt-1">

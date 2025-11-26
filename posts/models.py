@@ -62,8 +62,7 @@ class Comment(models.Model):
     
     reactions = GenericRelation('Reaction')
 
-    # THÊM HÀM NÀY
-    def get_reaction_stats_for_comment(self):
+    def get_reaction_stats(self):
         stats = self.reactions.values('reaction_type').annotate(count=Count('id'))
         return {item['reaction_type']: item['count'] for item in stats}
 

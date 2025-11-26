@@ -1497,34 +1497,40 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'ok') {
+                    // 1. Cập nhật vùng hiển thị số lượng (Stats)
                     const statsContainer = document.getElementById(`comment-reaction-stats-${commentId}`);
                     if (statsContainer) {
                         if (data.total_reactions > 0) {
                             let iconsHTML = '';
+                            // Logic chọn icon hiển thị (ưu tiên icon nào nhiều người thả nhất - ở đây demo hiển thị hết loại có mặt)
                             if (data.reaction_stats.LIKE) iconsHTML += '<span>👍</span>';
                             if (data.reaction_stats.LOVE) iconsHTML += '<span>❤️</span>';
                             if (data.reaction_stats.HAHA) iconsHTML += '<span>😂</span>';
                             if (data.reaction_stats.WOW) iconsHTML += '<span>😮</span>';
                             if (data.reaction_stats.SAD) iconsHTML += '<span>😢</span>';
                             if (data.reaction_stats.ANGRY) iconsHTML += '<span>😡</span>';
-                            statsContainer.innerHTML = `<span class="ms-1">${iconsHTML} ${data.total_reactions}</span>`;
+                            
+                            statsContainer.innerHTML = `<span class="d-flex align-items-center">${iconsHTML} <span class="ms-1 text-muted" style="font-size: 0.8rem;">${data.total_reactions}</span></span>`;
+                            statsContainer.style.display = 'inline-block'; // Hiện lên nếu trước đó bị ẩn
                         } else {
                             statsContainer.innerHTML = '';
+                            statsContainer.style.display = 'none'; // Ẩn đi nếu không còn like nào
                         }
                     }
 
+                    // 2. Cập nhật trạng thái nút bấm (Màu xanh/xám)
                     const mainReactionButton = document.querySelector(`.comment-reaction-btn[data-comment-id='${commentId}']`);
                     if (mainReactionButton) {
                         if (data.current_user_reaction) {
                             mainReactionButton.classList.add('text-primary', 'fw-bold');
                             mainReactionButton.classList.remove('text-muted');
+                            // Cập nhật chữ nút bấm
                             let reactionText = 'Thích';
-                            if (data.current_user_reaction === 'LIKE') reactionText = '👍 Thích';
-                            else if (data.current_user_reaction === 'LOVE') reactionText = '❤️ Yêu thích';
-                            else if (data.current_user_reaction === 'HAHA') reactionText = '😂 Haha';
-                            else if (data.current_user_reaction === 'WOW') reactionText = '😮 Wow';
-                            else if (data.current_user_reaction === 'SAD') reactionText = '😢 Buồn';
-                            else if (data.current_user_reaction === 'ANGRY') reactionText = '😡 Phẫn nộ';
+                            const map = {
+                                'LIKE': '👍 Thích', 'LOVE': '❤️ Yêu thích', 'HAHA': '😂 Haha',
+                                'WOW': '😮 Wow', 'SAD': '😢 Buồn', 'ANGRY': '😡 Phẫn nộ'
+                            };
+                            if (map[data.current_user_reaction]) reactionText = map[data.current_user_reaction];
                             mainReactionButton.innerHTML = reactionText;
                         } else {
                             mainReactionButton.classList.remove('text-primary', 'fw-bold');
@@ -1538,6 +1544,7 @@
             })
             .catch(error => console.error('Comment Reaction Error:', error));
         }
+
         document.body.addEventListener('click', function(event) {
             if (event.target.closest('.comment-reaction-btn, .comment-reaction-choice-btn')) {
                 handleCommentReaction(event);
