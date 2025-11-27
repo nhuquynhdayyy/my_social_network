@@ -329,12 +329,19 @@ def conversation_detail_view(request, conversation_id):
         other_participant = conversation.participants.exclude(id=request.user.id).first()
 
     if request.method == "POST":
-        form = MessageForm(request.POST)
+        # === CẬP NHẬT: Thêm request.FILES ===
+        form = MessageForm(request.POST, request.FILES)
         if form.is_valid():
             message = form.save(commit=False)
             message.conversation = conversation
             message.sender = request.user
             message.save()
+            
+            # Cập nhật last_message cho conversation
+            conversation.last_message = message
+            conversation.updated_at = timezone.now()
+            conversation.save()
+            
             return redirect('chat:conversation_detail', conversation_id=conversation.id)
 
     messages_qs = conversation.messages.select_related('sender').all()
@@ -367,15 +374,24 @@ def conversation_detail_view(request, conversation_id):
 def send_message_api(request, conversation_id):
     if request.method == 'POST':
         conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
-        form = MessageForm(request.POST)
+        # === CẬP NHẬT: Thêm request.FILES ===
+        form = MessageForm(request.POST, request.FILES)
+        
         if form.is_valid():
             message = form.save(commit=False)
             message.conversation = conversation
             message.sender = request.user
+            
+            # Kiểm tra: Phải có text HOẶC file
+            if not message.text and not message.file:
+                 return JsonResponse({'status': 'error', 'message': 'Tin nhắn rỗng'}, status=400)
+
             message.save()
+            
             conversation.last_message = message
             conversation.updated_at = timezone.now()
             conversation.save()
+            
             receivers = conversation.participants.exclude(id=request.user.id)
             ct = ContentType.objects.get_for_model(message)
             for receiver in receivers:
@@ -388,14 +404,25 @@ def send_message_api(request, conversation_id):
                 )
             local_ts = timezone.localtime(message.timestamp)
             formatted_ts = local_ts.strftime('%H:%M, %d-%m-%Y')
+            
+            # === CẬP NHẬT: Trả về thông tin file ===
+            file_url = message.file.url if message.file else None
+            file_type = 'file'
+            if message.file:
+                if message.is_image: file_type = 'image'
+                elif message.is_video: file_type = 'video'
+
             return JsonResponse({
                 'status': 'ok',
                 'message_id': message.id,
                 'sender': message.sender.username,
                 'text': message.text,
-                'timestamp': formatted_ts
+                'timestamp': formatted_ts,
+                'file_url': file_url,
+                'file_type': file_type
             })
         return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 @login_required
 def delete_message_api(request, message_id):
@@ -445,9 +472,10 @@ def api_get_conversations(request):
             if not other_participant: continue
             conv_name = other_participant.username
             conv_avatar_url = other_participant.avatar.url
-        
+       
         last_message_text = ''
         if conv.last_message:
+            # 1. Xác định người gửi
             if conv.last_message.sender is None:
                 sender_prefix = ""
             elif conv.last_message.sender == request.user:
@@ -455,9 +483,22 @@ def api_get_conversations(request):
             elif conv.type == 'GROUP':
                 sender_prefix = f"{conv.last_message.sender.first_name}: "
             else:
-                sender_prefix = ""
-            last_message_text = f"{sender_prefix}{conv.last_message.text}"
-        
+                sender_prefix = "" # Chat 1-1 thì không cần hiện tên người gửi
+            
+            # 2. Xác định nội dung (Text hay File)
+            content = ""
+            if conv.last_message.text:
+                content = conv.last_message.text
+            elif conv.last_message.file:
+                if conv.last_message.is_image:
+                    content = "[Hình ảnh]"
+                elif conv.last_message.is_video:
+                    content = "[Video]"
+                else:
+                    content = "[File đính kèm]"
+            
+            last_message_text = f"{sender_prefix}{content}"
+       
         data.append({
             'conversation_id': conv.id,
             'name': conv_name,
@@ -466,6 +507,33 @@ def api_get_conversations(request):
             'detail_url': reverse('chat:conversation_detail', kwargs={'conversation_id': conv.id})
         })
     return JsonResponse({'conversations': data})
+
+# ... (GIỮ NGUYÊN api_search_users, react_to_message_api) ...
+
+# === HÀM CẦN SỬA 2: api_get_messages (Để khi load tin nhắn cũ cũng có thông tin file) ===
+@login_required
+def api_get_messages(request, conversation_id):
+    conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+    messages = conversation.messages.order_by('timestamp')
+    
+    messages_data = []
+    for msg in messages:
+        file_url = msg.file.url if msg.file else None
+        file_type = None
+        if msg.file:
+            if msg.is_image: file_type = 'image'
+            elif msg.is_video: file_type = 'video'
+            else: file_type = 'file'
+
+        messages_data.append({
+            'author_id': msg.sender_id if msg.sender else None,
+            'text': msg.text,
+            'timestamp': timezone.localtime(msg.timestamp).strftime('%H:%M, %d-%m-%Y'),
+            'file_url': file_url,
+            'file_type': file_type
+        })
+
+    return JsonResponse({'messages': messages_data})
 
 @login_required
 def api_search_users(request):
@@ -526,8 +594,24 @@ def react_to_message_api(request, message_id):
 @login_required
 def api_get_messages(request, conversation_id):
     conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
-    messages = conversation.messages.order_by('timestamp').annotate(
-        author_id=F('sender_id')
-    ).values('author_id', 'text', 'timestamp')
-    messages_data = list(messages)
+    messages = conversation.messages.order_by('timestamp')
+    
+    messages_data = []
+    for msg in messages:
+        # === CẬP NHẬT: Xử lý file cho từng tin nhắn ===
+        file_url = msg.file.url if msg.file else None
+        file_type = None
+        if msg.file:
+            if msg.is_image: file_type = 'image'
+            elif msg.is_video: file_type = 'video'
+            else: file_type = 'file'
+
+        messages_data.append({
+            'author_id': msg.sender_id if msg.sender else None,
+            'text': msg.text,
+            'timestamp': timezone.localtime(msg.timestamp).strftime('%H:%M, %d-%m-%Y'),
+            'file_url': file_url,
+            'file_type': file_type
+        })
+
     return JsonResponse({'messages': messages_data})

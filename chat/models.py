@@ -1,5 +1,4 @@
-# chat/models.py
-
+import os
 from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
@@ -10,14 +9,10 @@ class Conversation(models.Model):
         ('GROUP', 'Nhóm'),
     ]
     type = models.CharField(max_length=10, choices=CONVERSATION_TYPES, default='PRIVATE')
-    name = models.CharField(max_length=128, blank=True, null=True) 
+    name = models.CharField(max_length=128, blank=True, null=True)
     admin = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_groups')
     avatar = models.ImageField(upload_to='group_avatars/', default='group_default.png')
-    
-    # Nếu True: Chỉ Admin thêm người/đổi tên. Nếu False: Ai cũng làm được (nhưng thêm người vẫn cần admin duyệt nếu logic yêu cầu, ở đây ta làm theo logic: True = Cần duyệt/Admin làm, False = Tự do)
-    # Theo yêu cầu của bạn: Bật chế độ quản trị viên -> Cần duyệt.
     admin_only_management = models.BooleanField(default=True)
-    
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='conversations')
     updated_at = models.DateTimeField(auto_now=True)
     last_message = models.ForeignKey(
@@ -30,7 +25,6 @@ class Conversation(models.Model):
     def __str__(self):
         return f"Conversation {self.id}"
 
-# === MODEL MỚI: YÊU CẦU THAM GIA NHÓM ===
 class GroupMembershipRequest(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='membership_requests')
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='invitations_sent')
@@ -46,16 +40,36 @@ class GroupMembershipRequest(models.Model):
 class Message(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages', null=True)
-    text = models.TextField()
+    
+    # Text có thể trống nếu gửi ảnh/video
+    text = models.TextField(blank=True, null=True) 
+    
+    # === THÊM TRƯỜNG FILE ===
+    file = models.FileField(upload_to='chat_files/', blank=True, null=True)
+    # ========================
+
     timestamp = models.DateTimeField(auto_now_add=True)
     reactions = GenericRelation('posts.Reaction')
-   
+    
     class Meta:
         ordering = ['timestamp']
 
     def __str__(self):
         sender_name = self.sender.username if self.sender else "System"
         return f"Message from {sender_name} at {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
+
+    # Helpers kiểm tra loại file
+    @property
+    def is_image(self):
+        if not self.file: return False
+        ext = os.path.splitext(self.file.name)[1].lower()
+        return ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.heic']
+
+    @property
+    def is_video(self):
+        if not self.file: return False
+        ext = os.path.splitext(self.file.name)[1].lower()
+        return ext in ['.mp4', '.mov', '.avi', '.wmv', '.mkv', '.webm']
 
 class MessageReadStatus(models.Model):
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='read_statuses')

@@ -1,4 +1,3 @@
-<!-- notifications/templates/notifications/notification_list.html -->
 {% extends "posts/base.html" %}
 {% load post_extras %}
 
@@ -25,25 +24,37 @@
                                 đã bình luận về bài viết của bạn.
                             {% elif notif.notification_type == 'COMMENT_REACTION' %}
                                 đã bày tỏ cảm xúc về bình luận của bạn.
+                            
+                            <!-- === SỬA PHẦN NÀY: KIỂM TRA TIN NHẮN LÀ ẢNH/VIDEO === -->
                             {% elif notif.notification_type == 'MESSAGE' %}
-                                đã gửi cho bạn một tin nhắn mới.
+                                {% if notif.target and notif.target.file %}
+                                    {% if notif.target.is_image %}
+                                        đã gửi cho bạn một hình ảnh.
+                                    {% elif notif.target.is_video %}
+                                        đã gửi cho bạn một video.
+                                    {% else %}
+                                        đã gửi cho bạn một tập tin đính kèm.
+                                    {% endif %}
+                                {% else %}
+                                    đã gửi cho bạn một tin nhắn mới.
+                                {% endif %}
+                            <!-- =================================================== -->
+
                             {% elif notif.notification_type == 'ADDED_TO_GROUP' %}
-                                đã thêm bạn vào nhóm 
+                                đã thêm bạn vào nhóm
                                 {% if notif.target %}
                                     <strong>{{ notif.target.name|default:"(Nhóm chưa đặt tên)" }}</strong>.
                                 {% else %}
                                     một nhóm chat.
                                 {% endif %}
-                            
-                            <!-- === THÊM ĐOẠN NÀY === -->
+                           
                             {% elif notif.notification_type == 'GROUP_INVITE_REQUEST' %}
-                                muốn thêm thành viên vào nhóm 
+                                muốn thêm thành viên vào nhóm
                                 {% if notif.target %}
                                     <strong>{{ notif.target.name|default:"(Nhóm chưa đặt tên)" }}</strong>.
                                 {% else %}
                                     nhóm chat của bạn.
                                 {% endif %}
-                            <!-- ===================== -->
                             {% endif %}
                         </p>
                         <small>{{ notif.timestamp|timesince }} trước</small>

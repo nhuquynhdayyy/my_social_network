@@ -7,15 +7,17 @@ User = get_user_model()
 class MessageForm(forms.ModelForm):
     class Meta:
         model = Message
-        fields = ['text']
+        fields = ['text', 'file'] # Thêm 'file'
         widgets = {
             'text': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nhập tin nhắn...',
                 'autocomplete': 'off'
-            })
+            }),
+            # Input file sẽ ẩn đi, được trigger bằng icon
+            'file': forms.FileInput(attrs={'class': 'd-none', 'id': 'chat-file-input'})
         }
-        labels = { 'text': '' }
+        labels = { 'text': '', 'file': '' }
 
 class GroupCreationForm(forms.ModelForm):
     participants = forms.ModelMultipleChoiceField(
@@ -44,7 +46,7 @@ class GroupCreationForm(forms.ModelForm):
 
     def clean_participants(self):
         participants = self.cleaned_data['participants']
-        if len(participants) < 2: 
+        if len(participants) < 2:
             raise forms.ValidationError("Vui lòng chọn ít nhất 2 thành viên khác để tạo nhóm.")
         return participants
 
@@ -54,16 +56,15 @@ class AdminSettingsForm(forms.ModelForm):
         fields = ['admin_only_management']
         labels = { 'admin_only_management': 'Bật chế độ kiểm duyệt (Chỉ Admin mới được thay đổi thông tin nhóm & thêm/duyệt thành viên)' }
 
-# === ĐÂY LÀ FORM ĐÃ ĐƯỢC CẬP NHẬT ===
 class GroupUpdateForm(forms.ModelForm):
     class Meta:
         model = Conversation
         fields = ['name', 'avatar']
-        labels = { 
+        labels = {
             'name': 'Tên nhóm',
             'avatar': 'Ảnh đại diện nhóm'
         }
-        widgets = { 
+        widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'avatar': forms.ClearableFileInput(attrs={'class': 'form-control'})
         }
@@ -79,7 +80,6 @@ class AddMembersForm(forms.Form):
         conversation = kwargs.pop('conversation', None)
         super().__init__(*args, **kwargs)
         if conversation:
-            # Loại bỏ người đã trong nhóm và người đang chờ duyệt
             existing_ids = set(conversation.participants.values_list('id', flat=True))
             pending_ids = set(conversation.membership_requests.values_list('user_to_add_id', flat=True))
             exclude_ids = existing_ids.union(pending_ids)
