@@ -9,7 +9,6 @@
         </div>
         <div class="card-body" id="message-container" style="height: 60vh; overflow-y: auto;">
             
-            <!-- Lấy ngày hiện tại của server để so sánh -->
             {% now "Ymd" as current_date_str %}
 
             {% for message in messages %}
@@ -17,30 +16,32 @@
                     
                     <div class="message-bubble-container">
 
-                        <!-- 1. XỬ LÝ HIỂN THỊ GIỜ (THÔNG MINH) CHO TIN NHẮN CỦA MÌNH -->
+                        <!-- 1. GIỜ (Bên trái cho tin mình gửi) -->
                         {% if message.sender == user %}
                             <small class="message-timestamp">
                                 {% with msg_date_str=message.timestamp|date:"Ymd" %}
                                     {% if current_date_str == msg_date_str %}
-                                        {{ message.timestamp|date:"H:i" }} <!-- Nếu trùng ngày: Chỉ hiện giờ -->
+                                        {{ message.timestamp|date:"H:i" }}
                                     {% else %}
-                                        {{ message.timestamp|date:"H:i, d/m/Y" }} <!-- Khác ngày: Hiện full -->
+                                        {{ message.timestamp|date:"H:i, d/m/Y" }}
                                     {% endif %}
                                 {% endwith %}
                             </small>
                         {% endif %}
 
                         <!-- 2. BONG BÓNG CHAT -->
-                        <div class="message-bubble p-2 rounded {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 80%;">
-                            <div class="d-flex align-items-start justify-content-between">
-                                <p class="mb-0 message-text me-2" style="word-break: break-word;">
+                        <div class="message-bubble p-2 rounded {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 500px;">
+                            
+                            <!-- CONTENT WRAPPER: Căn giữa Text và Nút 3 chấm -->
+                            <div class="d-flex align-items-center justify-content-between">
+                                <p class="mb-0 message-text me-2" style="word-break: break-word; line-height: 1.4;">
                                     {{ message.text|linebreaksbr }}
                                 </p>
 
                                 {% if message.sender == user %}
                                     <!-- Dropdown 3 chấm -->
-                                    <div class="dropdown flex-shrink-0"> 
-                                        <button class="btn btn-link text-white-50 p-0 border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <div class="dropdown flex-shrink-0" style="height: 24px;"> <!-- Cố định chiều cao để căn chuẩn -->
+                                        <button class="btn btn-link text-white-50 p-0 border-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;" type="button" data-bs-toggle="dropdown">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
                                                 <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
                                             </svg>
@@ -54,7 +55,7 @@
                                 {% endif %}
                             </div>
 
-                            <!-- Form sửa tin nhắn (ẩn) -->
+                            <!-- Form sửa (Ẩn) -->
                             {% if message.sender == user %}
                                 <div id="edit-form-{{ message.id }}" style="display: none;" class="mt-2">
                                     <textarea class="form-control form-control-sm mb-1 text-dark" id="edit-text-{{ message.id }}" rows="2">{{ message.text }}</textarea>
@@ -66,8 +67,9 @@
                             {% endif %}
                         </div>
 
-                        <!-- Khu vực thống kê reaction -->
-                        <div id="message-reaction-stats-{{ message.id }}" class="reaction-stats-display">
+                        <!-- 3. THỐNG KÊ REACTION (SỬA LỖI VỆT TRẮNG) -->
+                        <!-- Thêm style display:none nếu chưa có reaction -->
+                        <div id="message-reaction-stats-{{ message.id }}" class="reaction-stats-display" {% if not message.reaction_stats %}style="display: none;"{% endif %}>
                             {% with stats=message.reaction_stats %}
                                 {% if stats %}
                                     {% for reaction in stats %}
@@ -83,7 +85,7 @@
                             {% endwith %}
                         </div>
 
-                        <!-- 3. XỬ LÝ HIỂN THỊ GIỜ (THÔNG MINH) CHO TIN NHẮN NGƯỜI KHÁC -->
+                        <!-- 4. GIỜ (Bên phải cho tin người khác) -->
                         {% if message.sender != user %}
                             <small class="message-timestamp">
                                 {% with msg_date_str=message.timestamp|date:"Ymd" %}
@@ -96,7 +98,7 @@
                             </small>
                         {% endif %}
 
-                        <!-- Popup reaction -->
+                        <!-- Popup Reaction -->
                         <div class="reaction-popup">
                             <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="LIKE">👍</button>
                             <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="LOVE">❤️</button>
@@ -122,8 +124,26 @@
     </div>
 </div>
 
+<!-- Modal Xóa Tin Nhắn -->
+<div class="modal fade" id="deleteMessageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-0 justify-content-center">
+                <h5 class="modal-title fw-bold" style="font-size: 1.1rem;">Xóa tin nhắn?</h5>
+            </div>
+            <div class="modal-body text-center text-muted p-2">
+                Bạn muốn xóa tin nhắn này ở phía ai?
+            </div>
+            <div class="modal-footer flex-column border-top-0 p-2 gap-2">
+                <button type="button" class="btn btn-primary w-100 fw-bold" id="btnDeleteEveryone">Thu hồi với mọi người</button>
+                <button type="button" class="btn btn-light w-100 fw-bold text-primary border" id="btnDeleteMe">Chỉ xóa ở phía tôi</button>
+                <button type="button" class="btn btn-link text-decoration-none text-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
-    /* Container chính: Dùng Flexbox để xếp Thời gian và Bong bóng nằm ngang */
     .message-bubble-container {
         position: relative;
         display: flex; 
@@ -136,20 +156,13 @@
         color: #aaa;
         opacity: 0;
         transition: opacity 0.2s ease;
-        
-        /* Quan trọng: Không cho xuống dòng */
         white-space: nowrap;
         margin-top: 5px;
         text-align: center;
-        
-        /* Đảm bảo đủ chỗ hiển thị nếu ngày dài */
-        min-width: fit-content; 
+        min-width: 40px; 
     }
 
-    /* Khi hover vào container -> Hiện thời gian */
-    .message-bubble-container:hover .message-timestamp {
-        opacity: 1;
-    }
+    .message-bubble-container:hover .message-timestamp { opacity: 1; }
 
     .message-bubble {
         max-width: 100%; 
@@ -185,7 +198,7 @@
     }
     .reaction-popup .btn:hover { transform: scale(1.5); }
 
-    /* Thống kê reaction */
+    /* Thống kê reaction (Đã bỏ :empty để dùng JS control) */
     .reaction-stats-display {
         position: absolute;
         bottom: -10px;
@@ -201,54 +214,22 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
-<!-- MODAL TÙY CHỌN XÓA TIN NHẮN -->
-<div class="modal fade" id="deleteMessageModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content">
-            <div class="modal-header border-bottom-0 pb-0 justify-content-center">
-                <h5 class="modal-title fw-bold" style="font-size: 1.1rem;">Xóa tin nhắn?</h5>
-            </div>
-            <div class="modal-body text-center text-muted p-2">
-                Bạn muốn xóa tin nhắn này ở phía ai?
-            </div>
-            <div class="modal-footer flex-column border-top-0 p-2 gap-2">
-                <button type="button" class="btn btn-primary w-100 fw-bold" id="btnDeleteEveryone">Thu hồi với mọi người</button>
-                <button type="button" class="btn btn-light w-100 fw-bold text-primary border" id="btnDeleteMe">Chỉ xóa ở phía tôi</button>
-                <button type="button" class="btn btn-link text-decoration-none text-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-// Hàm xử lý hiển thị thời gian thông minh cho Javascript
 function formatSmartTime(timestampStr) {
-    // Input từ server: "14:30, 27-11-2025"
     if (!timestampStr) return "";
-
     try {
         const parts = timestampStr.split(', ');
         if (parts.length < 2) return timestampStr; 
-
-        const timePart = parts[0]; // "14:30"
-        const datePart = parts[1]; // "27-11-2025"
-
+        const timePart = parts[0]; 
+        const datePart = parts[1]; 
         const today = new Date();
         const d = String(today.getDate()).padStart(2, '0');
         const m = String(today.getMonth() + 1).padStart(2, '0'); 
         const y = today.getFullYear();
         const todayStr = `${d}-${m}-${y}`;
-
-        // Nếu là hôm nay -> Chỉ trả về giờ
-        if (datePart === todayStr) {
-            return timePart;
-        }
-        
-        // Nếu khác ngày -> Trả về full (Thay dấu gạch ngang thành chéo cho đẹp)
+        if (datePart === todayStr) return timePart;
         return timestampStr.replace(/-/g, '/');
-    } catch (e) {
-        return timestampStr;
-    }
+    } catch (e) { return timestampStr; }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -285,24 +266,22 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'ok') {
-                // Dùng hàm formatSmartTime để xử lý hiển thị giờ cho tin mới
                 const displayTime = formatSmartTime(data.timestamp);
 
                 const messageHtml = `
                 <div id="message-${data.message_id}" class="mb-3 d-flex justify-content-end">
                     <div class="message-bubble-container"> 
                         
-                        <!-- GIỜ HIỆN BÊN TRÁI (VÌ LÀ TIN MÌNH GỬI) -->
                         <small class="message-timestamp">
                             ${displayTime}
                         </small>
 
-                        <div class="message-bubble p-2 rounded bg-primary text-white" style="max-width: 80%;">
-                            <div class="d-flex align-items-start justify-content-between">
-                                <p class="mb-0 message-text me-2" style="word-break: break-word;">${data.text}</p>
+                        <div class="message-bubble p-2 rounded bg-primary text-white" style="max-width: 500px;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <p class="mb-0 message-text me-2" style="word-break: break-word; line-height: 1.4;">${data.text}</p>
                                 
-                                <div class="dropdown flex-shrink-0">
-                                    <button class="btn btn-link text-white-50 p-0 border-0" type="button" data-bs-toggle="dropdown">
+                                <div class="dropdown flex-shrink-0" style="height: 24px;">
+                                    <button class="btn btn-link text-white-50 p-0 border-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;" type="button" data-bs-toggle="dropdown">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
                                             <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
                                         </svg>
@@ -324,7 +303,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
 
-                        <div id="message-reaction-stats-${data.message_id}" class="reaction-stats-display"></div>
+                        <!-- Ẩn Reaction Stats mặc định bằng style display: none -->
+                        <div id="message-reaction-stats-${data.message_id}" class="reaction-stats-display" style="display: none;"></div>
+                        
                         <div class="reaction-popup">
                             <button class="btn message-reaction-choice-btn" data-message-id="${data.message_id}" data-reaction-type="LIKE">👍</button>
                             <button class="btn message-reaction-choice-btn" data-message-id="${data.message_id}" data-reaction-type="LOVE">❤️</button>
@@ -361,6 +342,8 @@ function reactToMessage(messageId, reactionType) {
 function updateReactionStatsUI(messageId, stats, total) {
     const statsContainer = document.getElementById(`message-reaction-stats-${messageId}`);
     if (!statsContainer) return;
+    
+    // Cập nhật JS: Kiểm soát hiển thị bằng style.display
     if (total > 0) {
         let iconsHTML = '';
         if (stats.LIKE) iconsHTML += '<span>👍</span>';
@@ -370,7 +353,11 @@ function updateReactionStatsUI(messageId, stats, total) {
         if (stats.SAD) iconsHTML += '<span>😢</span>';
         if (stats.ANGRY) iconsHTML += '<span>😡</span>';
         statsContainer.innerHTML = `${iconsHTML} <span class="reaction-count">${total}</span>`;
-    } else { statsContainer.innerHTML = ''; }
+        statsContainer.style.display = 'flex'; // HIỆN
+    } else {
+        statsContainer.innerHTML = '';
+        statsContainer.style.display = 'none'; // ẨN
+    }
 }
 
 function getCookie(name) {
