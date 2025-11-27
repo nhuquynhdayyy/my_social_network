@@ -133,25 +133,27 @@ def delete_message_api(request, message_id):
     if request.method == 'POST':
         message = get_object_or_404(Message, id=message_id)
 
-        # Lấy loại xóa từ request gửi lên ('me' hoặc 'everyone')
-        # Lưu ý: request.body là dạng bytes, cần decode
+        # Kiểm tra bảo mật: Người xóa phải là thành viên trong cuộc trò chuyện
+        if request.user not in message.conversation.participants.all():
+             return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+
         try:
             data = json.loads(request.body)
-            delete_type = data.get('delete_type', 'me') # Mặc định là xóa phía tôi
+            delete_type = data.get('delete_type', 'me')
         except:
             delete_type = 'me'
 
         # LOGIC XÓA
         if delete_type == 'everyone':
-            # Chỉ người gửi mới được quyền xóa với mọi người
+            # CHỈ NGƯỜI GỬI mới được thu hồi
             if message.sender == request.user:
                 message.delete()
                 return JsonResponse({'status': 'ok', 'message_id': message_id, 'type': 'everyone'})
             else:
-                return JsonResponse({'status': 'error', 'message': 'Bạn không có quyền xóa tin nhắn này với mọi người.'}, status=403)
+                return JsonResponse({'status': 'error', 'message': 'Bạn không thể thu hồi tin nhắn của người khác.'}, status=403)
         
         elif delete_type == 'me':
-            # Thêm user vào danh sách ẩn
+            # AI CŨNG ĐƯỢC QUYỀN XÓA PHÍA MÌNH (Kể cả không phải người gửi)
             message.hidden_by.add(request.user)
             return JsonResponse({'status': 'ok', 'message_id': message_id, 'type': 'me'})
 

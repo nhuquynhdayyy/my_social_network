@@ -13,11 +13,11 @@
 
             {% for message in messages %}
                 <div id="message-{{ message.id }}" class="mb-3 d-flex {% if message.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
-                    
-                    <div class="message-bubble-container {% if message.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
+                    <div class="message-bubble-container">
 
-                        <!-- 1. GIỜ (Bên trái cho tin mình gửi) -->
+                        <!-- 1. GIỜ (Bên trái cho tin mình) -->
                         {% if message.sender == user %}
+                            <!-- ... (Code hiển thị giờ cũ giữ nguyên) ... -->
                             <small class="message-timestamp">
                                 {% with msg_date_str=message.timestamp|date:"Ymd" %}
                                     {% if current_date_str == msg_date_str %}
@@ -32,30 +32,34 @@
                         <!-- 2. BONG BÓNG CHAT -->
                         <div class="message-bubble p-2 rounded {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 500px;">
                             
-                            <!-- CONTENT WRAPPER: Căn giữa Text và Nút 3 chấm -->
+                            <!-- CONTENT WRAPPER -->
                             <div class="d-flex align-items-center justify-content-between">
                                 <p class="mb-0 message-text me-2" style="word-break: break-word; line-height: 1.4;">
                                     {{ message.text|linebreaksbr }}
                                 </p>
 
-                                {% if message.sender == user %}
-                                    <!-- Dropdown 3 chấm -->
-                                    <div class="dropdown flex-shrink-0" style="height: 24px;"> <!-- Cố định chiều cao để căn chuẩn -->
-                                        <button class="btn btn-link text-white-50 p-0 border-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;" type="button" data-bs-toggle="dropdown">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
-                                                <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-                                            </svg>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                            <li><a class="dropdown-item small" href="#" onclick="showEditForm('{{ message.id }}'); return false;">Sửa tin nhắn</a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><a class="dropdown-item small text-danger" href="#" onclick="deleteMessage('{{ message.id }}'); return false;">Xóa tin nhắn</a></li>
-                                        </ul>
-                                    </div>
-                                {% endif %}
+                                <!-- DROPDOWN 3 CHẤM (HIỆN CHO TẤT CẢ MỌI NGƯỜI) -->
+                                <div class="dropdown flex-shrink-0" style="height: 24px;">
+                                    <!-- Đổi màu nút 3 chấm: Tin mình thì màu trắng mờ, Tin bạn thì màu đen mờ -->
+                                    <button class="btn btn-link {% if message.sender == user %}text-white-50{% else %}text-muted{% endif %} p-0 border-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;" type="button" data-bs-toggle="dropdown">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                                        </svg>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                        <!-- Chỉ hiện nút Sửa nếu là tin chính chủ -->
+                                        {% if message.sender == user %}
+                                        <li><a class="dropdown-item small" href="#" onclick="showEditForm('{{ message.id }}'); return false;">Sửa tin nhắn</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        {% endif %}
+                                        
+                                        <!-- Nút Xóa hiện cho cả 2 -->
+                                        <li><a class="dropdown-item small text-danger" href="#" onclick="deleteMessage('{{ message.id }}'); return false;">Xóa tin nhắn</a></li>
+                                    </ul>
+                                </div>
                             </div>
 
-                            <!-- Form sửa (Ẩn) -->
+                            <!-- Form sửa (Chỉ render nếu là tin mình) -->
                             {% if message.sender == user %}
                                 <div id="edit-form-{{ message.id }}" style="display: none;" class="mt-2">
                                     <textarea class="form-control form-control-sm mb-1 text-dark" id="edit-text-{{ message.id }}" rows="2">{{ message.text }}</textarea>
@@ -67,8 +71,7 @@
                             {% endif %}
                         </div>
 
-                        <!-- 3. THỐNG KÊ REACTION (SỬA LỖI VỆT TRẮNG) -->
-                        <!-- Thêm style display:none nếu chưa có reaction -->
+                        <!-- 3. THỐNG KÊ REACTION (Giữ nguyên code cũ) -->
                         <div id="message-reaction-stats-{{ message.id }}" class="reaction-stats-display" {% if not message.reaction_stats %}style="display: none;"{% endif %}>
                             {% with stats=message.reaction_stats %}
                                 {% if stats %}
@@ -98,7 +101,7 @@
                             </small>
                         {% endif %}
 
-                        <!-- Popup Reaction -->
+                        <!-- Popup Reaction (Giữ nguyên code cũ) -->
                         <div class="reaction-popup">
                             <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="LIKE">👍</button>
                             <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="LOVE">❤️</button>
