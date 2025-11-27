@@ -13,11 +13,12 @@
 
             {% for message in messages %}
                 <div id="message-{{ message.id }}" class="mb-3 d-flex {% if message.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
-                    <div class="message-bubble-container">
+                    
+                    <!-- Thêm justify-content-end nếu là tin mình -->
+                    <div class="message-bubble-container {% if message.sender == user %}justify-content-end{% endif %}">
 
-                        <!-- 1. GIỜ (Bên trái cho tin mình) -->
+                        <!-- 1. GIỜ (Bên trái cho tin mình gửi) -->
                         {% if message.sender == user %}
-                            <!-- ... (Code hiển thị giờ cũ giữ nguyên) ... -->
                             <small class="message-timestamp">
                                 {% with msg_date_str=message.timestamp|date:"Ymd" %}
                                     {% if current_date_str == msg_date_str %}
@@ -32,34 +33,30 @@
                         <!-- 2. BONG BÓNG CHAT -->
                         <div class="message-bubble p-2 rounded {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 500px;">
                             
-                            <!-- CONTENT WRAPPER -->
-                            <div class="d-flex align-items-center justify-content-between">
-                                <p class="mb-0 message-text me-2" style="word-break: break-word; line-height: 1.4;">
+                            <!-- SỬA CHỐT HẠ: Dùng align-items-start (Căn trên) và gap-2 -->
+                            <div class="d-flex align-items-start gap-2">
+                                <p class="mb-0 message-text" style="word-break: break-word; line-height: 1.4;">
                                     {{ message.text|linebreaksbr }}
                                 </p>
 
-                                <!-- DROPDOWN 3 CHẤM (HIỆN CHO TẤT CẢ MỌI NGƯỜI) -->
-                                <div class="dropdown flex-shrink-0" style="height: 24px;">
-                                    <!-- Đổi màu nút 3 chấm: Tin mình thì màu trắng mờ, Tin bạn thì màu đen mờ -->
-                                    <button class="btn btn-link {% if message.sender == user %}text-white-50{% else %}text-muted{% endif %} p-0 border-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;" type="button" data-bs-toggle="dropdown">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
-                                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-                                        </svg>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                        <!-- Chỉ hiện nút Sửa nếu là tin chính chủ -->
-                                        {% if message.sender == user %}
-                                        <li><a class="dropdown-item small" href="#" onclick="showEditForm('{{ message.id }}'); return false;">Sửa tin nhắn</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        {% endif %}
-                                        
-                                        <!-- Nút Xóa hiện cho cả 2 -->
-                                        <li><a class="dropdown-item small text-danger" href="#" onclick="deleteMessage('{{ message.id }}'); return false;">Xóa tin nhắn</a></li>
-                                    </ul>
-                                </div>
+                                {% if message.sender == user %}
+                                    <!-- Dropdown 3 chấm -->
+                                    <div class="dropdown flex-shrink-0" style="height: 24px;"> 
+                                        <button class="btn btn-link text-white-50 p-0 border-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;" type="button" data-bs-toggle="dropdown">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                                                <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                                            </svg>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <li><a class="dropdown-item small" href="#" onclick="showEditForm('{{ message.id }}'); return false;">Sửa tin nhắn</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item small text-danger" href="#" onclick="deleteMessage('{{ message.id }}'); return false;">Xóa tin nhắn</a></li>
+                                        </ul>
+                                    </div>
+                                {% endif %}
                             </div>
 
-                            <!-- Form sửa (Chỉ render nếu là tin mình) -->
+                            <!-- Form sửa (Ẩn) -->
                             {% if message.sender == user %}
                                 <div id="edit-form-{{ message.id }}" style="display: none;" class="mt-2">
                                     <textarea class="form-control form-control-sm mb-1 text-dark" id="edit-text-{{ message.id }}" rows="2">{{ message.text }}</textarea>
@@ -71,8 +68,9 @@
                             {% endif %}
                         </div>
 
-                        <!-- 3. THỐNG KÊ REACTION (Giữ nguyên code cũ) -->
-                        <div id="message-reaction-stats-{{ message.id }}" class="reaction-stats-display" {% if not message.reaction_stats %}style="display: none;"{% endif %}>
+                        <!-- 3. THỐNG KÊ REACTION -->
+                        <div id="message-reaction-stats-{{ message.id }}" class="reaction-stats-display" 
+                             style="{% if not message.reaction_stats %}display: none;{% endif %}">
                             {% with stats=message.reaction_stats %}
                                 {% if stats %}
                                     {% for reaction in stats %}
@@ -101,7 +99,7 @@
                             </small>
                         {% endif %}
 
-                        <!-- Popup Reaction (Giữ nguyên code cũ) -->
+                        <!-- Popup Reaction -->
                         <div class="reaction-popup">
                             <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="LIKE">👍</button>
                             <button class="btn message-reaction-choice-btn" data-message-id="{{ message.id }}" data-reaction-type="LOVE">❤️</button>
@@ -201,7 +199,7 @@
     }
     .reaction-popup .btn:hover { transform: scale(1.5); }
 
-    /* Thống kê reaction (Đã bỏ :empty để dùng JS control) */
+    /* Thống kê reaction */
     .reaction-stats-display {
         position: absolute;
         bottom: -10px;
@@ -214,6 +212,9 @@
         box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         display: flex; align-items: center; gap: 2px; z-index: 1;
     }
+    
+    .justify-content-end .reaction-stats-display { right: 0; left: auto; }
+    .justify-content-start .reaction-stats-display { left: 0; right: auto; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
@@ -273,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const messageHtml = `
                 <div id="message-${data.message_id}" class="mb-3 d-flex justify-content-end">
-                    <!-- SỬA Ở ĐÂY: Thêm justify-content-end -->
+                    <!-- Thêm justify-content-end vào container -->
                     <div class="message-bubble-container justify-content-end"> 
                         
                         <small class="message-timestamp">
@@ -282,9 +283,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         <div class="message-bubble p-2 rounded bg-primary text-white" style="max-width: 500px;">
                             
-                            <!-- SỬA Ở ĐÂY (Lần trước): Thêm w-100 -->
-                            <div class="d-flex align-items-center justify-content-between w-100">
-                                <p class="mb-0 message-text me-2" style="word-break: break-word; line-height: 1.4;">${data.text}</p>
+                            <!-- SỬA CHỐT HẠ: d-flex align-items-start gap-2 -->
+                            <div class="d-flex align-items-start gap-2">
+                                <p class="mb-0 message-text" style="word-break: break-word; line-height: 1.4;">${data.text}</p>
                                 
                                 <div class="dropdown flex-shrink-0" style="height: 24px;">
                                     <button class="btn btn-link text-white-50 p-0 border-0 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;" type="button" data-bs-toggle="dropdown">
@@ -309,6 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
 
+                        <!-- Ẩn Reaction Stats mặc định bằng style display: none -->
                         <div id="message-reaction-stats-${data.message_id}" class="reaction-stats-display" style="display: none;"></div>
                         
                         <div class="reaction-popup">
@@ -348,7 +350,6 @@ function updateReactionStatsUI(messageId, stats, total) {
     const statsContainer = document.getElementById(`message-reaction-stats-${messageId}`);
     if (!statsContainer) return;
     
-    // Cập nhật JS: Kiểm soát hiển thị bằng style.display
     if (total > 0) {
         let iconsHTML = '';
         if (stats.LIKE) iconsHTML += '<span>👍</span>';
@@ -358,10 +359,10 @@ function updateReactionStatsUI(messageId, stats, total) {
         if (stats.SAD) iconsHTML += '<span>😢</span>';
         if (stats.ANGRY) iconsHTML += '<span>😡</span>';
         statsContainer.innerHTML = `${iconsHTML} <span class="reaction-count">${total}</span>`;
-        statsContainer.style.display = 'flex'; // HIỆN
+        statsContainer.style.display = 'flex'; 
     } else {
         statsContainer.innerHTML = '';
-        statsContainer.style.display = 'none'; // ẨN
+        statsContainer.style.display = 'none'; 
     }
 }
 
