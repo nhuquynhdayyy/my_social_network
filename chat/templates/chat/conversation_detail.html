@@ -16,21 +16,49 @@
                     <div class="message-bubble-container">
 
                         <!-- Bong bóng chat (giữ nguyên) -->
-                        <div class="message-bubble p-2 rounded {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 70%;">
-                            <p class="mb-0 message-text">{{ message.text }}</p>
-                            <small class="text-muted d-block text-end {% if message.sender == user %}text-white-50{% endif %}">
+                        <div class="message-bubble p-2 rounded {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 80%;">
+                            <div class="d-flex align-items-start justify-content-between">
+                                <!-- Nội dung tin nhắn (thêm word-break để không bị vỡ layout nếu từ quá dài) -->
+                                <p class="mb-0 message-text me-2" style="word-break: break-word;">
+                                    {{ message.text|linebreaksbr }}
+                                </p>
+
+                                {% if message.sender == user %}
+                                    <!-- Dropdown 3 chấm -->
+                                    <div class="dropdown flex-shrink-0"> <!-- flex-shrink-0 để nút không bị co lại -->
+                                        <button class="btn btn-link text-white-50 p-0 border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                                                <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                                            </svg>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <li>
+                                                <a class="dropdown-item small" href="#" onclick="showEditForm('{{ message.id }}'); return false;">Sửa tin nhắn</a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item small text-danger" href="#" onclick="deleteMessage('{{ message.id }}'); return false;">Xóa tin nhắn</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <!-- KẾT THÚC SỬA -->
+
+                            <!-- Thời gian hiển thị ở dưới cùng -->
+                            <small class="text-muted d-block text-end {% if message.sender == user %}text-white-50{% endif %} mt-1" style="font-size: 0.7rem;">
                                 {{ message.timestamp|date:"H:i, d/m/Y" }}
                             </small>
+
+                            <!-- Form sửa tin nhắn (ẩn) -->
                             {% if message.sender == user %}
-                            <div class="message-actions">
-                                <button class="btn btn-sm btn-light py-0 px-1" onclick="showEditForm('{{ message.id }}')">Sửa</button>
-                                <button class="btn btn-sm btn-danger py-0 px-1" onclick="deleteMessage('{{ message.id }}')">Xóa</button>
-                            </div>
-                            <div id="edit-form-{{ message.id }}" style="display: none;">
-                                <textarea class="form-control form-control-sm mt-1" id="edit-text-{{ message.id }}">{{ message.text }}</textarea>
-                                <button class="btn btn-sm btn-success mt-1" onclick="submitEdit('{{ message.id }}')">Lưu</button>
-                                <button class="btn btn-sm btn-secondary mt-1" onclick="hideEditForm('{{ message.id }}')">Hủy</button>
-                            </div>
+                                <div id="edit-form-{{ message.id }}" style="display: none;" class="mt-2">
+                                    <textarea class="form-control form-control-sm mb-1 text-dark" id="edit-text-{{ message.id }}" rows="2">{{ message.text }}</textarea>
+                                    <div class="d-flex justify-content-end gap-1">
+                                        <button class="btn btn-sm btn-secondary py-0" onclick="hideEditForm('{{ message.id }}')">Hủy</button>
+                                        <button class="btn btn-sm btn-success py-0" onclick="submitEdit('{{ message.id }}')">Lưu</button>
+                                    </div>
+                                </div>
                             {% endif %}
                         </div>
 
@@ -151,29 +179,45 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.status === 'ok') {
                 const messageHtml = `
                 <div id="message-${data.message_id}" class="mb-3 d-flex justify-content-end">
-                    <div class="message-bubble-container"> <!-- Container quan trọng -->
+                    <div class="message-bubble-container"> 
                         
-                        <!-- Bong bóng chat -->
                         <div class="message-bubble p-2 rounded bg-primary text-white" style="max-width: 80%;">
-                            <p class="mb-0 message-text">${data.text}</p>
-                            <small class="text-muted d-block text-end text-white-50">
+                            
+                            <!-- BẮT ĐẦU SỬA JS: Thêm d-flex -->
+                            <div class="d-flex align-items-start justify-content-between">
+                                <p class="mb-0 message-text me-2" style="word-break: break-word;">${data.text}</p>
+                                
+                                <!-- Dropdown 3 chấm -->
+                                <div class="dropdown flex-shrink-0">
+                                    <button class="btn btn-link text-white-50 p-0 border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                                        </svg>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                        <li><a class="dropdown-item small" href="#" onclick="showEditForm('${data.message_id}'); return false;">Sửa tin nhắn</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item small text-danger" href="#" onclick="deleteMessage('${data.message_id}'); return false;">Xóa tin nhắn</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <!-- KẾT THÚC SỬA JS -->
+
+                            <small class="text-muted d-block text-end text-white-50 mt-1" style="font-size: 0.7rem;">
                                 ${data.timestamp}
                             </small>
-                            <div class="message-actions">
-                                    <button class="btn btn-sm btn-light py-0 px-1" onclick="showEditForm('${data.message_id}')">Sửa</button>
-                                    <button class="btn btn-sm btn-danger py-0 px-1" onclick="deleteMessage('${data.message_id}')">Xóa</button>
-                            </div>
-                            <div id="edit-form-${data.message_id}" style="display: none;">
-                                <textarea class="form-control form-control-sm mt-1" id="edit-text-${data.message_id}">${data.text}</textarea>
-                                <button class="btn btn-sm btn-success mt-1" onclick="submitEdit('${data.message_id}')">Lưu</button>
-                                <button class="btn btn-sm btn-secondary mt-1" onclick="hideEditForm('${data.message_id}')">Hủy</button>
+
+                            <!-- Form sửa ẩn -->
+                            <div id="edit-form-${data.message_id}" style="display: none;" class="mt-2">
+                                <textarea class="form-control form-control-sm mb-1 text-dark" id="edit-text-${data.message_id}">${data.text}</textarea>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <button class="btn btn-sm btn-secondary py-0" onclick="hideEditForm('${data.message_id}')">Hủy</button>
+                                    <button class="btn btn-sm btn-success py-0" onclick="submitEdit('${data.message_id}')">Lưu</button>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Vùng hiển thị stats reaction (ban đầu rỗng) -->
                         <div id="message-reaction-stats-${data.message_id}" class="reaction-stats-display"></div>
-
-                        <!-- Popup reaction (Phải có cái này mới react được!) -->
                         <div class="reaction-popup">
                             <button class="btn message-reaction-choice-btn" data-message-id="${data.message_id}" data-reaction-type="LIKE">👍</button>
                             <button class="btn message-reaction-choice-btn" data-message-id="${data.message_id}" data-reaction-type="LOVE">❤️</button>
