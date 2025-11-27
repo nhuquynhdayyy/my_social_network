@@ -61,7 +61,7 @@ def conversation_detail_view(request, conversation_id):
             return redirect('chat:conversation_detail', conversation_id=conversation.id)
 
     # --- Logic chuẩn bị dữ liệu cho GET request ---
-    messages = conversation.messages.all()
+    messages = conversation.messages.exclude(hidden_by=request.user).order_by('timestamp')
     form = MessageForm()
 
     for message in messages:
@@ -133,12 +133,29 @@ def delete_message_api(request, message_id):
     if request.method == 'POST':
         message = get_object_or_404(Message, id=message_id)
 
-        if message.sender != request.user:
-            return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+        # Lấy loại xóa từ request gửi lên ('me' hoặc 'everyone')
+        # Lưu ý: request.body là dạng bytes, cần decode
+        try:
+            data = json.loads(request.body)
+            delete_type = data.get('delete_type', 'me') # Mặc định là xóa phía tôi
+        except:
+            delete_type = 'me'
 
-        message.delete()
-        return JsonResponse({'status': 'ok', 'message_id': message_id})
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+        # LOGIC XÓA
+        if delete_type == 'everyone':
+            # Chỉ người gửi mới được quyền xóa với mọi người
+            if message.sender == request.user:
+                message.delete()
+                return JsonResponse({'status': 'ok', 'message_id': message_id, 'type': 'everyone'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Bạn không có quyền xóa tin nhắn này với mọi người.'}, status=403)
+        
+        elif delete_type == 'me':
+            # Thêm user vào danh sách ẩn
+            message.hidden_by.add(request.user)
+            return JsonResponse({'status': 'ok', 'message_id': message_id, 'type': 'me'})
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
 
 
 # ------------------- API SỬA TIN NHẮN -------------------
@@ -303,11 +320,10 @@ def api_get_messages(request, conversation_id):
     # Đảm bảo người dùng hiện tại là một phần của cuộc hội thoại này để bảo mật
     conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
     
-    # SỬA LỖI:
     # 1. Truy vấn đúng trường 'sender_id'.
     # 2. Dùng annotate() để đổi tên 'sender_id' thành 'author_id' ngay trong câu lệnh query.
     #    Đây là cách hiệu quả nhất.
-    messages = conversation.messages.order_by('timestamp').annotate(
+    messages = conversation.messages.exclude(hidden_by=request.user).order_by('timestamp').annotate(
         author_id=F('sender_id')
     ).values('author_id', 'text', 'timestamp')
     

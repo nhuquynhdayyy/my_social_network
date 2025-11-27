@@ -141,6 +141,34 @@
     }
 </style>
 
+<!-- MODAL TÙY CHỌN XÓA TIN NHẮN -->
+<div class="modal fade" id="deleteMessageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-0 justify-content-center">
+                <h5 class="modal-title fw-bold" style="font-size: 1.1rem;">Xóa tin nhắn?</h5>
+            </div>
+            <div class="modal-body text-center text-muted p-2">
+                Bạn muốn xóa tin nhắn này ở phía ai?
+            </div>
+            <div class="modal-footer flex-column border-top-0 p-2 gap-2">
+                <!-- Nút Xóa với mọi người (Chỉ hiện nếu là tin nhắn chính chủ) -->
+                <button type="button" class="btn btn-primary w-100 fw-bold" id="btnDeleteEveryone">
+                    Thu hồi với mọi người
+                </button>
+                
+                <!-- Nút Xóa ở phía tôi -->
+                <button type="button" class="btn btn-light w-100 fw-bold text-primary border" id="btnDeleteMe">
+                    Chỉ xóa ở phía tôi
+                </button>
+                
+                <!-- Nút Hủy -->
+                <button type="button" class="btn btn-link text-decoration-none text-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const messageContainer = document.getElementById('message-container');
@@ -294,22 +322,70 @@ function getCookie(name) {
     return cookieValue;
 }
 
+let messageIdToDelete = null;
+const deleteMsgModal = new bootstrap.Modal(document.getElementById('deleteMessageModal'));
+const btnDeleteEveryone = document.getElementById('btnDeleteEveryone');
+const btnDeleteMe = document.getElementById('btnDeleteMe');
+
+// Hàm được gọi khi bấm nút "Xóa tin nhắn" trong dropdown 3 chấm
 function deleteMessage(messageId) {
-    if (!confirm('Bạn có chắc muốn xóa tin nhắn này?')) return;
+    messageIdToDelete = messageId;
     
-    fetch(`/chat/api/message/delete/${messageId}/`, {
+    // Kiểm tra xem tin nhắn này có phải của mình gửi không?
+    // Chúng ta có thể check class 'justify-content-end' hoặc 'bg-primary' của thẻ cha
+    const msgElement = document.getElementById(`message-${messageId}`);
+    const isMyMessage = msgElement.classList.contains('justify-content-end');
+
+    // Nếu là tin nhắn của mình -> Hiện nút "Thu hồi với mọi người"
+    // Nếu là tin nhắn người khác -> Ẩn nút đó đi (chỉ được xóa phía tôi)
+    if (isMyMessage) {
+        btnDeleteEveryone.style.display = 'block';
+    } else {
+        btnDeleteEveryone.style.display = 'none';
+    }
+
+    deleteMsgModal.show();
+}
+
+// Xử lý sự kiện bấm nút trong Modal
+function executeDelete(type) {
+    if (!messageIdToDelete) return;
+
+    // Disable buttons
+    btnDeleteEveryone.disabled = true;
+    btnDeleteMe.disabled = true;
+
+    fetch(`/chat/api/message/delete/${messageIdToDelete}/`, {
         method: 'POST',
-        headers: {'X-CSRFToken': getCookie('csrftoken')}
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ delete_type: type })
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'ok') {
-            document.getElementById(`message-${data.message_id}`).remove();
+            // Xóa tin nhắn khỏi giao diện ngay lập tức
+            const msgDiv = document.getElementById(`message-${data.message_id}`);
+            if (msgDiv) msgDiv.remove();
+            deleteMsgModal.hide();
         } else {
             alert('Lỗi: ' + data.message);
         }
+    })
+    .catch(err => console.error(err))
+    .finally(() => {
+        // Reset buttons
+        btnDeleteEveryone.disabled = false;
+        btnDeleteMe.disabled = false;
+        messageIdToDelete = null;
     });
 }
+
+// Gắn sự kiện cho 2 nút trong modal
+btnDeleteEveryone.addEventListener('click', () => executeDelete('everyone'));
+btnDeleteMe.addEventListener('click', () => executeDelete('me'));
 
 function showEditForm(messageId) {
     document.getElementById(`edit-form-${messageId}`).style.display = 'block';

@@ -23,6 +23,8 @@ class Message(models.Model):
 
     reactions = GenericRelation('posts.Reaction')
     
+    hidden_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='hidden_messages', blank=True)
+    
     class Meta:
         ordering = ['timestamp']
 
