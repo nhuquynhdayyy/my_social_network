@@ -972,6 +972,26 @@
         </div>
     </div>
 
+    <!-- MODAL XÁC NHẬN XÓA BÌNH LUẬN -->
+    <div class="modal fade" id="deleteCommentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm"> <!-- modal-sm cho nhỏ gọn -->
+            <div class="modal-content">
+            <div class="modal-header border-bottom-0 pb-0 justify-content-center">
+                <h5 class="modal-title fw-bold" style="font-size: 1.1rem;">Xóa bình luận?</h5>
+            </div>
+            <div class="modal-body text-center text-muted">
+                Bạn có chắc chắn muốn xóa bình luận này không?
+            </div>
+            <div class="modal-footer border-top-0 justify-content-center p-2">
+                <!-- Nút Hủy -->
+                <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold" data-bs-dismiss="modal" style="font-size: 0.95rem;">Không</button>
+                <!-- Nút Xóa (Màu xanh giống Facebook) -->
+                <button type="button" class="btn btn-primary fw-bold px-4 rounded-pill" id="confirmDeleteCommentBtn">Xóa</button>
+            </div>
+            </div>
+        </div>
+    </div>
+
     <!-- =================== SCRIPT CHUNG (Đã tối ưu và gộp) =================== -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
@@ -1420,30 +1440,6 @@
         });
 
         document.body.addEventListener('click', function(event) {
-            // --- XÓA BÌNH LUẬN (ĐÃ SỬA LỖI) ---
-            if (event.target.classList.contains('delete-comment-btn')) {
-                event.preventDefault();
-                if (!confirm('Bạn có chắc chắn muốn xóa bình luận này không?')) return;
-
-                const commentId = event.target.dataset.commentId;
-                // Tự tạo URL đúng bằng cách dùng namespace
-                const url = `/comment/${commentId}/delete/`; 
-
-                fetch(url, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': csrftoken }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'ok') {
-                        const commentDiv = event.target.closest('[id^="comment-"]');
-                        if (commentDiv) commentDiv.remove();
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            }
             
             // --- MỞ/ĐÓNG FORM TRẢ LỜI ---
             if (event.target.classList.contains('reply-btn')) {
@@ -1505,6 +1501,76 @@
                     commentContentWrapper.innerHTML = commentContentWrapper.dataset.originalContent;
                 }
             }
+        });
+        
+        // ---------------------------------------------------------
+        // LOGIC XÓA BÌNH LUẬN (KIỂU FACEBOOK MODAL)
+        // ---------------------------------------------------------
+        
+        // Biến toàn cục để lưu ID comment đang muốn xóa
+        let commentIdToDelete = null;
+        const deleteCommentModal = new bootstrap.Modal(document.getElementById('deleteCommentModal'));
+        const confirmDeleteBtn = document.getElementById('confirmDeleteCommentBtn');
+
+        document.body.addEventListener('click', function(event) {
+            
+            // --- 1. KHI BẤM NÚT THÙNG RÁC (MỞ MODAL) ---
+            if (event.target.classList.contains('delete-comment-btn')) {
+                event.preventDefault();
+                // Lấy ID bình luận từ nút bấm
+                commentIdToDelete = event.target.dataset.commentId;
+                // Mở Modal xác nhận
+                deleteCommentModal.show();
+            }
+
+            // ... (Giữ nguyên các logic khác như reply-btn, edit-comment-btn, v.v...) ...
+             if (event.target.classList.contains('reply-btn')) {
+                 // ... code cũ giữ nguyên ...
+             }
+             // ...
+        });
+
+        // --- 2. KHI BẤM NÚT "XÓA" TRONG MODAL (GỌI API) ---
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (!commentIdToDelete) return;
+
+            // Disable nút để tránh double click
+            confirmDeleteBtn.disabled = true;
+            confirmDeleteBtn.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div>';
+
+            const url = `/comment/${commentIdToDelete}/delete/`; 
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    // Tìm phần tử HTML bình luận để xóa
+                    const commentDiv = document.getElementById(`comment-${commentIdToDelete}`);
+                    if (commentDiv) {
+                        // Hiệu ứng mờ dần trước khi xóa (Optional cho mượt)
+                        commentDiv.style.transition = "opacity 0.3s";
+                        commentDiv.style.opacity = "0";
+                        setTimeout(() => commentDiv.remove(), 300);
+                    }
+                    // Ẩn modal
+                    deleteCommentModal.hide();
+                } else {
+                    alert("Lỗi: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Đã xảy ra lỗi kết nối.');
+            })
+            .finally(() => {
+                // Reset trạng thái nút
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.innerText = 'Xóa';
+                commentIdToDelete = null; // Reset ID
+            });
         });
         
         // =======================================================
