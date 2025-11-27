@@ -12,6 +12,7 @@ from .forms import MessageForm
 import json
 from posts.models import Reaction
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 User = get_user_model()
 
@@ -218,11 +219,24 @@ def api_search_users(request):
 
     data = []
     for user in users:
+        # --- SỬA ĐOẠN NÀY ---
+        # Kiểm tra xem user có avatar không để lấy URL, nếu không thì trả về None
+        avatar_url = None
+        try:
+            if user.avatar:
+                avatar_url = user.avatar.url
+        except ValueError:
+            # Phòng trường hợp trường avatar tồn tại nhưng không có file
+            pass
+
         data.append({
+            'id': user.id, # Thêm ID để Javascript sử dụng
             'username': user.username,
             'full_name': user.get_full_name() or user.username,
+            'avatar_url': avatar_url, # <--- Bổ sung dòng này
             'start_conversation_url': f'/chat/start/{user.id}/'
         })
+        # --------------------
 
     return JsonResponse({'users': data})
 
@@ -301,3 +315,26 @@ def api_get_messages(request, conversation_id):
     messages_data = list(messages)
     
     return JsonResponse({'messages': messages_data})
+
+@require_POST
+@login_required
+def api_start_conversation(request):
+    try:
+        data = json.loads(request.body)
+        target_user_id = data.get('target_user_id')
+        target_user = User.objects.get(id=target_user_id)
+        
+        # Tìm cuộc hội thoại cũ
+        conversation = Conversation.objects.filter(participants=request.user).filter(participants=target_user).first()
+        
+        # Nếu chưa có thì tạo mới
+        if not conversation:
+            conversation = Conversation.objects.create()
+            conversation.participants.add(request.user, target_user)
+            
+        return JsonResponse({
+            'status': 'ok', 
+            'conversation_id': conversation.id
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)

@@ -29,4 +29,5 @@ urlpatterns = [
     path('api/search-users/', views.api_search_users, name='api_search_users'),
     path('api/message/react/<int:message_id>/', views.react_to_message_api, name='react_to_message_api'),
     path('api/conversation/<int:conversation_id>/messages/', views.api_get_messages, name='api_get_messages'),
+    path('api/start-conversation/', views.api_start_conversation, name='api_start_conversation'),
 ]

@@ -22,6 +22,27 @@
         background-color: #fafafa;
       }
 
+      .search-result-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .search-result-item .avatar {
+            width: 50px !important;       /* Cố định chiều rộng */
+            height: 50px !important;      /* Cố định chiều cao */
+            border-radius: 50%;           /* Bo tròn */
+            object-fit: cover;            /* Cắt ảnh vừa khung, không bị méo */
+            margin-right: 15px;           /* Cách tên ra một chút */
+            flex-shrink: 0;               /* Ngăn không cho ảnh bị bóp méo khi màn hình nhỏ */
+        }
+
+        .search-result-item:hover {
+            background-color: #f5f5f5;
+        }
+
       .modal-fullscreen-custom .modal-dialog {
             max-width: 90vw; /* Độ rộng tối đa 90% màn hình */
             width: 90vw;
@@ -568,7 +589,8 @@
       .chat-popup-body {
           padding: 0; /* Xóa padding mặc định */
           flex-grow: 1;
-          overflow: hidden; /* Quan trọng: để các view con tự cuộn */
+          overflow-y: hidden; /* Ẩn thanh cuộn dọc mặc định */
+          overflow-x: hidden !important;
           position: relative;
       }
       .chat-view {
@@ -1633,16 +1655,26 @@
         });
         
         function switchToView(viewName) {
+            // 1. Reset trạng thái cũ
             chatPopup.classList.remove('show-detail', 'show-search');
+            
             if (viewName === 'detail') {
                 chatPopup.classList.add('show-detail');
             } else if (viewName === 'search') {
                 chatPopup.classList.add('show-search');
-                searchInput.value = ''; // Xóa input cũ
+                
+                // Reset nội dung tìm kiếm
+                searchInput.value = ''; 
                 searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Nhập ít nhất 2 ký tự.</p>';
-                searchInput.focus();
+                
+                // === KHẮC PHỤC LỖI Ở ĐÂY ===
+                // Không focus ngay lập tức. Đợi 300ms (bằng thời gian transition CSS) 
+                // để giao diện trượt xong rồi mới focus.
+                setTimeout(() => {
+                    searchInput.focus();
+                }, 350); // Để dư ra 50ms cho chắc chắn
             }
-            // Nếu viewName là 'list' hoặc không có, nó sẽ tự động quay về list
+            // Nếu viewName là 'list' thì các class đã được remove ở trên, giao diện tự về list.
         }
 
         newMessageBtn.addEventListener("click", () => switchToView('search'));
@@ -1806,19 +1838,65 @@
                     searchResultsList.innerHTML = "";
                     if (data.users && data.users.length > 0) {
                         data.users.forEach(user => {
+                            // Logic xử lý Avatar: Nếu API trả về null, dùng ảnh mặc định tạo từ tên
+                            const avatar = user.avatar_url 
+                                ? user.avatar_url 
+                                : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=random&color=fff`;
+
                             searchResultsList.innerHTML += `
-                                <a href="${user.start_conversation_url}" class="conversation-item">
-                                    <img src="${user.avatar_url || '/static/images/default_avatar.png'}" class="avatar" alt="${user.username}">
-                                    <div class="message-details">
-                                        <p class="username">${user.full_name}</p>
+                                <div class="search-result-item" 
+                                    data-user-id="${user.id}" 
+                                    data-username="${user.username}" 
+                                    data-avatar="${avatar}">
+                                    <img src="${avatar}" class="avatar" alt="${user.username}">
+                                    <div class="user-info">
+                                        <span class="user-name">${user.full_name}</span>
                                     </div>
-                                </a>`;
+                                </div>`;
                         });
                     } else {
                         searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Không tìm thấy người dùng.</p>';
                     }
                 });
             }, 300);
+        });
+
+        searchResultsList.addEventListener('click', function(event) {
+            // Tìm phần tử .search-result-item gần nhất được click
+            const item = event.target.closest('.search-result-item');
+            
+            if (item) {
+                const targetUserId = item.dataset.userId;
+                const targetUsername = item.dataset.username;
+                const targetAvatar = item.dataset.avatar;
+
+                // Hiển thị loading
+                searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Đang kết nối...</p>';
+
+                // Gọi API backend để lấy Conversation ID
+                fetch("/chat/api/start-conversation/", {
+                    method: "POST",
+                    headers: { 
+                        "X-CSRFToken": csrftoken,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ target_user_id: targetUserId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Mở giao diện chat chi tiết
+                        openConversation(data.conversation_id, targetUsername, targetAvatar);
+                    } else {
+                        alert("Lỗi: " + data.message);
+                        switchToView('search'); // Quay lại nếu lỗi
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Có lỗi xảy ra khi kết nối.");
+                });
+            }
         });
         {% endif %}
         
