@@ -1448,27 +1448,46 @@
                     if (data.status === "ok") {
                         updateReactionStatsUI(postId, data.reaction_stats, data.total_reactions);
 
-                        // === BẮT ĐẦU NÂNG CẤP: CẬP NHẬT NỘI DUNG NÚT "THÍCH" CHÍNH ===
-                        const mainPostReactionButton = document.querySelector(`.reaction-btn[data-post-id='${postId}'][data-reaction-type='LIKE'].w-100`);
+                        // Tìm nút Thích chính của bài viết này
+                        const mainPostReactionButton = document.querySelector(`.reaction-btn[data-post-id='${postId}'].w-100`);
 
                         if (mainPostReactionButton) {
                             if (data.current_user_reaction) {
+                                // === TRƯỜNG HỢP 1: ĐANG CÓ REACTION (Vừa thả tim xong) ===
+                                
+                                // 1. Cập nhật giao diện (Màu sắc, Icon)
                                 mainPostReactionButton.classList.add('text-primary', 'fw-bold');
-                                let reactionText = '👍 Thích'; // Mặc định
-                                if (data.current_user_reaction === 'LIKE') reactionText = '👍 Thích';
-                                else if (data.current_user_reaction === 'LOVE') reactionText = '❤️ Yêu thích';
-                                else if (data.current_user_reaction === 'HAHA') reactionText = '😂 Haha';
-                                else if (data.current_user_reaction === 'WOW') reactionText = '😮 Wow';
-                                else if (data.current_user_reaction === 'SAD') reactionText = '😢 Buồn';
-                                else if (data.current_user_reaction === 'ANGRY') reactionText = '😡 Phẫn nộ';
+                                
+                                // Cập nhật text và icon tương ứng
+                                let reactionText = '👍 Thích';
+                                if (data.current_user_reaction === 'LIKE') reactionText = '<span class="reaction-icon-liked">👍</span> Thích';
+                                else if (data.current_user_reaction === 'LOVE') reactionText = '<span class="reaction-icon-loved">❤️</span> Yêu thích';
+                                else if (data.current_user_reaction === 'HAHA') reactionText = '<span class="reaction-icon-haha">😂</span> Haha';
+                                else if (data.current_user_reaction === 'WOW') reactionText = '<span class="reaction-icon-wow">😮</span> Wow';
+                                else if (data.current_user_reaction === 'SAD') reactionText = '<span class="reaction-icon-sad">😢</span> Buồn';
+                                else if (data.current_user_reaction === 'ANGRY') reactionText = '<span class="reaction-icon-angry">😡</span> Phẫn nộ';
                                 mainPostReactionButton.innerHTML = reactionText;
+
+                                // 2. CẬP NHẬT LOGIC (QUAN TRỌNG NHẤT)
+                                // Gán loại reaction hiện tại vào nút. Để lần sau bấm vào, nó gửi đúng loại này lên server để hủy.
+                                mainPostReactionButton.dataset.reactionType = data.current_user_reaction; 
+
                             } else {
+                                // === TRƯỜNG HỢP 2: ĐÃ HỦY REACTION (Về trạng thái ban đầu) ===
+                                
                                 mainPostReactionButton.classList.remove('text-primary', 'fw-bold');
-                                mainPostReactionButton.innerHTML = '👍 Thích';
+                                
+                                // Trả về icon SVG xám
+                                mainPostReactionButton.innerHTML = `
+                                    <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="interactive-icon">
+                                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                                    </svg>
+                                    Thích`;
+
+                                // Reset logic về mặc định là LIKE (để bấm lần tới là Like)
+                                mainPostReactionButton.dataset.reactionType = 'LIKE';
                             }
                         }
-                        // === KẾT THÚC NÂNG CẤP ===
-
                     } else {
                         alert(data.message || "Có lỗi xảy ra.");
                     }

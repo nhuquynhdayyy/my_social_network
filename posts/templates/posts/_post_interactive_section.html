@@ -50,7 +50,8 @@
         {% with user_reaction=user_reactions_map|get_item:post.id %}
         <button 
             class="btn btn-interactive reaction-btn w-100 {% if user_reaction %}reaction-active{% endif %}" 
-            data-post-id="{{ post.id }}" data-reaction-type="LIKE">
+            data-post-id="{{ post.id }}" 
+            data-reaction-type="{{ user_reaction|default:'LIKE' }}">
             
             {% if user_reaction == 'LIKE' %}
                 <span class="reaction-icon-liked">👍</span> Thích
