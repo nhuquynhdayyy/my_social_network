@@ -151,25 +151,47 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.status === 'ok') {
                 const messageHtml = `
                 <div id="message-${data.message_id}" class="mb-3 d-flex justify-content-end">
-                    <div class="message-bubble p-2 rounded bg-primary text-white" style="max-width: 70%;">
-                        <p class="mb-0 message-text">${data.text}</p>
-                        <small class="text-muted d-block text-end text-white-50">
-                            ${data.timestamp}
-                        </small>
-                        <div class="message-actions">
-                             <button class="btn btn-sm btn-light py-0 px-1" onclick="showEditForm('${data.message_id}')">Sửa</button>
-                             <button class="btn btn-sm btn-danger py-0 px-1" onclick="deleteMessage('${data.message_id}')">Xóa</button>
+                    <div class="message-bubble-container"> <!-- Container quan trọng -->
+                        
+                        <!-- Bong bóng chat -->
+                        <div class="message-bubble p-2 rounded bg-primary text-white" style="max-width: 80%;">
+                            <p class="mb-0 message-text">${data.text}</p>
+                            <small class="text-muted d-block text-end text-white-50">
+                                ${data.timestamp}
+                            </small>
+                            <div class="message-actions">
+                                    <button class="btn btn-sm btn-light py-0 px-1" onclick="showEditForm('${data.message_id}')">Sửa</button>
+                                    <button class="btn btn-sm btn-danger py-0 px-1" onclick="deleteMessage('${data.message_id}')">Xóa</button>
+                            </div>
+                            <div id="edit-form-${data.message_id}" style="display: none;">
+                                <textarea class="form-control form-control-sm mt-1" id="edit-text-${data.message_id}">${data.text}</textarea>
+                                <button class="btn btn-sm btn-success mt-1" onclick="submitEdit('${data.message_id}')">Lưu</button>
+                                <button class="btn btn-sm btn-secondary mt-1" onclick="hideEditForm('${data.message_id}')">Hủy</button>
+                            </div>
                         </div>
-                        <div id="edit-form-${data.message_id}" style="display: none;">
-                            <textarea class="form-control form-control-sm mt-1" id="edit-text-${data.message_id}">${data.text}</textarea>
-                            <button class="btn btn-sm btn-success mt-1" onclick="submitEdit('${data.message_id}')">Lưu</button>
-                            <button class="btn btn-sm btn-secondary mt-1" onclick="hideEditForm('${data.message_id}')">Hủy</button>
+
+                        <!-- Vùng hiển thị stats reaction (ban đầu rỗng) -->
+                        <div id="message-reaction-stats-${data.message_id}" class="reaction-stats-display"></div>
+
+                        <!-- Popup reaction (Phải có cái này mới react được!) -->
+                        <div class="reaction-popup">
+                            <button class="btn message-reaction-choice-btn" data-message-id="${data.message_id}" data-reaction-type="LIKE">👍</button>
+                            <button class="btn message-reaction-choice-btn" data-message-id="${data.message_id}" data-reaction-type="LOVE">❤️</button>
+                            <button class="btn message-reaction-choice-btn" data-message-id="${data.message_id}" data-reaction-type="HAHA">😂</button>
+                            <button class="btn message-reaction-choice-btn" data-message-id="${data.message_id}" data-reaction-type="WOW">😮</button>
+                            <button class="btn message-reaction-choice-btn" data-message-id="${data.message_id}" data-reaction-type="SAD">😢</button>
+                            <button class="btn message-reaction-choice-btn" data-message-id="${data.message_id}" data-reaction-type="ANGRY">😡</button>
                         </div>
+
                     </div>
                 </div>`;
-                messageContainer.innerHTML += messageHtml;
+                
+                // Thêm vào giao diện
+                messageContainer.insertAdjacentHTML('beforeend', messageHtml);
+                
+                // Reset form
                 textInput.value = '';
-                messageContainer.scrollTop = messageContainer.scrollHeight; // Cuộn xuống
+                messageContainer.scrollTop = messageContainer.scrollHeight; 
             }
         });
     });
