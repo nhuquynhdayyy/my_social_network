@@ -1,151 +1,266 @@
 {% extends "posts/base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
+<style>
+    /* =================================================================
+       PHẦN 1: THU NHỎ SIDEBAR CHÍNH (GIỮ NGUYÊN)
+       ================================================================= */
+    .sidebar { width: 72px !important; padding: 12px 12px !important; border-right: 1px solid #dbdbdb; }
+    .sidebar-nav li a span { display: none !important; }
+    .sidebar-nav li a { justify-content: center !important; padding: 12px 0 !important; }
+    .sidebar-nav .nav-icon { margin-right: 0 !important; width: 28px; height: 28px; }
+    .sidebar-brand { display: none !important; }
+    .main-content { margin-left: 72px !important; padding: 0 !important; width: calc(100% - 72px) !important; }
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="mb-0">Tin nhắn</h2>
-                <div>
-                    <a href="{% url 'chat:create_group' %}" class="btn btn-success">Tạo nhóm mới</a>
-                    <button type="button" class="btn btn-primary" id="compose-new-message-btn">Soạn tin mới</button>
-                </div>
-            </div>
+    /* =================================================================
+       PHẦN 2: GIAO DIỆN DANH SÁCH CHAT
+       ================================================================= */
+    body { background-color: #fff; }
+    
+    .chat-layout {
+        display: flex;
+        height: 100vh;
+        max-width: 100%;
+        background: #fff;
+    }
 
-            <!-- Phần tìm kiếm giữ nguyên -->
-            <div class="mb-4">
-                <div class="input-group">
-                    <input type="text" id="conversationSearchInput" class="form-control" placeholder="Tìm kiếm người dùng để bắt đầu trò chuyện...">
-                    <button class="btn btn-outline-secondary" type="button" id="clear-search-btn" style="display: none;">&times;</button>
-                </div>
-            </div>
-            <div id="search-results-container" style="display: none;">
-                <div class="list-group" id="searchResultsList"></div>
-            </div>
+    /* --- CỘT TRÁI (FULL) --- */
+    .chat-sidebar {
+        width: 350px;
+        border-right: 1px solid #dbdbdb;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+    }
 
-            <!-- === DANH SÁCH HỘI THOẠI (SỬA LOGIC HIỂN THỊ LAST MESSAGE) === -->
-            <div id="conversation-list-container">
-                <div class="list-group">
-                    {% for conv in conversations %}
-                    <a href="{% url 'chat:conversation_detail' conv.id %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">
-                                {% if conv.type == 'GROUP' %}
-                                    {{ conv.name }} <span class="badge bg-secondary">Nhóm</span>
-                                {% else %}
-                                    {% for participant in conv.participants.all %}
-                                        {% if participant != request.user %}{{ participant.username }}{% endif %}
-                                    {% endfor %}
-                                {% endif %}
-                            </h5>
-                            <small class="text-muted">{{ conv.updated_at|timesince }} trước</small>
-                        </div>
-                        <p class="mb-1 text-muted">
+    .sidebar-header {
+        height: 75px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        border-bottom: 1px solid #dbdbdb;
+    }
+    .sidebar-title { font-weight: 700; font-size: 1.2rem; margin: 0; }
+    
+    .header-actions { display: flex; gap: 15px; align-items: center; }
+    
+    /* Icon Button Style */
+    .btn-header-icon {
+        background: none; border: none; padding: 0; cursor: pointer; color: #000;
+        display: flex; align-items: center;
+    }
+
+    /* THANH TÌM KIẾM (Ẩn mặc định) */
+    .search-bar-container {
+        display: none; padding: 10px 15px; background: #fff; border-bottom: 1px solid #f0f0f0;
+    }
+    .search-bar-container input {
+        width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; background: #efefef; outline: none;
+    }
+
+    .conv-list { flex: 1; overflow-y: auto; }
+    
+    .conv-item {
+        display: flex; align-items: center; padding: 12px 20px;
+        cursor: pointer; text-decoration: none; color: #000;
+        transition: background 0.1s;
+    }
+    .conv-item:hover { background-color: #fafafa; }
+    
+    .conv-avatar { width: 56px; height: 56px; border-radius: 50%; margin-right: 15px; object-fit: cover; }
+    .conv-info { flex: 1; overflow: hidden; }
+    .conv-name { font-size: 0.95rem; font-weight: 500; }
+    .conv-last { font-size: 0.85rem; color: #8e8e8e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* --- CỘT PHẢI (MÀN HÌNH CHỜ) --- */
+    .chat-empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-primary-ig {
+        background-color: #0095f6; color: white; border: none;
+        padding: 7px 16px; border-radius: 8px; font-weight: 600;
+    }
+
+    /* SEARCH USER MODAL */
+    .search-result-item {
+        display: flex; align-items: center; padding: 10px;
+        border-bottom: 1px solid #eee; text-decoration: none; color: #000;
+    }
+    .search-result-item:hover { background-color: #f0f2f5; }
+    .search-avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; }
+</style>
+
+<div class="chat-layout">
+    <!-- CỘT TRÁI -->
+    <div class="chat-sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-title">{{ user.username }}</span>
+            
+            <div class="header-actions">
+                <!-- 1. ICON TÌM KIẾM (MỚI THÊM) -->
+                <button class="btn-header-icon" id="toggle-search-list-btn" title="Tìm kiếm đoạn chat">
+                    <svg aria-label="Search" fill="currentColor" height="24" role="img" viewBox="0 0 24 24" width="24"><path d="M19 10.5A8.5 8.5 0 1 1 10.5 2a8.5 8.5 0 0 1 8.5 8.5Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><line fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" x1="16.511" x2="22" y1="16.511" y2="22"></line></svg>
+                </button>
+
+                <!-- 2. ICON SOẠN TIN MỚI -->
+                <button class="btn-header-icon" data-bs-toggle="modal" data-bs-target="#newMsgModal" title="Soạn tin mới">
+                    <svg aria-label="New message" fill="currentColor" height="24" role="img" viewBox="0 0 24 24" width="24">
+                        <path d="M12.202 3.203H5.25a3 3 0 0 0-3 3V18.75a3 3 0 0 0 3 3h12.5a3 3 0 0 0 3-3v-6.94l-8.546-8.607zm6.81 1.252l-6.814 6.814V4.46l6.814-6.814zm-5.602 11.235l-2.768-2.768 8.845-8.845 2.768 2.768-8.845 8.845z"></path>
+                        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- THANH INPUT TÌM KIẾM (MỚI THÊM) -->
+        <div class="search-bar-container" id="list-search-bar">
+            <input type="text" id="filter-list-input" placeholder="Tìm người hoặc nhóm...">
+        </div>
+        
+        <div class="conv-list" id="conversation-list-wrapper">
+            {% for conv in conversations %}
+            <a href="{% url 'chat:conversation_detail' conv.id %}" class="conv-item">
+                {% if conv.type == 'GROUP' %}
+                    <img src="{{ conv.avatar.url }}" class="conv-avatar" alt="Group">
+                    <div class="conv-info">
+                        <div class="conv-name">{{ conv.name }}</div>
+                        <div class="conv-last">
                             {% if conv.last_message %}
-                                <strong>
-                                    {% if conv.last_message.sender == request.user %}Bạn:
-                                    {% elif conv.type == 'GROUP' %}{{ conv.last_message.sender.first_name }}:
-                                    {% endif %}
-                                </strong>
-                                
-                                <!-- LOGIC MỚI Ở ĐÂY -->
-                                {% if conv.last_message.text %}
-                                    {{ conv.last_message.text|truncatechars:50 }}
-                                {% elif conv.last_message.file %}
-                                    {% if conv.last_message.is_image %}
-                                        <em>[Hình ảnh]</em>
-                                    {% elif conv.last_message.is_video %}
-                                        <em>[Video]</em>
-                                    {% else %}
-                                        <em>[File đính kèm]</em>
-                                    {% endif %}
-                                {% endif %}
-                                
-                            {% else %}
-                                <span class="text-muted">Chưa có tin nhắn nào.</span>
-                            {% endif %}
-                        </p>
-                    </a>
-                    {% empty %}
-                        <p class="text-center text-muted p-3">Bạn chưa có cuộc trò chuyện nào.</p>
+                                {% if conv.last_message.sender == request.user %}Bạn: {% endif %}{{ conv.last_message.text|default:"File đính kèm" }}
+                            {% else %}Nhóm mới{% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    {% for participant in conv.participants.all %}
+                        {% if participant != request.user %}
+                        <img src="{{ participant.avatar.url }}" class="conv-avatar" alt="{{ participant.username }}">
+                        <div class="conv-info">
+                            <div class="conv-name">{{ participant.first_name }} {{ participant.last_name }}</div>
+                            <div class="conv-last">
+                                {% if conv.last_message %}
+                                    {% if conv.last_message.sender == request.user %}Bạn: {% endif %}{{ conv.last_message.text|default:"File đính kèm" }}
+                                {% else %}Bắt đầu trò chuyện{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
                     {% endfor %}
+                {% endif %}
+            </a>
+            {% empty %}
+                <div class="text-center mt-5 text-muted">Chưa có tin nhắn nào</div>
+            {% endfor %}
+            <p id="no-result-msg" class="text-center text-muted mt-3 small d-none">Không tìm thấy cuộc trò chuyện nào.</p>
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI (CHỜ) -->
+    <div class="chat-empty">
+        <svg aria-label="Direct" fill="currentColor" height="96" role="img" viewBox="0 0 96 96" width="96"><circle cx="48" cy="48" fill="none" r="47" stroke="currentColor" stroke-miterlimit="10" stroke-width="2"></circle><path d="M47.8 3.8c-24.3 0-44 19.7-44 44s19.7 44 44 44 44-19.7 44-44-44-44-44-44zm0 84.8c-22.5 0-40.8-18.3-40.8-40.8S25.3 7 47.8 7 88.6 25.3 88.6 47.8 70.3 88.6 47.8 88.6z"></path><path d="M74.3 33.5L26.8 22.3a2.4 2.4 0 00-3.1 3.1l11.2 47.5a2.4 2.4 0 004.5 0l6.7-22.1 22.1-6.7a2.4 2.4 0 000-4.6zM54.7 46.9l-16.1 4.9 4.9-16.1 23.3-8-12.1 19.2z"></path></svg>
+        <h3 class="fw-light mt-3">Tin nhắn của bạn</h3>
+        <p class="text-muted">Gửi ảnh và tin nhắn riêng tư cho bạn bè.</p>
+        <button class="btn btn-primary-ig mt-2" data-bs-toggle="modal" data-bs-target="#newMsgModal">Gửi tin nhắn</button>
+    </div>
+</div>
+
+<!-- MODAL SEARCH USER (ĐỂ TẠO CHAT MỚI) -->
+<div class="modal fade" id="newMsgModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Tin nhắn mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control border-0 border-bottom" id="userSearchInput" placeholder="Tìm kiếm người dùng..." autocomplete="off">
                 </div>
+                <div id="searchResultList" style="max-height: 300px; overflow-y: auto;">
+                    <p class="text-center text-muted mt-3 small">Nhập tên để tìm kiếm...</p>
+                </div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <a href="{% url 'chat:create_group' %}" class="text-decoration-none text-primary fw-bold">Tạo nhóm chat mới</a>
             </div>
         </div>
     </div>
 </div>
-{% endblock content %}
 
-{% block extra_js %}
-<!-- Script giữ nguyên -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // ... (Code JS cũ của bạn cho search) ...
-    // Phần này không cần sửa vì api_get_conversations ở trên đã sửa rồi
-    const searchInput = document.getElementById('conversationSearchInput');
-    const searchResultsContainer = document.getElementById('search-results-container');
-    const searchResultsList = document.getElementById('searchResultsList');
-    const originalListContainer = document.getElementById('conversation-list-container');
-    const clearSearchBtn = document.getElementById('clear-search-btn');
-    const composeBtn = document.getElementById('compose-new-message-btn');
-    let searchTimeout;
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 1. XỬ LÝ LỌC DANH SÁCH CHAT ---
+        const toggleBtn = document.getElementById('toggle-search-list-btn');
+        const searchBar = document.getElementById('list-search-bar');
+        const filterInput = document.getElementById('filter-list-input');
+        const convItems = document.querySelectorAll('.conv-item');
+        const noResultMsg = document.getElementById('no-result-msg');
 
-    composeBtn.addEventListener('click', function() {
-        searchInput.focus();
-        originalListContainer.style.display = 'none';
-        searchResultsContainer.style.display = 'block';
-        if (searchInput.value.trim() === '') {
-            searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Bắt đầu tìm kiếm bằng cách gõ tên người dùng.</p>';
-        }
-    });
+        // Bật tắt thanh tìm kiếm
+        toggleBtn.addEventListener('click', function() {
+            if (searchBar.style.display === 'block') {
+                searchBar.style.display = 'none';
+                filterInput.value = ''; // Xóa chữ
+                // Hiện lại tất cả
+                convItems.forEach(item => item.style.display = 'flex');
+                noResultMsg.classList.add('d-none');
+            } else {
+                searchBar.style.display = 'block';
+                filterInput.focus();
+            }
+        });
 
-    searchInput.addEventListener('keyup', function() {
-        clearTimeout(searchTimeout);
-        const query = searchInput.value.trim();
+        // Lọc danh sách khi gõ
+        filterInput.addEventListener('keyup', function() {
+            const query = this.value.toLowerCase().trim();
+            let hasResult = false;
 
-        if (query.length === 0) {
-            searchResultsContainer.style.display = 'none';
-            originalListContainer.style.display = 'block';
-            clearSearchBtn.style.display = 'none';
-            return;
-        }
+            convItems.forEach(item => {
+                const name = item.querySelector('.conv-name').innerText.toLowerCase();
+                if (name.includes(query)) {
+                    item.style.display = 'flex';
+                    hasResult = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
 
-        clearSearchBtn.style.display = 'block';
-        originalListContainer.style.display = 'none';
-        searchResultsContainer.style.display = 'block';
-        searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Đang tìm...</p>';
+            if (!hasResult) noResultMsg.classList.remove('d-none');
+            else noResultMsg.classList.add('d-none');
+        });
 
-        searchTimeout = setTimeout(() => {
+
+        // --- 2. XỬ LÝ TÌM KIẾM NGƯỜI DÙNG ĐỂ TẠO CHAT MỚI (MODAL) ---
+        document.getElementById('userSearchInput').addEventListener('keyup', function() {
+            let query = this.value.trim();
+            let resultList = document.getElementById('searchResultList');
+            if(query.length < 1) {
+                resultList.innerHTML = '<p class="text-center text-muted mt-3 small">Nhập tên để tìm kiếm...</p>'; return;
+            }
             fetch(`{% url 'chat:api_search_users' %}?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    searchResultsList.innerHTML = '';
-                    if (data.users && data.users.length > 0) {
-                        data.users.forEach(user => {
-                            searchResultsList.innerHTML += `
-                                <a href="${user.start_conversation_url}" class="list-group-item list-group-item-action">
-                                    <div class="d-flex align-items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-person-circle text-secondary me-3" viewBox="0 0 16 16"><path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/></svg>
-                                        <div>
-                                            <h5 class="mb-0">${user.full_name}</h5>
-                                            <small class="text-muted">@${user.username}</small>
-                                        </div>
-                                    </div>
-                                </a>`;
-                        });
-                    } else {
-                        searchResultsList.innerHTML = `<p class="text-center text-muted p-3">Không tìm thấy người dùng nào khớp với "${query}".</p>`;
-                    }
-                });
-        }, 300);
+            .then(res => res.json())
+            .then(data => {
+                resultList.innerHTML = '';
+                if(data.users.length > 0) {
+                    data.users.forEach(user => {
+                        resultList.innerHTML += `
+                            <a href="${user.start_conversation_url}" class="search-result-item">
+                                <img src="/static/images/default.jpg" class="search-avatar" onerror="this.src='https://via.placeholder.com/40'">
+                                <div>
+                                    <div class="fw-bold">${user.username}</div>
+                                    <div class="text-muted small">${user.full_name}</div>
+                                </div>
+                            </a>
+                        `;
+                    });
+                } else {
+                    resultList.innerHTML = '<p class="text-center text-muted mt-3">Không tìm thấy người dùng.</p>';
+                }
+            });
+        });
     });
-
-    clearSearchBtn.addEventListener('click', function() {
-        searchInput.value = '';
-        searchInput.focus();
-        searchResultsList.innerHTML = '<p class="text-center text-muted p-3">Bắt đầu tìm kiếm bằng cách gõ tên người dùng.</p>';
-    });
-});
 </script>
-{% endblock extra_js %}
+{% endblock content %}
