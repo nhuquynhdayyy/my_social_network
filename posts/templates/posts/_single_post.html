@@ -1,114 +1,139 @@
 <!-- posts/templates/posts/_single_post.html -->
-<div class="mb-4" id="post-{{ post.id }}">
-    <!-- === PHẦN 1: HEADER CỦA BÀI VIẾT (Tác giả, thời gian, nút Sửa/Xóa) === -->
-    <div class="p-2">
+<div class="card mb-4 shadow-sm border-0" id="post-{{ post.id }}">
+    <!-- === PHẦN 1: HEADER CỦA BÀI VIẾT CHÍNH (Người đăng hoặc Người chia sẻ) === -->
+    <div class="p-3 d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center">
-            <!-- Avatar -->
             <a href="{% url 'accounts:profile' username=post.author.username %}">
-                <img src="{{ post.author.avatar.url }}" class="rounded-circle" width="40" height="40" alt="{{ post.author.username }}">
+                <img src="{{ post.author.avatar.url }}" class="rounded-circle me-2 border" width="40" height="40" style="object-fit: cover;">
             </a>
-            <!-- Tên và thời gian -->
-            <div class="ms-2">
-                <a href="{% url 'accounts:profile' username=post.author.username %}" class="fw-bold text-dark text-decoration-none">{{ post.author.username }}</a>
-                <p class="card-text mb-0">
-                    <small class="text-muted d-flex align-items-center">
-                        {{ post.created_at|timesince }} trước
-                        <span class="mx-1">·</span>
-                        
-                        {% if post.privacy == 'PUBLIC' %}
-                            <span class="privacy-icon" data-bs-toggle="tooltip" data-bs-title="Công khai">
-                                <svg fill="currentColor" viewBox="0 0 16 16" width="1em" height="1em"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM2.04 4.326c.325 1.329 2.532 2.54 3.717 3.19.48.263.793.434.743.484-.08.08-.162.158-.242.234-.416.416-.682.707-.682 1.014 0 .309.266.599.682 1.015.08.075.162.153.242.234.05.05.263.22.743.484.354.193.638.36.924.527.287.166.568.34.84.53.397.282.826.61.924.962.098.353-.146.549-.358.61a.81.81 0 0 1-.458.053l-.014-.002c-.416-.043-.86-.2-1.218-.42a.81.81 0 0 1-.444-.724v-.455a.81.81 0 0 1 .444-.724l.01-.005.004-.002a.81.81 0 0 1 .444-.724l.01-.005.004-.002a.81.81 0 0 1 .444-.724l.01-.005.004-.002zM12.873 11.2c-.173.282-.52.434-.82.434-.416 0-.75-.334-.75-.75 0-.415.334-.75.75-.75.299 0 .646.152.82.434.173.283.173.717 0 1Z"></path></svg>
-                            </span>
-                        {% elif post.privacy == 'FRIENDS' %}
-                            <span class="privacy-icon" data-bs-toggle="tooltip" data-bs-title="Bạn bè">
-                                <svg fill="currentColor" viewBox="0 0 16 16" width="1em" height="1em"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4Zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10Z"></path></svg>
-                            </span>
-                        {% elif post.privacy == 'PRIVATE' %}
-                            <span class="privacy-icon" data-bs-toggle="tooltip" data-bs-title="Chỉ mình tôi">
-                                <svg fill="currentColor" viewBox="0 0 16 16" width="1em" height="1em"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM5 8h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path></svg>
-                            </span>
-                        {% endif %}
-                    </small>
-                </p>
-            </div>
-            <!-- Nút Sửa/Xóa -->
-            {% if user.is_authenticated and user == post.author %}
-                <div class="dropdown ms-auto">
-                    <button class="btn btn-light btn-sm rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
-                            <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
-                        </svg>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <a class="dropdown-item" href="{% url 'posts:post_edit' pk=post.pk %}">
-                                <!-- Icon Sửa -->
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-fill me-2" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/></svg>
-                                Sửa bài viết
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item text-danger" href="{% url 'posts:post_delete' pk=post.pk %}">
-                                <!-- Icon Xóa -->
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill me-2" viewBox="0 0 16 16"><path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/></svg>
-                                Xóa bài viết
-                            </a>
-                        </li>
-                    </ul>
+            <div>
+                <div>
+                    <a href="{% url 'accounts:profile' username=post.author.username %}" class="fw-bold text-dark text-decoration-none">{{ post.author.get_full_name }}</a>
+                    {% if post.shared_from %}
+                        <span class="text-muted">đã chia sẻ một bài viết</span>
+                    {% endif %}
                 </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- === PHẦN 2: NỘI DUNG BÀI VIẾT (Text) === -->
-    <div class="px-2 mb-2">
-        <p class="card-text">{{ post.content|linebreaksbr }}</p>
-    </div>
-
-    <!-- === PHẦN 3: MEDIA (Ảnh/Video) === -->
-    {% if post.media.all %}
-        <div id="carouselPost{{ post.id }}" class="carousel slide" style="position: relative;">
-            <!-- Counter (Giữ nguyên) -->
-            {% if post.media.all|length > 1 %}
-            <div class="carousel-counter">
-                <span class="current-slide-number">1</span> / {{ post.media.all|length }}
+                <small class="text-muted">
+                    {{ post.created_at|timesince }} trước · 
+                    <!-- Icon privacy -->
+                    {% if post.privacy == 'PUBLIC' %}🌏{% elif post.privacy == 'FRIENDS' %}👥{% else %}🔒{% endif %}
+                </small>
             </div>
-            {% endif %}
+        </div>
+        
+        <!-- Nút Sửa/Xóa -->
+        {% if user.is_authenticated and user == post.author %}
+            <div class="dropdown ms-auto">
+                <button class="btn btn-light btn-sm rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
+                        <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+                    </svg>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'posts:post_edit' pk=post.pk %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-fill me-2" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/></svg>
+                            Sửa bài viết
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="{% url 'posts:post_delete' pk=post.pk %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill me-2" viewBox="0 0 16 16"><path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/></svg>
+                            Xóa bài viết
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        {% endif %}
+    </div>
 
-            <div class="carousel-inner">
-                {% for media_item in post.media.all %}
-                <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                    <!-- THÊM: Class open-post-modal và data-post-id -->
-                    <a href="#" class="open-post-modal" data-post-id="{{ post.id }}">
-                        {% if media_item.media_type == 'IMAGE' %}
-                            <img src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; object-fit: cover; border-radius: 8px;" alt="Post image">
-                        {% elif media_item.media_type == 'VIDEO' %}
-                            <!-- Video click vào để mở modal thì nên dùng thẻ bao ngoài, hoặc để controls=false để click vào là mở modal -->
-                            <video src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; border-radius: 8px;"></video>
-                            <!-- Icon Play overlay để báo hiệu đây là video -->
-                            <div class="position-absolute top-50 start-50 translate-middle text-white" style="pointer-events: none;">
-                                <svg fill="currentColor" viewBox="0 0 16 16" width="48" height="48"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/></svg>
-                            </div>
-                        {% endif %}
+    <!-- === PHẦN 2: NỘI DUNG CỦA BÀI VIẾT CHÍNH === -->
+    <div class="px-3 pb-2">
+        {{ post.content|linebreaksbr }}
+    </div>
+
+    <!-- === PHẦN 3: NỘI DUNG (CHIA SẺ HOẶC MEDIA GỐC) === -->
+    {% if post.shared_from %}
+        <!-- TRƯỜNG HỢP 1: BÀI VIẾT CHIA SẺ -->
+        <div class="mx-3 mb-3 border rounded overflow-hidden">
+            <!-- Header bài gốc -->
+            <div class="p-3 bg-light border-bottom">
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'accounts:profile' username=post.shared_from.author.username %}">
+                        <img src="{{ post.shared_from.author.avatar.url }}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
                     </a>
+                    <div>
+                        <a href="{% url 'accounts:profile' username=post.shared_from.author.username %}" class="fw-bold text-dark text-decoration-none small">
+                            {{ post.shared_from.author.get_full_name }}
+                        </a>
+                        <div class="text-muted" style="font-size: 0.75rem;">{{ post.shared_from.created_at|date:"d/m/Y" }}</div>
+                    </div>
                 </div>
-                {% endfor %}
+                <div class="mt-2 small">
+                    {{ post.shared_from.content|linebreaksbr }}
+                </div>
             </div>
-            {% if post.media.all|length > 1 %}
-            <button class="carousel-control-prev" type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Previous</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">Next</span>
-            </button>
+            
+            <!-- Media của bài gốc -->
+            {% if post.shared_from.media.all %}
+                {% with shared_media=post.shared_from.media.all %}
+                    {% if shared_media|length > 0 %}
+                        {% if shared_media.0.media_type == 'IMAGE' %}
+                             <img src="{{ shared_media.0.file.url }}" class="w-100" style="max-height: 500px; object-fit: cover;">
+                        {% elif shared_media.0.media_type == 'VIDEO' %}
+                             <video src="{{ shared_media.0.file.url }}" class="w-100" controls style="max-height: 500px;"></video>
+                        {% endif %}
+                        {% if shared_media|length > 1 %}
+                            <div class="p-2 text-center bg-light text-muted small">+ {{ shared_media|length|add:"-1" }} ảnh/video khác</div>
+                        {% endif %}
+                    {% endif %}
+                {% endwith %}
             {% endif %}
         </div>
-    {% endif %}
 
-    <!-- === PHẦN 4: TƯƠNG TÁC (Reaction, Comment) === -->
-    <div class="px-2">
-      {% include 'posts/_post_interactive_section.html' %}
+    {% else %}
+        <!-- TRƯỜNG HỢP 2: BÀI VIẾT THƯỜNG (Hiện Media Carousel) -->
+        {% if post.media.all %}
+            <div id="carouselPost{{ post.id }}" class="carousel slide" style="position: relative;">
+                {% if post.media.all|length > 1 %}
+                <div class="carousel-counter">
+                    <span class="current-slide-number">1</span> / {{ post.media.all|length }}
+                </div>
+                {% endif %}
+
+                <div class="carousel-inner">
+                    {% for media_item in post.media.all %}
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                        <a href="#" class="open-post-modal" data-post-id="{{ post.id }}">
+                            {% if media_item.media_type == 'IMAGE' %}
+                                <img src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; object-fit: cover; border-radius: 8px;" alt="Post image">
+                            {% elif media_item.media_type == 'VIDEO' %}
+                                <video src="{{ media_item.file.url }}" class="d-block w-100" style="max-height: 600px; border-radius: 8px;"></video>
+                                <div class="position-absolute top-50 start-50 translate-middle text-white" style="pointer-events: none;">
+                                    <svg fill="currentColor" viewBox="0 0 16 16" width="48" height="48"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/></svg>
+                                </div>
+                            {% endif %}
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if post.media.all|length > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carouselPost{{ post.id }}" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% endif %} <!-- QUAN TRỌNG: Đóng thẻ if kiểm tra shared_from ở đây -->
+
+    <!-- === PHẦN 4: TƯƠNG TÁC (Reaction, Comment) - Hiển thị cho cả 2 trường hợp === -->
+    <div class="px-3">
+        {% include 'posts/_post_interactive_section.html' %}
     </div>
 </div>

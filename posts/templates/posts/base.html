@@ -1011,6 +1011,67 @@
             });
         });
 
+        // --- LOGIC MỞ MODAL CHIA SẺ ---
+        document.body.addEventListener('click', function(event) {
+            const shareBtn = event.target.closest('.share-post-btn');
+            if (shareBtn) {
+                const postId = shareBtn.dataset.postId;
+                
+                // Gọi API lấy HTML Modal
+                fetch(`/post/${postId}/get-share-modal/`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        const container = document.getElementById('shareModalContainer');
+                        container.innerHTML = `
+                            <div class="modal fade" id="sharePostModal" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        ${data.html}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        const shareModal = new bootstrap.Modal(document.getElementById('sharePostModal'));
+                        shareModal.show();
+                        
+                        // Xử lý submit form trong modal
+                        const form = document.getElementById('sharePostForm');
+                        form.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            const formData = new FormData(form);
+                            
+                            fetch(form.action, {
+                                method: 'POST',
+                                body: formData,
+                                headers: { 'X-CSRFToken': csrftoken } // Đảm bảo có csrftoken
+                            })
+                            .then(res => res.json())
+                            .then(respData => {
+                                if (respData.status === 'ok') {
+                                    // 1. Đóng modal chia sẻ ngay lập tức
+                                    shareModal.hide();
+                                    
+                                    // 2. Hiển thị Toast thông báo đẹp thay vì alert
+                                    showToast('Đã chia sẻ bài viết lên trang cá nhân của bạn!');
+                                    
+                                    // 3. Tải lại trang sau 1 khoảng thời gian ngắn để người dùng kịp đọc thông báo
+                                    setTimeout(() => {
+                                        location.reload();
+                                    }, 1500); 
+                                } else {
+                                    // Nếu lỗi thì hiện Toast màu đỏ
+                                    showToast(respData.message, 'danger');
+                                }
+                            });
+                        });
+                    } else {
+                        alert(data.message);
+                    }
+                });
+            }
+        });
+
         // === LOGIC MỞ MODAL CHI TIẾT BÀI VIẾT ===
         const postDetailModal = new bootstrap.Modal(document.getElementById('postDetailModal'));
         const postDetailModalBody = document.getElementById('postDetailModalBody');
@@ -2028,8 +2089,34 @@
                 }
             }
         });
+
+        function showToast(message, type = 'success') {
+            const toastElement = document.getElementById('liveToast');
+            const toastBody = document.getElementById('toastMessage');
+            
+            // Cập nhật nội dung
+            toastBody.textContent = message;
+            
+            // Cập nhật màu sắc (Xanh cho thành công, Đỏ cho lỗi)
+            toastElement.className = `toast align-items-center text-white border-0 bg-${type}`; // type: success, danger, warning, info
+            
+            // Khởi tạo và hiển thị
+            const toast = new bootstrap.Toast(toastElement, { delay: 3000 }); // Tự tắt sau 3 giây
+            toast.show();
+        }
       });
     </script>
-
+    <!-- TOAST NOTIFICATION CONTAINER (Góc trên bên phải) -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2000;">
+        <div id="liveToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+            <div class="toast-body" id="toastMessage">
+                <!-- Nội dung thông báo sẽ được JS điền vào đây -->
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    <div id="shareModalContainer"></div>
   </body>
 </html>

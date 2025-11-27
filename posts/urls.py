@@ -30,4 +30,6 @@ urlpatterns = [
     path('post/<int:post_id>/reactions/', get_reaction_list, name='get_reaction_list'),
     path('post/<int:post_id>/modal/', views.post_detail_modal, name='post_detail_modal'),
     path('comment/<int:comment_id>/reactions/', views.get_comment_reactions, name='comment_reactions'),
+    path('post/<int:post_id>/get-share-modal/', views.get_share_modal, name='get_share_modal'),
+    path('post/<int:post_id>/share/', views.share_post, name='share_post'),
 ]

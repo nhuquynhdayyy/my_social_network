@@ -1,0 +1,60 @@
+{% load post_extras %}
+<div class="modal-header border-bottom-0 pb-0">
+    <h5 class="modal-title fw-bold text-center w-100">Chia sẻ bài viết</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+    <form id="sharePostForm" method="POST" action="{% url 'posts:share_post' post_id=post.id %}">
+        {% csrf_token %}
+        
+        <!-- Header người chia sẻ -->
+        <div class="d-flex align-items-center mb-3">
+            <img src="{{ user.avatar.url }}" class="rounded-circle me-2" width="40" height="40" style="object-fit: cover;">
+            <div>
+                <div class="fw-bold">{{ user.get_full_name }}</div>
+                <!-- Select quyền riêng tư -->
+                <select name="privacy" class="form-select form-select-sm border-0 bg-light py-0 ps-1 pe-4" style="width: auto; font-size: 0.8rem; font-weight: 600;">
+                    {% if post.privacy == 'PUBLIC' %}
+                        <option value="PUBLIC">🌏 Công khai</option>
+                    {% endif %}
+                    <!-- Luôn cho phép Bạn bè và Chỉ mình tôi -->
+                    <option value="FRIENDS" {% if post.privacy == 'FRIENDS' %}selected{% endif %}>👥 Bạn bè</option>
+                    <option value="PRIVATE">🔒 Chỉ mình tôi</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Input nội dung của người chia sẻ -->
+        <textarea name="content" class="form-control border-0 fs-5 mb-3 p-0" rows="2" placeholder="Hãy nói gì đó về bài viết này..." style="resize: none; box-shadow: none;"></textarea>
+
+        <!-- Preview bài viết gốc -->
+        <div class="border rounded p-3 mb-3">
+            <div class="d-flex align-items-center mb-2">
+                <img src="{{ post.author.avatar.url }}" class="rounded-circle me-2" width="30" height="30" style="object-fit: cover;">
+                <div>
+                    <div class="fw-bold small">{{ post.author.get_full_name }}</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">{{ post.created_at|date:"d/m/Y H:i" }}</div>
+                </div>
+            </div>
+            
+            <div class="small mb-2">{{ post.content|truncatewords:20 }}</div>
+            
+            <!-- Preview Media (Chỉ lấy ảnh/video đầu tiên để hiển thị gọn) -->
+            {% with first_media=post.media.first %}
+                {% if first_media %}
+                    {% if first_media.media_type == 'IMAGE' %}
+                        <img src="{{ first_media.file.url }}" class="w-100 rounded" style="max-height: 200px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 150px;">
+                            <span class="text-muted">Video đính kèm</span>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="d-grid">
+            <button type="submit" class="btn btn-primary fw-bold">Chia sẻ ngay</button>
+        </div>
+    </form>
+</div>

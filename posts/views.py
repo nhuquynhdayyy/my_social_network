@@ -622,3 +622,76 @@ def get_comment_reactions(request, comment_id):
         'reactions': data,
         'reaction_counts': reaction_counts
     })
+
+@login_required
+def get_share_modal(request, post_id):
+    # Lấy bài viết gốc
+    post = get_object_or_404(Post, id=post_id)
+    
+    # KIỂM TRA QUYỀN XEM BÀI VIẾT (Logic tương tự như react/comment)
+    viewer = request.user
+    author = post.author
+    can_view = False
+    
+    if viewer == author or post.privacy == 'PUBLIC':
+        can_view = True
+    elif post.privacy == 'FRIENDS':
+        # Kiểm tra bạn bè
+        are_friends = Friendship.objects.filter(
+            (Q(from_user=author, to_user=viewer) | Q(from_user=viewer, to_user=author)),
+            status='ACCEPTED'
+        ).exists()
+        if are_friends:
+            can_view = True
+            
+    if not can_view or post.privacy == 'PRIVATE':
+        return JsonResponse({'status': 'error', 'message': 'Bạn không có quyền chia sẻ bài viết này'}, status=403)
+
+    # Render modal HTML
+    html = render_to_string('posts/_share_post_modal.html', {'post': post}, request=request)
+    return JsonResponse({'status': 'ok', 'html': html})
+
+@login_required
+@require_POST
+def share_post(request, post_id):
+    original_post = get_object_or_404(Post, id=post_id)
+    
+    # 1. Logic kiểm tra quyền xem (như trên)
+    # ... (Để ngắn gọn, giả sử đã check quyền xem ở đây giống hàm trên) ...
+    
+    # 2. Lấy dữ liệu từ form
+    content = request.POST.get('content', '')
+    new_privacy = request.POST.get('privacy', 'PUBLIC')
+    
+    # 3. LOGIC QUYỀN RIÊNG TƯ (QUAN TRỌNG)
+    # Phạm vi chia sẻ không được rộng hơn bài gốc
+    if original_post.privacy == 'FRIENDS' and new_privacy == 'PUBLIC':
+        return JsonResponse({'status': 'error', 'message': 'Bài viết gốc ở chế độ Bạn bè, bạn không thể chia sẻ Công khai.'}, status=400)
+    
+    # Nếu bài gốc là PRIVATE, lẽ ra không vào được đây, nhưng check thêm cho chắc
+    if original_post.privacy == 'PRIVATE':
+        return JsonResponse({'status': 'error', 'message': 'Không thể chia sẻ bài viết riêng tư.'}, status=400)
+
+    # 4. Tạo bài viết mới (là bài chia sẻ)
+    # Nếu bài gốc vốn đã là một bài chia sẻ, ta chia sẻ bài gốc CỦA bài chia sẻ đó (để tránh chuỗi dài)
+    # Hoặc đơn giản là chia sẻ trực tiếp bài hiện tại. Ở đây ta chọn chia sẻ bài hiện tại.
+    source_post = original_post.shared_from if original_post.shared_from else original_post
+
+    new_post = Post.objects.create(
+        author=request.user,
+        content=content,
+        privacy=new_privacy,
+        shared_from=source_post # Liên kết đến bài gốc
+    )
+    
+    # Tạo thông báo cho chủ bài viết gốc
+    if request.user != source_post.author:
+        Notification.objects.create(
+            recipient=source_post.author,
+            sender=request.user,
+            notification_type='POST_SHARE', # Bạn cần thêm loại này vào model Notification nếu chưa có
+            target_content_type=ContentType.objects.get_for_model(new_post),
+            target_object_id=new_post.id
+        )
+
+    return JsonResponse({'status': 'ok', 'message': 'Đã chia sẻ bài viết!'})

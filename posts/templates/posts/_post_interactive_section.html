@@ -82,12 +82,20 @@
         </button>
     </div>
     
-    <!-- Nút Chia sẻ (Giả) -->
+    <!-- Nút Chia sẻ -->
     <div class="flex-fill text-center">
-        <button class="btn btn-interactive w-100">
+        <!-- Chỉ hiện nút chia sẻ nếu quyền là Public hoặc Friends -->
+        {% if post.privacy != 'PRIVATE' %}
+        <button class="btn btn-interactive w-100 share-post-btn" data-post-id="{{ post.id }}">
             <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="interactive-icon"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8m-4-6-4-4-4 4m4-4v13"></path></svg>
             Chia sẻ
         </button>
+        {% else %}
+        <button class="btn btn-interactive w-100 disabled" title="Không thể chia sẻ bài viết riêng tư">
+            <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="interactive-icon text-muted"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8m-4-6-4-4-4 4m4-4v13"></path></svg>
+            <span class="text-muted">Chia sẻ</span>
+        </button>
+        {% endif %}
     </div>
 </div>
 
