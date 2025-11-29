@@ -326,20 +326,59 @@
                             <ul class="list-unstyled">
                                 {% for member in participants %}
                                 <li class="d-flex justify-content-between align-items-center mb-2">
+                                    <!-- 1. Avatar và Tên -->
                                     <div class="d-flex align-items-center">
-                                        <img src="{{ member.avatar.url }}" class="rounded-circle me-2" width="32" height="32">
+                                        <img src="{{ member.avatar.url }}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
                                         <div>
-                                            <div class="small fw-bold">{{ member.first_name }}</div>
-                                            {% if member == conversation.admin %}<div class="badge bg-secondary" style="font-size: 0.6rem;">QTV</div>{% endif %}
+                                            <div class="small fw-bold">
+                                                <a href="{% url 'accounts:profile' username=member.username %}" class="text-decoration-none text-dark">
+                                                    {{ member.first_name }} {{ member.last_name }}
+                                                </a>
+                                            </div>
+                                            {% if member == conversation.admin %}
+                                                <div class="badge bg-secondary" style="font-size: 0.6rem;">QTV</div>
+                                            {% endif %}
                                         </div>
                                     </div>
-                                    {% if is_group_admin and member != request.user %}
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-link text-dark p-0" data-bs-toggle="dropdown">•••</button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                            <li><a class="dropdown-item text-danger" href="{% url 'chat:remove_member' conversation.id member.id %}" onclick="return confirm('Xóa thành viên này?')">Xóa khỏi nhóm</a></li>
-                                        </ul>
-                                    </div>
+                                
+                                    <!-- 2. Nút 3 chấm (Menu hành động) -->
+                                    <!-- Chỉ hiện nếu thành viên này KHÔNG PHẢI là chính mình -->
+                                    {% if member != request.user %}
+                                        <div class="dropdown">
+                                            <button class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center" 
+                                                    style="width: 32px; height: 32px;" 
+                                                    type="button" 
+                                                    data-bs-toggle="dropdown" 
+                                                    aria-expanded="false">
+                                                <!-- Icon 3 chấm dọc -->
+                                                <svg aria-label="More" fill="currentColor" height="16" role="img" viewBox="0 0 24 24" width="16">
+                                                    <circle cx="12" cy="12" r="1.5"></circle>
+                                                    <circle cx="12" cy="6" r="1.5"></circle>
+                                                    <circle cx="12" cy="18" r="1.5"></circle>
+                                                </svg>
+                                            </button>
+                                            
+                                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                                <!-- Option 1: Nhắn tin (Luôn hiện với người khác) -->
+                                                <li>
+                                                    <a class="dropdown-item" href="{% url 'chat:start_conversation' user_id=member.id %}">
+                                                        💬 Nhắn tin
+                                                    </a>
+                                                </li>
+                                
+                                                <!-- Option 2: Xóa thành viên (Chỉ hiện nếu bạn là Admin) -->
+                                                {% if is_group_admin %}
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <a class="dropdown-item text-danger fw-bold" 
+                                                           href="{% url 'chat:remove_member' conversation.id member.id %}" 
+                                                           onclick="return confirm('Bạn chắc chắn muốn mời thành viên này ra khỏi nhóm?')">
+                                                           🗑️ Xóa khỏi nhóm
+                                                        </a>
+                                                    </li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
                                     {% endif %}
                                 </li>
                                 {% endfor %}
