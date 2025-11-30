@@ -26,7 +26,7 @@ def get_notifications(request):
         recipient=user
     ).select_related('sender', 'target_content_type').order_by('-timestamp')[:15]
 
-    # 2. Đếm riêng tổng số thông báo CHƯA ĐỌC
+    # 2. Đếm tổng số thông báo CHƯA ĐỌC
     total_unread = Notification.objects.filter(recipient=user, is_read=False).count()
 
     message_groups = {}
@@ -48,34 +48,33 @@ def get_notifications(request):
     for conv_id, group_data in message_groups.items():
         n = group_data['latest_notification']
         count = group_data['count']
-        msg_obj = n.target # Đây là đối tượng Message
-
-        # Xác định nội dung thông báo dựa trên loại tin nhắn
+        msg_obj = n.target
+        
         msg_content_desc = "một tin nhắn mới."
         if msg_obj.file:
-            if msg_obj.is_image:
-                msg_content_desc = "một hình ảnh."
-            elif msg_obj.is_video:
-                msg_content_desc = "một video."
-            else:
-                msg_content_desc = "một tập tin."
-        
-        # Logic hiển thị
+            if msg_obj.is_image: msg_content_desc = "một hình ảnh."
+            elif msg_obj.is_video: msg_content_desc = "một video."
+            else: msg_content_desc = "một tập tin."
+       
         if count > 1:
             notif_text = f"đã gửi cho bạn {count} tin nhắn."
         else:
             notif_text = f"đã gửi cho bạn {msg_content_desc}"
 
+        # --- THÊM DÒNG NÀY: LẤY AVATAR ---
+        avatar = n.sender.avatar.url if n.sender.avatar else '/static/images/default.jpg'
+
         notifications_data.append({
             'id': n.id,
             'type': notif_text,
             'sender': n.sender.username,
+            'avatar_url': avatar, # <--- QUAN TRỌNG: TRẢ VỀ AVATAR
             'timestamp': timezone.localtime(n.timestamp).strftime('%H:%M %d-%m-%Y'),
             'link': reverse('notifications:redirect', args=[n.id]),
             'is_read': group_data['is_read']
         })
 
-    # Xử lý các thông báo khác (giữ nguyên logic cũ)
+    # Xử lý các thông báo khác
     for n in other_notifications:
         notif_text = ""
         target_content = ""
@@ -85,25 +84,26 @@ def get_notifications(request):
         if n.notification_type == 'FRIEND_REQUEST':
             notif_text = "đã gửi cho bạn một lời mời kết bạn."
         elif n.notification_type == 'POST_REACTION':
-            notif_text = f"đã bày tỏ cảm xúc về bài viết của bạn: \"{target_content}...\""
+            notif_text = f"đã bày tỏ cảm xúc về bài viết: \"{target_content}...\""
         elif n.notification_type == 'POST_COMMENT':
-            notif_text = f"đã bình luận về bài viết của bạn: \"{target_content}...\""
+            notif_text = f"đã bình luận về bài viết: \"{target_content}...\""
         elif n.notification_type == 'COMMENT_REACTION':
-            notif_text = f"đã bày tỏ cảm xúc về bình luận của bạn: \"{target_content}...\""
+            notif_text = f"đã bày tỏ cảm xúc về bình luận: \"{target_content}...\""
         elif n.notification_type == 'ADDED_TO_GROUP':
-            group_name = "một nhóm chat"
-            if n.target:
-                group_name = n.target.name or "Nhóm chưa đặt tên"
+            group_name = n.target.name if n.target else "Nhóm chưa đặt tên"
             notif_text = f"đã thêm bạn vào nhóm <strong>{group_name}</strong>."
         elif n.notification_type == 'GROUP_INVITE_REQUEST':
-            group_name = "một nhóm chat"
-            if n.target: group_name = n.target.name or "Nhóm chưa đặt tên"
+            group_name = n.target.name if n.target else "Nhóm chưa đặt tên"
             notif_text = f"muốn thêm thành viên vào nhóm <strong>{group_name}</strong>."
        
+        # --- THÊM DÒNG NÀY: LẤY AVATAR ---
+        avatar = n.sender.avatar.url if n.sender.avatar else '/static/images/default.jpg'
+
         notifications_data.append({
             'id': n.id,
             'type': notif_text,
             'sender': n.sender.username,
+            'avatar_url': avatar, # <--- QUAN TRỌNG
             'timestamp': timezone.localtime(n.timestamp).strftime('%H:%M %d-%m-%Y'),
             'link': reverse('notifications:redirect', args=[n.id]),
             'is_read': n.is_read

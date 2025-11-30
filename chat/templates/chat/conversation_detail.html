@@ -129,6 +129,15 @@
         margin-bottom: 5px;
         color: #262626;
     }
+    .notification-panel {
+        left: 73px !important; /* Sidebar chat rộng 72px + 1px border = 73px */
+    }
+
+    /* Đảm bảo panel đè lên danh sách chat nhưng nằm dưới sidebar */
+    .chat-layout {
+        position: relative; 
+        z-index: 1;
+    }
 </style>
 
 <div class="chat-layout">
