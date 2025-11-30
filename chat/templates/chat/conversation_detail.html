@@ -404,15 +404,16 @@
                                                         💬 Nhắn tin
                                                     </a>
                                                 </li>
-                                                {% if is_group_admin %}
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <li>
-                                                        <a class="dropdown-item text-danger fw-bold"
-                                                           href="{% url 'chat:remove_member' conversation.id member.id %}"
-                                                           onclick="return confirm('Bạn chắc chắn muốn mời thành viên này ra khỏi nhóm?')">
-                                                           🗑️ Xóa khỏi nhóm
-                                                        </a>
-                                                    </li>
+                                                {% if is_group_admin or not conversation.admin_only_management %}
+                                                    {% if member != conversation.admin %}
+                                                        <li>
+                                                            <a class="dropdown-item text-danger fw-bold" 
+                                                            href="{% url 'chat:remove_member' conversation.id member.id %}" 
+                                                            onclick="return confirm('Xóa thành viên này?')">
+                                                            🗑️ Xóa khỏi nhóm
+                                                            </a>
+                                                        </li>
+                                                    {% endif %}
                                                 {% endif %}
                                             </ul>
                                         </div>
