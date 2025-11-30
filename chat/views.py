@@ -165,15 +165,7 @@ def leave_group_view(request, conversation_id):
 
 @login_required
 def create_group_view(request):
-    initial_data = {}
-    pre_selected_user_id = request.GET.get('with_user')
-    if pre_selected_user_id:
-        try:
-            target_user = User.objects.get(pk=pre_selected_user_id)
-            initial_data['participants'] = [target_user.pk]
-        except User.DoesNotExist:
-            pass
-
+    # View này bây giờ chủ yếu xử lý POST từ Modal
     if request.method == 'POST':
         form = GroupCreationForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
@@ -192,11 +184,15 @@ def create_group_view(request):
                     recipient=member, sender=request.user, notification_type='ADDED_TO_GROUP',
                     target_content_type=conv_content_type, target_object_id=group.id
                 )
+            messages.success(request, "Tạo nhóm thành công!")
             return redirect('chat:conversation_detail', conversation_id=group.id)
+        else:
+            # Nếu lỗi form, quay lại trang danh sách và báo lỗi
+            messages.error(request, "Tạo nhóm thất bại. Vui lòng kiểm tra lại thông tin (ít nhất 2 thành viên).")
+            return redirect('chat:conversation_list')
     else:
-        form = GroupCreationForm(user=request.user, initial=initial_data)
-        
-    return render(request, 'chat/create_group.html', {'form': form})
+        # Nếu truy cập GET trực tiếp, redirect về list
+        return redirect('chat:conversation_list')
 
 
 @login_required
@@ -230,7 +226,12 @@ def remove_member(request, conversation_id, user_id):
 @login_required
 def conversation_list_view(request):
     conversations = request.user.conversations.order_by('-updated_at')
-    return render(request, 'chat/conversation_list.html', {'conversations': conversations})
+    # === SỬA: Truyền form tạo nhóm vào context ===
+    group_creation_form = GroupCreationForm(user=request.user)
+    return render(request, 'chat/conversation_list.html', {
+        'conversations': conversations,
+        'group_creation_form': group_creation_form
+    })
 
 
 @login_required
@@ -246,7 +247,7 @@ def start_conversation_view(request, user_id):
 
 
 # ============================================================================
-# 2. VIEW CHI TIẾT CHAT (QUAN TRỌNG: GỬI KÈM FORM CHO SIDEBAR)
+# 2. VIEW CHI TIẾT CHAT
 # ============================================================================
 @login_required
 def conversation_detail_view(request, conversation_id):
@@ -255,7 +256,6 @@ def conversation_detail_view(request, conversation_id):
     if conversation.type == 'PRIVATE':
         other_participant = conversation.participants.exclude(id=request.user.id).first()
 
-    # Xử lý gửi tin nhắn (Dự phòng nếu JS bị tắt)
     if request.method == "POST" and 'text' in request.POST:
         form = MessageForm(request.POST, request.FILES)
         if form.is_valid():
@@ -271,7 +271,6 @@ def conversation_detail_view(request, conversation_id):
     messages_qs = conversation.messages.select_related('sender').all()
     form = MessageForm()
     
-    # Lấy Reaction của user để hiển thị nút đã like/chưa like
     message_ids = [msg.id for msg in messages_qs]
     message_content_type = ContentType.objects.get_for_model(Message)
     user_reactions = Reaction.objects.filter(
@@ -281,7 +280,6 @@ def conversation_detail_view(request, conversation_id):
 
     participants = conversation.participants.all().order_by('first_name')
 
-    # Context cơ bản
     context = {
         'conversation': conversation,
         'messages': messages_qs,
@@ -290,14 +288,14 @@ def conversation_detail_view(request, conversation_id):
         'user_reactions_map': user_reactions_map,
         'is_group_admin': (conversation.admin == request.user),
         'participants': participants,
+        # === SỬA: Truyền form tạo nhóm vào context ===
+        'group_creation_form': GroupCreationForm(user=request.user) 
     }
 
-    # === QUAN TRỌNG: GỬI KÈM FORM QUẢN LÝ NHÓM VÀO CONTEXT (ĐỂ HIỂN THỊ Ở SIDEBAR) ===
     if conversation.type == 'GROUP':
         context['update_info_form'] = GroupUpdateForm(instance=conversation)
         context['add_members_form'] = AddMembersForm(conversation=conversation)
         context['settings_form'] = AdminSettingsForm(instance=conversation)
-        # Nếu là admin thì lấy danh sách yêu cầu chờ duyệt
         if conversation.admin == request.user:
              context['pending_requests'] = conversation.membership_requests.select_related('invited_by', 'user_to_add').all()
 
@@ -305,7 +303,7 @@ def conversation_detail_view(request, conversation_id):
 
 
 # ============================================================================
-# 3. CÁC API VIEWS (ĐẦY ĐỦ KHÔNG RÚT GỌN)
+# 3. CÁC API VIEWS (GIỮ NGUYÊN)
 # ============================================================================
 
 @login_required
@@ -327,7 +325,6 @@ def send_message_api(request, conversation_id):
             conversation.updated_at = timezone.now()
             conversation.save()
             
-            # Gửi thông báo
             receivers = conversation.participants.exclude(id=request.user.id)
             ct = ContentType.objects.get_for_model(message)
             for receiver in receivers:

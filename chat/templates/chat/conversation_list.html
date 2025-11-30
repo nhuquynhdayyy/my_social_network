@@ -93,6 +93,38 @@
     }
     .search-result-item:hover { background-color: #f0f2f5; }
     .search-avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; }
+
+    /* CSS CHO MODAL TẠO NHÓM ĐẸP HƠN */
+    .group-modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .group-modal-header {
+        border-bottom: 1px solid #dbdbdb;
+        padding: 15px 20px;
+    }
+    .group-modal-body {
+        padding: 20px;
+    }
+    .form-group-label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        color: #262626;
+    }
+    .form-control-custom {
+        background-color: #fafafa;
+        border: 1px solid #dbdbdb;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 0.95rem;
+    }
+    .form-control-custom:focus {
+        border-color: #a8a8a8;
+        box-shadow: none;
+        background-color: #fff;
+    }
 </style>
 
 <div class="chat-layout">
@@ -102,7 +134,7 @@
             <span class="sidebar-title">{{ user.username }}</span>
             
             <div class="header-actions">
-                <!-- 1. ICON TÌM KIẾM (MỚI THÊM) -->
+                <!-- 1. ICON TÌM KIẾM -->
                 <button class="btn-header-icon" id="toggle-search-list-btn" title="Tìm kiếm đoạn chat">
                     <svg aria-label="Search" fill="currentColor" height="24" role="img" viewBox="0 0 24 24" width="24"><path d="M19 10.5A8.5 8.5 0 1 1 10.5 2a8.5 8.5 0 0 1 8.5 8.5Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><line fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" x1="16.511" x2="22" y1="16.511" y2="22"></line></svg>
                 </button>
@@ -117,7 +149,7 @@
             </div>
         </div>
         
-        <!-- THANH INPUT TÌM KIẾM (MỚI THÊM) -->
+        <!-- THANH INPUT TÌM KIẾM -->
         <div class="search-bar-container" id="list-search-bar">
             <input type="text" id="filter-list-input" placeholder="Tìm người hoặc nhóm...">
         </div>
@@ -167,28 +199,83 @@
     </div>
 </div>
 
-<!-- MODAL SEARCH USER (ĐỂ TẠO CHAT MỚI) -->
+<!-- ============================================= -->
+<!-- MODAL TÌM KIẾM NGƯỜI DÙNG (NEW MESSAGE)       -->
+<!-- ============================================= -->
 <div class="modal fade" id="newMsgModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold">Tin nhắn mới</h5>
+        <div class="modal-content group-modal-content">
+            <div class="modal-header group-modal-header">
+                <h5 class="modal-title fw-bold" style="font-size: 1.1rem;">Tin nhắn mới</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body group-modal-body">
                 <div class="mb-3">
-                    <input type="text" class="form-control border-0 border-bottom" id="userSearchInput" placeholder="Tìm kiếm người dùng..." autocomplete="off">
+                    <input type="text" class="form-control form-control-custom" id="userSearchInput" placeholder="Tìm kiếm người dùng..." autocomplete="off">
                 </div>
                 <div id="searchResultList" style="max-height: 300px; overflow-y: auto;">
                     <p class="text-center text-muted mt-3 small">Nhập tên để tìm kiếm...</p>
                 </div>
             </div>
-            <div class="modal-footer border-0 justify-content-center">
-                <a href="{% url 'chat:create_group' %}" class="text-decoration-none text-primary fw-bold">Tạo nhóm chat mới</a>
+            <!-- FOOTER CHỨA NÚT TẠO NHÓM -->
+            <div class="modal-footer border-0 justify-content-center pt-0">
+                <!-- Thay đổi: data-bs-toggle và target để mở Modal tạo nhóm -->
+                <button class="btn btn-link text-decoration-none fw-bold" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+                    👥 Tạo nhóm chat mới
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- ============================================= -->
+<!-- MODAL TẠO NHÓM (MỚI THÊM VÀO)                 -->
+<!-- ============================================= -->
+<div class="modal fade" id="createGroupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content group-modal-content">
+            <form method="post" enctype="multipart/form-data" action="{% url 'chat:create_group' %}">
+                {% csrf_token %}
+                <div class="modal-header group-modal-header bg-light">
+                    <h5 class="modal-title fw-bold" style="font-size: 1.1rem;">Tạo nhóm trò chuyện</h5>
+                    <!-- Nút back để quay lại modal tìm kiếm nếu muốn -->
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <div class="modal-body group-modal-body">
+                    <!-- Tên nhóm -->
+                    <div class="mb-3">
+                        <label class="form-group-label">Tên nhóm</label>
+                        {{ group_creation_form.name }}
+                    </div>
+
+                    <!-- Ảnh đại diện -->
+                    <div class="mb-3">
+                        <label class="form-group-label">Ảnh đại diện</label>
+                        {{ group_creation_form.avatar }}
+                    </div>
+
+                    <!-- Chọn thành viên -->
+                    <div class="mb-3">
+                        <label class="form-group-label">Chọn thành viên</label>
+                        <div class="small text-muted mb-1">(Chọn ít nhất 2 người)</div>
+                        <!-- Render field participants, class form-control đã được set trong forms.py -->
+                        {{ group_creation_form.participants }}
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 bg-light rounded-bottom">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold">Tạo nhóm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- CSS cho TomSelect để hiển thị đẹp trong modal -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -204,7 +291,6 @@
             if (searchBar.style.display === 'block') {
                 searchBar.style.display = 'none';
                 filterInput.value = ''; // Xóa chữ
-                // Hiện lại tất cả
                 convItems.forEach(item => item.style.display = 'flex');
                 noResultMsg.classList.add('d-none');
             } else {
@@ -217,7 +303,6 @@
         filterInput.addEventListener('keyup', function() {
             const query = this.value.toLowerCase().trim();
             let hasResult = false;
-
             convItems.forEach(item => {
                 const name = item.querySelector('.conv-name').innerText.toLowerCase();
                 if (name.includes(query)) {
@@ -227,40 +312,54 @@
                     item.style.display = 'none';
                 }
             });
-
             if (!hasResult) noResultMsg.classList.remove('d-none');
             else noResultMsg.classList.add('d-none');
         });
 
-
-        // --- 2. XỬ LÝ TÌM KIẾM NGƯỜI DÙNG ĐỂ TẠO CHAT MỚI (MODAL) ---
-        document.getElementById('userSearchInput').addEventListener('keyup', function() {
-            let query = this.value.trim();
-            let resultList = document.getElementById('searchResultList');
-            if(query.length < 1) {
-                resultList.innerHTML = '<p class="text-center text-muted mt-3 small">Nhập tên để tìm kiếm...</p>'; return;
-            }
-            fetch(`{% url 'chat:api_search_users' %}?q=${encodeURIComponent(query)}`)
-            .then(res => res.json())
-            .then(data => {
-                resultList.innerHTML = '';
-                if(data.users.length > 0) {
-                    data.users.forEach(user => {
-                        resultList.innerHTML += `
-                            <a href="${user.start_conversation_url}" class="search-result-item">
-                                <img src="/static/images/default.jpg" class="search-avatar" onerror="this.src='https://via.placeholder.com/40'">
-                                <div>
-                                    <div class="fw-bold">${user.username}</div>
-                                    <div class="text-muted small">${user.full_name}</div>
-                                </div>
-                            </a>
-                        `;
-                    });
-                } else {
-                    resultList.innerHTML = '<p class="text-center text-muted mt-3">Không tìm thấy người dùng.</p>';
+        // --- 2. XỬ LÝ TÌM KIẾM NGƯỜI DÙNG (MODAL NEW MESSAGE) ---
+        const userSearchInput = document.getElementById('userSearchInput');
+        if(userSearchInput){
+            userSearchInput.addEventListener('keyup', function() {
+                let query = this.value.trim();
+                let resultList = document.getElementById('searchResultList');
+                if(query.length < 1) {
+                    resultList.innerHTML = '<p class="text-center text-muted mt-3 small">Nhập tên để tìm kiếm...</p>'; return;
                 }
+                fetch(`{% url 'chat:api_search_users' %}?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    resultList.innerHTML = '';
+                    if(data.users.length > 0) {
+                        data.users.forEach(user => {
+                            resultList.innerHTML += `
+                                <a href="${user.start_conversation_url}" class="search-result-item">
+                                    <img src="/static/images/default.jpg" class="search-avatar" onerror="this.src='https://via.placeholder.com/40'">
+                                    <div>
+                                        <div class="fw-bold">${user.username}</div>
+                                        <div class="text-muted small">${user.full_name}</div>
+                                    </div>
+                                </a>
+                            `;
+                        });
+                    } else {
+                        resultList.innerHTML = '<p class="text-center text-muted mt-3">Không tìm thấy người dùng.</p>';
+                    }
+                });
             });
-        });
+        }
+
+        // --- 3. KHỞI TẠO TOM SELECT CHO MODAL TẠO NHÓM ---
+        // Chúng ta cần khởi tạo nó khi modal mở ra hoặc khởi tạo luôn nếu element tồn tại
+        const participantsSelect = document.getElementById('id_participants');
+        if (participantsSelect) {
+            new TomSelect('#id_participants', {
+                plugins: ['remove_button'],
+                create: false,
+                placeholder: 'Tìm và chọn thành viên...',
+                maxItems: null,
+                dropdownParent: 'body' // Quan trọng để dropdown hiển thị đè lên modal
+            });
+        }
     });
 </script>
 {% endblock content %}
