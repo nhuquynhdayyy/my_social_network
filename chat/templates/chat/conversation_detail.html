@@ -3,6 +3,14 @@
 
 {% block content %}
 <style>
+    .ts-control {
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 0.9rem;
+    }
+    .ts-dropdown {
+        z-index: 9999 !important; /* Đảm bảo menu gợi ý nổi lên trên cùng */
+    }
     /* 1. THU NHỎ SIDEBAR CHÍNH WEBSITE */
     .sidebar { width: 72px !important; padding: 12px 12px !important; border-right: 1px solid #dbdbdb; }
     .sidebar-nav li a span { display: none !important; }
@@ -317,7 +325,7 @@
                             Tùy chỉnh đoạn chat
                         </button>
                     </h2>
-                    <div id="collapseCustomize" class="accordion-collapse collapse" data-bs-parent="#chatInfoAccordion">
+                    <div id="collapseCustomize" class="accordion-collapse collapse">
                         <div class="accordion-body">
                             {% if conversation.admin_only_management and not is_group_admin %}
                                 <div class="alert alert-secondary py-1 small">🔒 Chỉ Admin được thay đổi.</div>
@@ -346,7 +354,7 @@
                             Thành viên nhóm
                         </button>
                     </h2>
-                    <div id="collapseMembers" class="accordion-collapse collapse" data-bs-parent="#chatInfoAccordion">
+                    <div id="collapseMembers" class="accordion-collapse collapse">
                         <div class="accordion-body">
                             <button class="btn btn-light btn-sm w-100 mb-3 fw-bold text-start" type="button" data-bs-toggle="collapse" data-bs-target="#addMemberForm">+ Thêm người</button>
                             <div class="collapse mb-3" id="addMemberForm">
@@ -437,7 +445,7 @@
                             Quyền riêng tư & Hỗ trợ
                         </button>
                     </h2>
-                     <div id="collapsePrivacy" class="accordion-collapse collapse" data-bs-parent="#chatInfoAccordion">
+                    <div id="collapsePrivacy" class="accordion-collapse collapse">
                         <div class="accordion-body">
                             {% if is_group_admin %}
                             <form method="post" action="{% url 'chat:manage_group' conversation.id %}" class="mb-3">
