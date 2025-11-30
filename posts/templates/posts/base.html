@@ -1402,6 +1402,104 @@
         }
         const csrftoken = getCookie("csrftoken");
 
+        const notifLink = document.getElementById('nav-notification-link'); // Link ở sidebar
+        const notifPanel = document.getElementById('notificationPanel');    // Khung panel trượt
+        const notifBody = document.getElementById('notificationListBody');  // Nơi chứa danh sách
+        const notifBadge = document.getElementById('nav-notif-badge');      // Số lượng đỏ
+
+        // --- A. Sự kiện bấm vào nút "Thông báo" trên Sidebar ---
+        if (notifLink) {
+            notifLink.addEventListener('click', function(e) {
+                e.preventDefault(); // Ngăn không cho chuyển trang
+                
+                // Thêm/Bỏ class 'show' để kích hoạt hiệu ứng trượt CSS
+                notifPanel.classList.toggle('show');
+
+                // Nếu Panel vừa mở ra -> Gọi hàm tải dữ liệu ngay
+                if (notifPanel.classList.contains('show')) {
+                    loadNotificationsToPanel();
+                }
+            });
+        }
+
+        // --- B. Sự kiện bấm ra ngoài thì đóng Panel ---
+        document.addEventListener('click', function(e) {
+            // Nếu Panel đang mở
+            // VÀ click KHÔNG nằm trong Panel
+            // VÀ click KHÔNG nằm trong nút chuông thông báo
+            if (notifPanel && notifPanel.classList.contains('show') && 
+                !notifPanel.contains(e.target) && 
+                !notifLink.contains(e.target)) {
+                
+                notifPanel.classList.remove('show'); // Đóng lại
+            }
+        });
+
+        // --- C. Hàm tải dữ liệu từ Server ---
+        function loadNotificationsToPanel() {
+            // Gọi API lấy dữ liệu
+            fetch("/notifications/api/")
+            .then(r => r.json())
+            .then(data => {
+                // 1. Cập nhật số lượng tin chưa đọc (Badge đỏ)
+                if (data.total_unread > 0) {
+                    notifBadge.innerText = data.total_unread;
+                    notifBadge.style.display = 'inline-block';
+                } else {
+                    notifBadge.style.display = 'none';
+                }
+
+                // 2. Vẽ danh sách thông báo vào Panel
+                if (!data.notifications || data.notifications.length === 0) {
+                    notifBody.innerHTML = '<div class="text-center p-4 text-muted">Không có thông báo nào.</div>';
+                } else {
+                    let html = '';
+                    data.notifications.forEach(n => {
+                        // Nếu chưa đọc thì thêm class 'unread' để tô màu nền xanh nhạt
+                        let unreadClass = !n.is_read ? 'unread' : '';
+                        
+                        // Render từng dòng thông báo
+                        html += `
+                        <a href="${n.link}" class="notif-item ${unreadClass}">
+                            <img src="${n.avatar_url}" alt="${n.sender}">
+                            <div class="notif-content">
+                                <div>
+                                    <strong>${n.sender}</strong> ${n.type}
+                                </div>
+                                <div class="notif-time">${n.timestamp}</div>
+                            </div>
+                            <!-- Nếu chưa đọc thì hiện chấm xanh dương nhỏ -->
+                            ${!n.is_read ? '<span style="width:8px;height:8px;background:#0095f6;border-radius:50%;margin-left:auto;"></span>' : ''}
+                        </a>
+                        `;
+                    });
+                    notifBody.innerHTML = html;
+                }
+            })
+            .catch(err => console.error("Lỗi tải thông báo:", err));
+        }
+
+        // --- D. Chạy tự động ---
+        {% if user.is_authenticated %}
+            // Gọi 1 lần khi vừa vào trang để hiện số đỏ (nếu có)
+            loadNotificationsToPanel();
+
+            // (Tùy chọn) Tự động cập nhật mỗi 30 giây để check thông báo mới
+            setInterval(() => {
+                // Chỉ cập nhật ngầm badge nếu panel đang đóng (để tránh giật giao diện khi đang xem)
+                if (notifPanel && !notifPanel.classList.contains('show')) {
+                    fetch("/notifications/api/").then(r=>r.json()).then(d => {
+                        if(d.total_unread > 0) {
+                            notifBadge.innerText = d.total_unread;
+                            notifBadge.style.display = 'inline-block';
+                        } else {
+                            notifBadge.style.display = 'none';
+                        }
+                    });
+                }
+            }, 5000);
+        {% endif %}
+
         // =======================================================
         // === LOGIC REACTION CHO BÀI VIẾT (POST)
         // =======================================================

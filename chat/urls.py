@@ -8,7 +8,14 @@ app_name = 'chat'
 urlpatterns = [
     # Danh sách các cuộc hội thoại
     path('', views.conversation_list_view, name='conversation_list'),
+    path('new-group/', views.create_group_view, name='create_group'),
 
+    path('<int:conversation_id>/manage/', views.manage_group_view, name='manage_group'),
+    path('request/<int:request_id>/<str:action>/', views.handle_membership_request, name='handle_request'),
+
+    path('<int:conversation_id>/leave/', views.leave_group_view, name='leave_group'),
+    path('<int:conversation_id>/remove/<int:user_id>/', views.remove_member, name='remove_member'),
+    
     # Bắt đầu một cuộc hội thoại mới với một người dùng
     path('start/<int:user_id>/', views.start_conversation_view, name='start_conversation'),
 
@@ -24,6 +31,8 @@ urlpatterns = [
     path('api/message/delete/<int:message_id>/', views.delete_message_api, name='delete_message_api'),
     
     # API nội bộ để sửa tin nhắn
+    path('api/message/send/<int:conversation_id>/', views.send_message_api, name='send_message_api'),
+    path('api/message/delete/<int:message_id>/', views.delete_message_api, name='delete_message_api'),
     path('api/message/edit/<int:message_id>/', views.edit_message_api, name='edit_message_api'),
     path('api/conversations/', views.api_get_conversations, name='api_get_conversations'),
     path('api/search-users/', views.api_search_users, name='api_search_users'),

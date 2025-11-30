@@ -65,11 +65,26 @@ def get_notifications(request):
     for conv_id, group_data in message_groups.items():
         n = group_data['latest_notification']
         count = group_data['count']
-        notif_text = f"đã gửi cho bạn {count} tin nhắn mới." if count > 1 else "đã gửi cho bạn một tin nhắn mới."
+        msg_obj = n.target
+        msg_content_desc = "một tin nhắn mới."
+        if msg_obj.file:
+            if msg_obj.is_image: msg_content_desc = "một hình ảnh."
+            elif msg_obj.is_video: msg_content_desc = "một video."
+            else: msg_content_desc = "một tập tin."
+       
+        if count > 1:
+            notif_text = f"đã gửi cho bạn {count} tin nhắn."
+        else:
+            notif_text = f"đã gửi cho bạn {msg_content_desc}"
+
+        avatar = n.sender.avatar.url if n.sender.avatar else '/static/images/default.jpg'
+
+        # notif_text = f"đã gửi cho bạn {count} tin nhắn mới." if count > 1 else "đã gửi cho bạn một tin nhắn mới."
         notifications_data.append({
             'id': n.id,
             'type': notif_text,
             'sender': n.sender.username,
+            'avatar_url': avatar,
             'timestamp': timezone.localtime(n.timestamp).strftime('%H:%M %d-%m-%Y'),
             'link': reverse('notifications:redirect', args=[n.id]),
             'is_read': group_data['is_read'] 
@@ -83,7 +98,7 @@ def get_notifications(request):
             
         if n.notification_type == 'FRIEND_REQUEST':
             notif_text = "đã gửi cho bạn một lời mời kết bạn."
-        elif n.notification_type == 'FRIEND_ACCEPT': # <-- THÊM VÀO ĐÂY
+        elif n.notification_type == 'FRIEND_ACCEPT': 
             notif_text = "đã chấp nhận lời mời kết bạn của bạn."
         elif n.notification_type == 'POST_REACTION':
             notif_text = f"đã bày tỏ cảm xúc về bài viết của bạn: \"{target_content}...\""
@@ -91,13 +106,22 @@ def get_notifications(request):
             notif_text = f"đã bình luận về bài viết của bạn: \"{target_content}...\""
         elif n.notification_type == 'COMMENT_REACTION':
             notif_text = f"đã bày tỏ cảm xúc về bình luận của bạn: \"{target_content}...\""
-        elif n.notification_type == 'MESSAGE_REACTION': # <-- THÊM VÀO ĐÂY
+        elif n.notification_type == 'MESSAGE_REACTION': 
             notif_text = f"đã bày tỏ cảm xúc về tin nhắn của bạn: \"{target_content}...\""
+        elif n.notification_type == 'ADDED_TO_GROUP':
+            group_name = n.target.name if n.target else "Nhóm chưa đặt tên"
+            notif_text = f"đã thêm bạn vào nhóm <strong>{group_name}</strong>."
+        elif n.notification_type == 'GROUP_INVITE_REQUEST':
+            group_name = n.target.name if n.target else "Nhóm chưa đặt tên"
+            notif_text = f"muốn thêm thành viên vào nhóm <strong>{group_name}</strong>."
+        
+        avatar = n.sender.avatar.url if n.sender.avatar else '/static/images/default.jpg'
 
         notifications_data.append({
             'id': n.id,
             'type': notif_text,
             'sender': n.sender.username,
+            'avatar_url': avatar,
             'timestamp': timezone.localtime(n.timestamp).strftime('%H:%M %d-%m-%Y'),
             'link': reverse('notifications:redirect', args=[n.id]),
             'is_read': n.is_read  
@@ -150,5 +174,11 @@ def redirect_notification(request, pk):
     if notif.notification_type == "MESSAGE_REACTION" and notif.target:
         message = notif.target
         return redirect("chat:conversation_detail", conversation_id=message.conversation_id)
-        
+    
+    if notif.notification_type == 'ADDED_TO_GROUP' and notif.target:
+        return redirect('chat:conversation_detail', conversation_id=notif.target.id)
+   
+    if notif.notification_type == 'GROUP_INVITE_REQUEST' and notif.target:
+        return redirect('chat:manage_group', conversation_id=notif.target.id)
+    
     return redirect("home")

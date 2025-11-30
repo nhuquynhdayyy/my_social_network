@@ -1,0 +1,198 @@
+<!-- chat/templates/chat/manage_group.html -->
+
+{% extends "posts/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            
+            <div class="d-flex align-items-center mb-4">
+                <img src="{{ conversation.avatar.url }}" class="rounded-circle me-3 border" width="60" height="60" style="object-fit: cover;">
+                <h2 class="mb-0">Quản lý nhóm: {{ conversation.name }}</h2>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- 1. Cài đặt Admin (Chỉ hiện cho Admin) -->
+            {% if is_group_admin %}
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <strong>⚙️ Cài đặt quản trị</strong>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-check form-switch">
+                            {{ settings_form.admin_only_management }}
+                            <label class="form-check-label" for="{{ settings_form.admin_only_management.id_for_label }}">
+                                {{ settings_form.admin_only_management.label }}
+                            </label>
+                        </div>
+                        <button type="submit" name="toggle_admin_mode" class="btn btn-primary mt-3">Lưu cài đặt</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 2. Danh sách yêu cầu chờ duyệt -->
+            {% if is_group_admin and pending_requests %}
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <strong>🔔 Yêu cầu tham gia chờ duyệt ({{ pending_requests|length }})</strong>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for req in pending_requests %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ req.user_to_add.get_full_name }}</strong>
+                            <div class="text-muted small">Mời bởi: {{ req.invited_by.get_full_name }}</div>
+                        </div>
+                        <div>
+                            <a href="{% url 'chat:handle_request' request_id=req.id action='approve' %}" class="btn btn-success btn-sm">Duyệt</a>
+                            <a href="{% url 'chat:handle_request' request_id=req.id action='reject' %}" class="btn btn-outline-danger btn-sm">Từ chối</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- 3. Cập nhật thông tin nhóm -->
+            <div class="card mb-4">
+                <div class="card-header">Thông tin nhóm</div>
+                <div class="card-body">
+                    {% if conversation.admin_only_management and not is_group_admin %}
+                        <div class="alert alert-secondary mb-0">
+                            🔒 Nhóm này đang bật chế độ <strong>chỉ Quản trị viên</strong> mới được thay đổi tên và ảnh đại diện.
+                        </div>
+                    {% else %}
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {{ update_info_form.as_p }}
+                            <button type="submit" name="update_group_info" class="btn btn-primary">Lưu thay đổi</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 4. Thêm thành viên -->
+            <div class="card">
+                <div class="card-header">Thêm thành viên mới</div>
+                <div class="card-body">
+                    {% if conversation.admin_only_management and not is_group_admin %}
+                        <div class="alert alert-warning py-2">
+                            <small>⚠️ Nhóm đang bật kiểm duyệt. Thành viên bạn mời sẽ cần Quản trị viên phê duyệt.</small>
+                        </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ add_members_form.as_p }}
+                        <button type="submit" name="add_members" class="btn btn-success">
+                            {% if conversation.admin_only_management and not is_group_admin %}
+                                Gửi yêu cầu thêm
+                            {% else %}
+                                Thêm thành viên
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <!-- BUTTONS CUỐI TRANG -->
+            <div class="d-flex justify-content-between">
+                <div>
+                    <a href="{% url 'chat:conversation_detail' conversation.id %}" class="btn btn-secondary">&laquo; Quay lại</a>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#confirmLeaveModal">
+                        Rời khỏi nhóm
+                    </button>
+                    
+                    <!-- === NÚT XÓA NHÓM (Chỉ Admin thấy) === -->
+                    {% if is_group_admin %}
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteGroupModal">
+                        🗑️ Xóa nhóm vĩnh viễn
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal xác nhận Rời nhóm -->
+<div class="modal fade" id="confirmLeaveModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Xác nhận rời khỏi nhóm</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Bạn có chắc chắn muốn rời khỏi nhóm **"{{ conversation.name }}"** không?
+        {% if is_group_admin and conversation.participants.count > 1 %}
+            <div class="alert alert-warning mt-3">Lưu ý: Bạn đang là quản trị viên. Sau khi bạn rời đi, quyền quản trị sẽ được chuyển cho một thành viên khác.</div>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <form method="post" action="{% url 'chat:leave_group' conversation.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Rời nhóm</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- === MODAL XÁC NHẬN XÓA NHÓM === -->
+{% if is_group_admin %}
+<div class="modal fade" id="confirmDeleteGroupModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">⚠️ CẢNH BÁO: Xóa nhóm vĩnh viễn</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Bạn đang chuẩn bị xóa nhóm <strong>"{{ conversation.name }}"</strong>.</p>
+        <p class="text-danger fw-bold">Hành động này không thể hoàn tác!</p>
+        <p>Toàn bộ tin nhắn và dữ liệu của nhóm sẽ bị xóa sạch khỏi hệ thống cho tất cả thành viên.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy, tôi ấn nhầm</button>
+        <!-- Form xóa nhóm (name="delete_group") -->
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="delete_group" class="btn btn-danger fw-bold">Tôi chắc chắn, Xóa ngay</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock content %}
+{% block extra_js %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        new TomSelect('select[multiple]', {
+            plugins: ['remove_button'],
+            create: false,
+            placeholder: 'Tìm và chọn thành viên...'
+            dropdownParent: 'body'
+        });
+    });
+</script>
+{% endblock extra_js %}

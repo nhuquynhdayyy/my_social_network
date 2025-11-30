@@ -11,12 +11,14 @@ class Notification(models.Model):
         ('POST_COMMENT', 'Bình luận bài viết'),
         ('COMMENT_REACTION', 'Bày tỏ cảm xúc về bình luận'), 
         ('MESSAGE', 'Tin nhắn mới'),
-        ('MESSAGE_REACTION', 'Bày tỏ cảm xúc về tin nhắn'), 
+        ('MESSAGE_REACTION', 'Bày tỏ cảm xúc về tin nhắn'),
+        ('ADDED_TO_GROUP', 'Được thêm vào nhóm'),          
+        ('GROUP_INVITE_REQUEST', 'Yêu cầu phê duyệt thành viên'),
     ]
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_notifications')
-    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    notification_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)
     is_read = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 

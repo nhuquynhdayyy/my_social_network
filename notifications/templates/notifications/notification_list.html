@@ -11,41 +11,62 @@
 
             <div class="list-group">
                 {% for notif in notifications %}
-                <!-- SỬA LẠI ĐIỀU KIỆN KIỂM TRA VÀ CLASS CSS -->
                 <a href="{% url 'notifications:redirect' pk=notif.pk %}" 
                    class="list-group-item list-group-item-action {% if notif.id in unread_ids %}notification-unread{% endif %}">
                     
                     <div class="d-flex w-100 justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
-                            <!-- THÊM CHẤM XANH CHO THÔNG BÁO MỚI -->
                             {% if notif.id in unread_ids %}
                                 <span class="notification-dot me-3"></span>
                             {% endif %}
                             <p class="mb-1">
                                 <strong>{{ notif.sender.username }}</strong>
-                                
-                                <!-- Hiển thị nội dung thông báo (giữ nguyên) -->
+                            
                                 {% if notif.notification_type == 'FRIEND_REQUEST' %}
                                     đã gửi cho bạn một lời mời kết bạn.
                                 {% elif notif.notification_type == 'FRIEND_ACCEPT' %}
                                     đã chấp nhận lời mời kết bạn của bạn.
-                                {% elif notif.notification_type == 'POST_LIKE' %} <!-- Sửa lại tên type cho đúng với model -->
+                                {% elif notif.notification_type == 'POST_LIKE' %} 
                                     đã bày tỏ cảm xúc về bài viết của bạn.
                                 {% elif notif.notification_type == 'POST_COMMENT' %}
                                     đã bình luận về bài viết của bạn.
                                 {% elif notif.notification_type == 'COMMENT_REACTION' %}
                                     đã bày tỏ cảm xúc về bình luận của bạn.
                                 {% elif notif.notification_type == 'MESSAGE' %}
-                                    đã gửi cho bạn một tin nhắn mới.
+                                    {% if notif.target and notif.target.file %}
+                                        {% if notif.target.is_image %}
+                                            đã gửi cho bạn một hình ảnh.
+                                        {% elif notif.target.is_video %}
+                                            đã gửi cho bạn một video.
+                                        {% else %}
+                                            đã gửi cho bạn một tập tin đính kèm.
+                                        {% endif %}
+                                    {% else %}
+                                        đã gửi cho bạn một tin nhắn mới.
+                                    {% endif %}
                                 {% elif notif.notification_type == 'MESSAGE_REACTION' %}
                                     đã bày tỏ cảm xúc về tin nhắn của bạn.
+                                {% elif notif.notification_type == 'ADDED_TO_GROUP' %}
+                                    đã thêm bạn vào nhóm
+                                    {% if notif.target %}
+                                        <strong>{{ notif.target.name|default:"(Nhóm chưa đặt tên)" }}</strong>.
+                                    {% else %}
+                                        một nhóm chat.
+                                    {% endif %}
+                            
+                                {% elif notif.notification_type == 'GROUP_INVITE_REQUEST' %}
+                                    muốn thêm thành viên vào nhóm
+                                    {% if notif.target %}
+                                        <strong>{{ notif.target.name|default:"(Nhóm chưa đặt tên)" }}</strong>.
+                                    {% else %}
+                                        nhóm chat của bạn.
+                                    {% endif %}
                                 {% endif %}
                             </p>
                         </div>
                         <small class="text-muted">{{ notif.timestamp|timesince }} trước</small>
                     </div>
 
-                    <!-- Hiển thị một phần nội dung (giữ nguyên) -->
                     {% if notif.target and notif.target.content %}
                         <em>"{{ notif.target.content|truncatewords:15 }}"</em>
                     </p>
