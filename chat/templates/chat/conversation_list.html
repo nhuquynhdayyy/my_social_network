@@ -6,6 +6,16 @@
 {% block content %}
 
 <style>
+    .ts-dropdown, .ts-control {
+        z-index: 9999 !important; /* Đảm bảo cao hơn Modal (z-index 1055) */
+    }
+    
+    /* Tùy chỉnh cho đẹp giống bên detail (Optional) */
+    .ts-control {
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 0.95rem;
+    }
     /* =================================================================
        PHẦN 1: THU NHỎ SIDEBAR CHÍNH (GIỮ NGUYÊN)
        ================================================================= */
