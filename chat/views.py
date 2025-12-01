@@ -228,7 +228,7 @@ def remove_member(request, conversation_id, user_id):
 # ------------------- VIEW TRANG DANH SÁCH -------------------
 @login_required
 def conversation_list_view(request):
-    conversations = request.user.conversations.order_by('-updated_at')
+    conversations = request.user.conversations.exclude(hidden_by=request.user).order_by('-updated_at')
     group_creation_form = GroupCreationForm(user=request.user)
     return render(request, 'chat/conversation_list.html', {
         'conversations': conversations,
@@ -327,6 +327,8 @@ def send_message_api(request, conversation_id):
             if not message.text and not message.file:
                  return JsonResponse({'status': 'error', 'message': 'Tin nhắn rỗng'}, status=400)
             message.save()
+
+            conversation.hidden_by.clear()
 
             # Cập nhật last_message
             conversation.last_message = message
@@ -433,7 +435,7 @@ def edit_message_api(request, message_id):
 @login_required
 def api_get_conversations(request):
     try:
-        conversations = request.user.conversations.order_by('-updated_at')[:15]
+        conversations = request.user.conversations.exclude(hidden_by=request.user).order_by('-updated_at')[:15]
         data = []
         for conv in conversations:
             conv_name = ''
@@ -685,3 +687,19 @@ def api_get_new_messages(request, conversation_id):
         })
         
     return JsonResponse({'messages': data})
+
+@login_required
+@require_POST
+def delete_conversation_view(request, conversation_id):
+    conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+    
+    # 1. Ẩn cuộc trò chuyện khỏi danh sách bên trái của người bấm xóa
+    conversation.hidden_by.add(request.user)
+    
+    # 2. Ẩn TOÀN BỘ tin nhắn CŨ đối với người bấm xóa
+    # (Để sau này chat lại, tin nhắn cũ không hiện ra nữa)
+    for msg in conversation.messages.all():
+        msg.hidden_by.add(request.user)
+        
+    messages.success(request, "Đã xóa cuộc trò chuyện.")
+    return redirect('chat:conversation_list')

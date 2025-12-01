@@ -14,6 +14,7 @@ class Conversation(models.Model):
     avatar = models.ImageField(upload_to='group_avatars/', default='group_default.png')
     admin_only_management = models.BooleanField(default=True)
     participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='conversations')
+    hidden_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='hidden_conversations', blank=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_message = models.ForeignKey(
         'Message',

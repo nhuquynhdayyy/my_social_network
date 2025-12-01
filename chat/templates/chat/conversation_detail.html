@@ -334,14 +334,26 @@
 
             <div class="info-actions">
                 {% if conversation.type == 'PRIVATE' %}
+                    <!-- 1. Nút Trang cá nhân -->
                     <a href="{% url 'accounts:profile' username=other_participant.username %}" class="action-btn-circle">
                         <div class="btn-circle-icon">👤</div> <span>Trang cá nhân</span>
                     </a>
                     
-                    <!-- THAY ĐỔI: Sử dụng Modal thay vì chuyển hướng -->
+                    <!-- 2. Nút Tạo nhóm -->
                     <button type="button" class="action-btn-circle" data-bs-toggle="modal" data-bs-target="#createGroupModal" data-preselect-user="{{ other_participant.id }}">
                         <div class="btn-circle-icon">👥</div> <span>Tạo nhóm</span>
                     </button>
+
+                    <!-- 3. Nút Xóa cuộc trò chuyện (MỚI) -->
+                    <button type="button" class="action-btn-circle text-danger" onclick="confirmDeleteConversation()">
+                        <div class="btn-circle-icon text-danger" style="background-color: #fee2e2;">🗑️</div> 
+                        <span>Xóa chat</span>
+                    </button>
+
+                    <!-- Form ẩn để xử lý xóa (An toàn hơn dùng thẻ a) -->
+                    <form id="delete-conversation-form" method="post" action="{% url 'chat:delete_conversation' conversation.id %}" style="display: none;">
+                        {% csrf_token %}
+                    </form>
                 {% endif %}
             </div>
 
@@ -1211,6 +1223,12 @@ document.addEventListener('click', function(e) {
             {% endfor %}
         {% endif %}
     });
+
+    function confirmDeleteConversation() {
+        if (confirm("Bạn có chắc chắn muốn xóa cuộc trò chuyện này không?\nHành động này sẽ ẩn cuộc trò chuyện khỏi danh sách của bạn.")) {
+            document.getElementById('delete-conversation-form').submit();
+        }
+    }
 </script>
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
