@@ -1074,48 +1074,50 @@
 
     <!-- =================== CHAT WIDGET NỔI =================== -->
     {% if user.is_authenticated %}
-    <div class="chat-widget-container">
-      <div class="chat-popup" id="chatPopup">
-        <!-- Header chung -->
-        <div class="chat-popup-header">
-          <h4 id="chat-view-title">Tin nhắn</h4>
-          <button type="button" class="chat-action-btn" id="closeChatBtn">&times;</button>
-        </div>
+        {% block chat_widget %}
+            <div class="chat-widget-container">
+            <div class="chat-popup" id="chatPopup">
+                <!-- Header chung -->
+                <div class="chat-popup-header">
+                <h4 id="chat-view-title">Tin nhắn</h4>
+                <button type="button" class="chat-action-btn" id="closeChatBtn">&times;</button>
+                </div>
 
-        <!-- Body chứa các view -->
-        <div class="chat-popup-body">
-          
-          <!-- VIEW 1: DANH SÁCH HỘI THOẠI -->
-          <div class="chat-view" id="recent-conversations-view">
-            <div class="conversations-list" id="chatPopupBodyContent">
-                <p class="text-center text-muted p-5">Đang tải...</p>
+                <!-- Body chứa các view -->
+                <div class="chat-popup-body">
+                
+                <!-- VIEW 1: DANH SÁCH HỘI THOẠI -->
+                <div class="chat-view" id="recent-conversations-view">
+                    <div class="conversations-list" id="chatPopupBodyContent">
+                        <p class="text-center text-muted p-5">Đang tải...</p>
+                    </div>
+                    <button class="chat-compose-btn" id="newMessageBtn" title="Tin nhắn mới">✏️</button>
+                </div>
+
+                <!-- VIEW 2: CHI TIẾT CUỘC HỘI THOẠI -->
+                <div class="chat-view" id="chat-detail-view">
+                    <div id="chat-detail-header" class="chat-detail-header"></div>
+                    <div id="message-list" class="message-list"></div>
+                    <form id="message-form" class="message-form">
+                    <input type="text" id="message-input" placeholder="Nhập tin nhắn..." autocomplete="off">
+                    <button type="submit" class="btn btn-primary btn-sm">Gửi</button>
+                    </form>
+                </div>
+
+                <!-- VIEW 3: TÌM KIẾM NGƯỜI DÙNG MỚI -->
+                <div class="chat-view" id="search-view">
+                    <div class="search-header">
+                    <button class="chat-back-btn" id="back-from-search-btn">←</button>
+                    <input type="text" id="search-view-input" placeholder="Tìm kiếm người dùng..." autocomplete="off">
+                    </div>
+                    <div class="search-results-list" id="searchResultsList"></div>
+                </div>
+
+                </div>
             </div>
-            <button class="chat-compose-btn" id="newMessageBtn" title="Tin nhắn mới">✏️</button>
-          </div>
-
-          <!-- VIEW 2: CHI TIẾT CUỘC HỘI THOẠI -->
-          <div class="chat-view" id="chat-detail-view">
-            <div id="chat-detail-header" class="chat-detail-header"></div>
-            <div id="message-list" class="message-list"></div>
-            <form id="message-form" class="message-form">
-              <input type="text" id="message-input" placeholder="Nhập tin nhắn..." autocomplete="off">
-              <button type="submit" class="btn btn-primary btn-sm">Gửi</button>
-            </form>
-          </div>
-
-          <!-- VIEW 3: TÌM KIẾM NGƯỜI DÙNG MỚI -->
-          <div class="chat-view" id="search-view">
-            <div class="search-header">
-              <button class="chat-back-btn" id="back-from-search-btn">←</button>
-              <input type="text" id="search-view-input" placeholder="Tìm kiếm người dùng..." autocomplete="off">
+            <button class="chat-open-button" id="openChatBtn">💬</button>
             </div>
-            <div class="search-results-list" id="searchResultsList"></div>
-          </div>
-
-        </div>
-      </div>
-      <button class="chat-open-button" id="openChatBtn">💬</button>
-    </div>
+        {% endblock chat_widget %}
     {% endif %}
     <!-- =================== HẾT CHAT WIDGET =================== -->
 
