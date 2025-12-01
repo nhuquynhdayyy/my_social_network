@@ -432,50 +432,73 @@ def edit_message_api(request, message_id):
 # ------------------- API LẤY CONVERSATIONS -------------------
 @login_required
 def api_get_conversations(request):
-    conversations = request.user.conversations.order_by('-updated_at')[:15]
-
-    data = []
-    for conv in conversations:
-        conv_name = ''
-        conv_avatar_url = ''
-        if conv.type == 'GROUP':
-            conv_name = conv.name
-            conv_avatar_url = conv.avatar.url
-        else:
-            other_participant = conv.participants.exclude(id=request.user.id).first()
-            if not other_participant: continue
-            conv_name = other_participant.username
-            conv_avatar_url = other_participant.avatar.url
-
-        last_message_ts = None
-        last_message_text = ''
-        if conv.last_message:
-            sender_prefix = "Bạn: " if conv.last_message.sender == request.user else ""
-            if conv.last_message.sender == request.user: sender_prefix = "Bạn: "
-            elif conv.type == 'GROUP' and conv.last_message.sender: sender_prefix = f"{conv.last_message.sender.first_name}: "
+    try:
+        conversations = request.user.conversations.order_by('-updated_at')[:15]
+        data = []
+        for conv in conversations:
+            conv_name = ''
+            conv_avatar_url = ''
             
-            content = conv.last_message.text
-            if conv.last_message.file:
-                if conv.last_message.is_image: content = "[Hình ảnh]"
-                elif conv.last_message.is_video: content = "[Video]"
-                else: content = "[File]"
-            last_message_text = f"{sender_prefix}{content}"
-            last_message_ts = timezone.localtime(conv.last_message.timestamp).strftime('%H:%M, %d-%m-%Y')
+            # --- XỬ LÝ AVATAR AN TOÀN ---
+            try:
+                if conv.type == 'GROUP':
+                    conv_name = conv.name
+                    if conv.avatar:
+                        conv_avatar_url = conv.avatar.url
+                    else:
+                        conv_avatar_url = '/static/images/group_default.png' # Ảnh mặc định nếu thiếu
+                else:
+                    other_participant = conv.participants.exclude(id=request.user.id).first()
+                    if not other_participant: 
+                        continue
+                    
+                    conv_name = other_participant.username
+                    # Kiểm tra kỹ avatar của user
+                    if other_participant.avatar:
+                        conv_avatar_url = other_participant.avatar.url
+                    else:
+                        conv_avatar_url = '/static/images/default_avatar.png' # Ảnh mặc định
+            except ValueError:
+                # Nếu file ảnh bị lỗi đường dẫn, dùng ảnh mặc định để tránh sập API
+                conv_avatar_url = '/static/images/default_avatar.png' 
+            # ---------------------------
 
-        data.append({
-            'conversation_id': conv.id,
-            'name': conv_name, 
-            'avatar_url': conv_avatar_url,
-            'other_participant': {
-                'username': other_participant.username,
-                'avatar_url': other_participant.avatar.url if other_participant.avatar else None,
-            },
-            'last_message': last_message_text,
-            'last_message_timestamp': last_message_ts,
-            'detail_url': reverse('chat:conversation_detail', kwargs={'conversation_id': conv.id})
-        })
+            last_message_ts = None
+            last_message_text = ''
+            if conv.last_message:
+                sender_prefix = ""
+                if conv.last_message.sender == request.user: 
+                    sender_prefix = "Bạn: "
+                elif conv.type == 'GROUP' and conv.last_message.sender: 
+                    sender_prefix = f"{conv.last_message.sender.first_name}: "
+                
+                content = conv.last_message.text
+                if conv.last_message.file:
+                    if conv.last_message.is_image: content = "[Hình ảnh]"
+                    elif conv.last_message.is_video: content = "[Video]"
+                    else: content = "[File]"
+                    
+                # Xử lý trường hợp text là None nhưng có file
+                if content is None:
+                    content = ""
+                    
+                last_message_text = f"{sender_prefix}{content}"
+                last_message_ts = timezone.localtime(conv.last_message.timestamp).strftime('%H:%M, %d-%m-%Y')
 
-    return JsonResponse({'conversations': data})
+            data.append({
+                'conversation_id': conv.id,
+                'name': conv_name, 
+                'avatar_url': conv_avatar_url,
+                'last_message': last_message_text,
+                'last_message_timestamp': last_message_ts,
+                'detail_url': reverse('chat:conversation_detail', kwargs={'conversation_id': conv.id})
+            })
+
+        return JsonResponse({'conversations': data})
+        
+    except Exception as e:
+        print(f"Lỗi API Conversations: {e}") # In lỗi ra terminal để debug
+        return JsonResponse({'conversations': []}, status=200) # Trả về list rỗng thay vì lỗi 500
 
 
 # ------------------- API TÌM KIẾM USER -------------------
