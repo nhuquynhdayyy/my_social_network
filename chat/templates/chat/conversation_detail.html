@@ -1038,6 +1038,91 @@ function submitEdit(msgId) {
         }
     });
 }
+
+function scrollToBottom() {
+        const msgContainer = document.getElementById('message-container');
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+    }
+
+    // Hàm lấy ID của tin nhắn cuối cùng đang hiển thị trên màn hình
+    function getLastMessageId() {
+        const messages = document.querySelectorAll('.msg-row');
+        if (messages.length > 0) {
+            const lastMsg = messages[messages.length - 1];
+            // ID của div là "msg-row-123", ta cần lấy số 123
+            return lastMsg.id.replace('msg-row-', '');
+        }
+        return 0;
+    }
+
+    // Hàm gọi API lấy tin nhắn mới
+    function fetchNewMessages() {
+        const lastId = getLastMessageId();
+        const convId = "{{ conversation.id }}";
+        
+        fetch(`/chat/api/get-new-messages/${convId}/?last_message_id=${lastId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.messages.length > 0) {
+                const container = document.getElementById('message-container');
+                
+                data.messages.forEach(msg => {
+                    // Kiểm tra xem tin nhắn này đã tồn tại chưa để tránh trùng lặp
+                    if (!document.getElementById(`msg-row-${msg.message_id}`)) {
+                        
+                        // Xác định class CSS (Gửi hay Nhận)
+                        const rowClass = msg.is_me ? 'sent' : 'received';
+                        
+                        // HTML hiển thị tin nhắn (giống cấu trúc bạn đã sửa ở bước trước)
+                        // Chú ý: Phần avatar chỉ hiện nếu là 'received' và là nhóm (tùy logic của bạn)
+                        let avatarHtml = '';
+                        if (!msg.is_me && "{{ conversation.type }}" === "GROUP") {
+                             avatarHtml = `<img src="${msg.sender_avatar}" class="msg-avatar-tiny" title="${msg.sender_username}">`;
+                        }
+
+                        const msgHtml = `
+                        <div class="msg-row ${rowClass}" id="msg-row-${msg.message_id}">
+                            ${avatarHtml}
+                            <div class="msg-bubble" id="msg-bubble-${msg.message_id}">
+                                <span class="msg-text-content">${msg.text ? msg.text : ''}</span>
+                                ${msg.file_url ? `<br><a href="${msg.file_url}" target="_blank" class="small text-decoration-underline">📎 File đính kèm</a>` : ''}
+                                <div id="reaction-display-${msg.message_id}" class="msg-reaction-display d-none"></div>
+                            </div>
+                            
+                            <!-- Action Group -->
+                            <div class="msg-actions-group">
+                                <div class="position-relative">
+                                    <button class="btn-action-tiny" onclick="toggleReactionPopup('${msg.message_id}')">☺</button>
+                                    <div class="reaction-popup" id="reaction-popup-${msg.message_id}">
+                                        <button class="reaction-btn" onclick="reactToMsg('${msg.message_id}', 'LOVE')">❤️</button>
+                                        <button class="reaction-btn" onclick="reactToMsg('${msg.message_id}', 'HAHA')">😂</button>
+                                        <button class="reaction-btn" onclick="reactToMsg('${msg.message_id}', 'WOW')">😮</button>
+                                        <button class="reaction-btn" onclick="reactToMsg('${msg.message_id}', 'SAD')">😢</button>
+                                        <button class="reaction-btn" onclick="reactToMsg('${msg.message_id}', 'ANGRY')">😡</button>
+                                        <button class="reaction-btn" onclick="reactToMsg('${msg.message_id}', 'LIKE')">👍</button>
+                                    </div>
+                                </div>
+                                ${msg.is_me ? `
+                                <button class="btn-action-tiny" onclick="showEdit('${msg.message_id}')">✎</button>
+                                <button class="btn-action-tiny text-danger" onclick="deleteMsg('${msg.message_id}')">🗑</button>
+                                ` : ''}
+                            </div>
+                        </div>`;
+                        
+                        container.insertAdjacentHTML('beforeend', msgHtml);
+                    }
+                });
+                
+                // Sau khi thêm tin mới, cuộn xuống dưới cùng
+                scrollToBottom();
+            }
+        })
+        .catch(err => console.error("Lỗi cập nhật tin nhắn:", err));
+    }
+
+    // Chạy hàm kiểm tra mỗi 2 giây (2000ms)
+    setInterval(fetchNewMessages, 2000);
+    
 // Đóng popup khi click ra ngoài
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.msg-actions-group')) document.querySelectorAll('.reaction-popup').forEach(p => p.classList.remove('show'));

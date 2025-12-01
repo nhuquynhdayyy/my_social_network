@@ -645,3 +645,43 @@ def api_start_conversation(request):
         })
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    
+@login_required
+def api_get_new_messages(request, conversation_id):
+    conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+    
+    # Lấy ID của tin nhắn cuối cùng từ phía client gửi lên
+    last_message_id = request.GET.get('last_message_id')
+    
+    if not last_message_id:
+        return JsonResponse({'messages': []})
+
+    # Tìm những tin nhắn có ID lớn hơn ID cuối cùng (tức là tin nhắn mới)
+    new_messages = conversation.messages.filter(id__gt=last_message_id).exclude(hidden_by=request.user).order_by('timestamp')
+    
+    data = []
+    for msg in new_messages:
+        # Format thời gian
+        local_ts = timezone.localtime(msg.timestamp)
+        formatted_ts = local_ts.strftime('%H:%M, %d-%m-%Y') # Hoặc format theo ý bạn
+
+        file_url = msg.file.url if msg.file else None
+        file_type = None
+        if msg.file:
+            if msg.is_image: file_type = 'image'
+            elif msg.is_video: file_type = 'video'
+            else: file_type = 'file'
+
+        data.append({
+            'message_id': msg.id,
+            'sender_id': msg.sender.id if msg.sender else None,
+            'sender_avatar': msg.sender.avatar.url if msg.sender and msg.sender.avatar else '/static/images/default.jpg',
+            'sender_username': msg.sender.username if msg.sender else 'System',
+            'text': msg.text,
+            'timestamp': formatted_ts,
+            'file_url': file_url,
+            'file_type': file_type,
+            'is_me': (msg.sender == request.user) # Đánh dấu xem có phải tin của mình không
+        })
+        
+    return JsonResponse({'messages': data})
