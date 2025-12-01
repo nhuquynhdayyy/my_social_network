@@ -348,9 +348,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     resultList.innerHTML = '';
                     if(data.users.length > 0) {
                         data.users.forEach(user => {
+                            let avatarSrc = user.avatar_url ? user.avatar_url : '/media/default.jpg';
+                            
                             resultList.innerHTML += `
                                 <a href="${user.start_conversation_url}" class="search-result-item">
-                                    <img src="/static/images/default.jpg" class="search-avatar" onerror="this.src='https://via.placeholder.com/40'">
+                                    <img src="${avatarSrc}" class="search-avatar" onerror="this.src='https://via.placeholder.com/40'">
                                     <div>
                                         <div class="fw-bold">${user.username}</div>
                                         <div class="text-muted small">${user.full_name}</div>

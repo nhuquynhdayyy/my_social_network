@@ -769,24 +769,18 @@ document.addEventListener('DOMContentLoaded', function() {
             resultList.innerHTML = '';
             if(data.users.length > 0) {
                 data.users.forEach(user => {
-                // 1. Tạo sẵn link ảnh dự phòng (dùng tên user)
-                const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=random&color=fff&size=64`;
-
-                // 2. Nếu có avatar_url thì dùng, không thì dùng fallback ngay
-                let mainAvatar = user.avatar_url ? user.avatar_url : fallbackAvatar;
-
-                // 3. Render HTML: QUAN TRỌNG NHẤT LÀ THÊM onerror
-                resultList.innerHTML += `
-                    <a href="${user.start_conversation_url}" class="search-result-item text-decoration-none text-dark">
-                        <img src="${mainAvatar}" 
-                            class="search-avatar" 
-                            style="object-fit: cover; width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;"
-                            onerror="this.onerror=null; this.src='${fallbackAvatar}';"> 
-                        <div>
-                            <div class="fw-bold">${user.username}</div>
-                            <div class="text-muted small">${user.full_name}</div>
-                        </div>
-                    </a>`;
+                    let avatarSrc = user.avatar_url ? user.avatar_url : '/media/default.jpg';
+                            
+                            resultList.innerHTML += `
+                                <a href="${user.start_conversation_url}" class="search-result-item">
+                                    <img src="${avatarSrc}" class="search-avatar" onerror="this.src='https://via.placeholder.com/40'">
+                                    <div>
+                                        <div class="fw-bold">${user.username}</div>
+                                        <div class="text-muted small">${user.full_name}</div>
+                                    </div>
+                                </a>
+                            `;
+                    
             });
             }
         });
