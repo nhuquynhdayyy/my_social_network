@@ -305,6 +305,26 @@
 
 {% block extra_js %}
 <script>
+    // --- ĐOẠN MÃ MỚI: HIỂN THỊ THÔNG BÁO TỪ SERVER (DJANGO MESSAGES) ---
+    document.addEventListener("DOMContentLoaded", function() {
+        {% if messages %}
+            {% for message in messages %}
+                // Chuyển đổi tag của Django sang màu của Bootstrap
+                // Django dùng 'error', Bootstrap dùng 'danger' cho màu đỏ
+                var type = "{{ message.tags }}";
+                if (type === 'error') type = 'danger'; 
+                
+                // Gọi hàm showToast đã được định nghĩa ở base.html
+                if (typeof showToast === 'function') {
+                    showToast("{{ message|safe }}", type);
+                } else {
+                    alert("{{ message|safe }}"); // Fallback nếu showToast chưa load kịp
+                }
+            {% endfor %}
+        {% endif %}
+    });
+</script>
+<script>
 document.addEventListener('DOMContentLoaded', function() {
 // --- 1. XỬ LÝ LỌC DANH SÁCH CHAT ---
         const toggleBtn = document.getElementById('toggle-search-list-btn');

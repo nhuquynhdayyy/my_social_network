@@ -190,7 +190,7 @@ def create_group_view(request):
             return redirect('chat:conversation_detail', conversation_id=group.id)
         else:
             # Nếu lỗi form, quay lại trang danh sách và báo lỗi
-            messages.error(request, "Tạo nhóm thất bại. Vui lòng kiểm tra lại thông tin (ít nhất 2 thành viên).")
+            messages.error(request, "Tạo nhóm thất bại. Vui lòng kiểm tra lại thông tin (thêm ít nhất 2 thành viên).")
             return redirect('chat:conversation_list')
     else:
         # Nếu truy cập GET trực tiếp, redirect về list
@@ -296,7 +296,7 @@ def conversation_detail_view(request, conversation_id):
 
     context = {
         'conversation': conversation,
-        'messages': messages,
+        'chat_messages': messages,
         'form': form,
         'other_participant': other_participant,
         'user_reactions_map': user_reactions_map,
