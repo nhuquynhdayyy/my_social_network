@@ -22,6 +22,103 @@
         background-color: #fafafa;
       }
 
+      .notification-panel {
+    position: fixed;
+    top: 0;
+    left: 244px; /* Bằng đúng chiều rộng của Sidebar */
+    width: 360px; /* Chiều rộng giống Facebook */
+    height: 100vh;
+    background-color: white;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+    z-index: 999; /* Nằm dưới Sidebar một chút nhưng trên content */
+    border-right: 1px solid #dbdbdb;
+    
+    /* Hiệu ứng trượt */
+    transform: translateX(-110%); /* Mặc định ẩn sang trái */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    visibility: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Class này được JS thêm vào để hiện thông báo */
+.notification-panel.show {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.notification-header {
+    padding: 24px 16px 10px 16px;
+    border-bottom: 1px solid #efefef;
+}
+.notification-header h3 {
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.notification-body {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+/* === CSS CHO TỪNG MỤC THÔNG BÁO === */
+.notif-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    text-decoration: none;
+    color: #050505;
+    transition: background-color 0.2s;
+    position: relative;
+}
+.notif-item:hover {
+    background-color: #f2f2f2;
+}
+
+/* Ảnh đại diện người gửi */
+.notif-item img {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 12px;
+}
+
+.notif-content {
+    flex-grow: 1;
+    font-size: 0.93rem;
+    line-height: 1.3333;
+}
+
+.notif-time {
+    font-size: 0.8rem;
+    color: #65676b; /* Màu xám thời gian */
+    margin-top: 3px;
+}
+
+/* Trạng thái chưa đọc */
+.notif-item.unread {
+    /* Facebook không đổi màu nền mà dùng chấm xanh, nhưng ta có thể thêm background nhạt nếu thích */
+    background-color: #f0f2f5; 
+}
+
+.notif-item.unread .notif-content {
+    font-weight: normal; /* Facebook dùng font thường, chỉ có tên người là đậm */
+}
+
+/* Chấm xanh đánh dấu chưa đọc */
+.unread-dot {
+    width: 12px;
+    height: 12px;
+    background-color: #0866ff;
+    border-radius: 50%;
+    margin-left: 10px;
+}
+
       .message-bubble-container {
             position: relative;
             /* Cho phép popup hiển thị đè lên các phần tử khác mà không bị cắt */
@@ -896,15 +993,28 @@
             </a>
           </li>
           <li>
-              <a href="{% url 'notifications:notification_list' %}" class="position-relative">
-              <svg class="nav-icon" aria-label="Notifications" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-              <span>Thông báo</span>
-              <span class="notification-badge" id="notif-count"></span>
+            <!-- Thêm id="nav-notification-link" để JS bắt sự kiện click -->
+            <a href="#" class="position-relative" id="nav-notification-link">
+                <svg class="nav-icon" aria-label="Notifications" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <span>Thông báo</span>
+                <!-- Badge số lượng -->
+                <span class="notification-badge" id="nav-notif-badge" style="display: none;">0</span>
             </a>
-          </li>
+        </li>
+
+        <!-- === THÊM ĐOẠN NÀY: KHUNG CHỨA DANH SÁCH THÔNG BÁO (BỊ THIẾU) === -->
+        <div class="notification-panel" id="notificationPanel">
+            <div class="notification-header">
+                <h3>Thông báo</h3>
+            </div>
+            <div class="notification-body custom-scrollbar" id="notificationListBody">
+                <!-- JS sẽ điền thông báo vào đây -->
+                <div class="text-center p-4 text-muted">Đang tải...</div>
+            </div>
+        </div>
            <li>
             <a href="{% url 'accounts:profile' username=user.username %}">
               <img src="{{ user.avatar.url }}" alt="{{ user.username }}" width="24" height="24" class="rounded-circle nav-icon"/>
