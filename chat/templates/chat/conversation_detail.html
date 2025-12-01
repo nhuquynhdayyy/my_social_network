@@ -6,6 +6,23 @@
 
 {% block content %}
 <style>
+    .msg-timestamp {
+        font-size: 0.65rem;
+        color: #aaa;
+        margin: 0 8px;
+        opacity: 0; /* Mặc định ẩn */
+        visibility: hidden;
+        transition: opacity 0.2s;
+        align-self: center;
+        white-space: nowrap;
+    }
+
+    /* Khi rê chuột vào dòng tin nhắn thì hiện thời gian */
+    .msg-row:hover .msg-timestamp {
+        opacity: 1;
+        visibility: visible;
+    }
+
     .ts-control {
         border-radius: 6px;
         padding: 6px 10px;
@@ -269,6 +286,15 @@
                             {% if message.sender == user %}
                                 <button class="btn-action-tiny" onclick="showEdit('{{ message.id }}')">✎</button>
                                 <button class="btn-action-tiny text-danger" onclick="deleteMsg('{{ message.id }}')">🗑</button>
+                            {% endif %}
+                        </div>
+
+                        <div class="msg-timestamp">
+                            {% now "Ymd" as today_str %} <!-- Lấy ngày hiện tại dạng YYYYMMDD -->
+                            {% if message.timestamp|date:"Ymd" == today_str %}
+                                {{ message.timestamp|date:"H:i" }} <!-- Nếu trùng ngày: chỉ hiện Giờ -->
+                            {% else %}
+                                {{ message.timestamp|date:"H:i, d/m/Y" }} <!-- Khác ngày: hiện Giờ, Ngày -->
                             {% endif %}
                         </div>
 
@@ -1039,6 +1065,36 @@ function submitEdit(msgId) {
     });
 }
 
+// --- HÀM XỬ LÝ THỜI GIAN THÔNG MINH ---
+function formatSmartTime(timestampStr) {
+    // timestampStr từ server có dạng: "14:30, 01-12-2025"
+    if (!timestampStr) return "";
+    
+    try {
+        const parts = timestampStr.split(', ');
+        if (parts.length < 2) return timestampStr; 
+
+        const timePart = parts[0]; // "14:30"
+        const datePart = parts[1]; // "01-12-2025"
+
+        // Lấy ngày hôm nay
+        const today = new Date();
+        const d = String(today.getDate()).padStart(2, '0');
+        const m = String(today.getMonth() + 1).padStart(2, '0'); 
+        const y = today.getFullYear();
+        const todayStr = `${d}-${m}-${y}`; // "01-12-2025"
+
+        if (datePart === todayStr) {
+            return timePart; // Nếu trùng ngày -> Trả về "14:30"
+        } else {
+            // Nếu khác ngày -> Trả về "14:30, 01/12/2025" (Đổi dấu - thành / cho đẹp)
+            return timestampStr.replace(/-/g, '/'); 
+        }
+    } catch (e) {
+        return timestampStr;
+    }
+}
+
 function scrollToBottom() {
         const msgContainer = document.getElementById('message-container');
         msgContainer.scrollTop = msgContainer.scrollHeight;
@@ -1107,6 +1163,11 @@ function scrollToBottom() {
                                 <button class="btn-action-tiny text-danger" onclick="deleteMsg('${msg.message_id}')">🗑</button>
                                 ` : ''}
                             </div>
+
+                            <div class="msg-timestamp">
+                                ${formatSmartTime(msg.timestamp)} <!-- Chỉ lấy giờ (HH:MM) -->
+                            </div>
+
                         </div>`;
                         
                         container.insertAdjacentHTML('beforeend', msgHtml);
@@ -1122,7 +1183,7 @@ function scrollToBottom() {
 
     // Chạy hàm kiểm tra mỗi 2 giây (2000ms)
     setInterval(fetchNewMessages, 2000);
-    
+
 // Đóng popup khi click ra ngoài
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.msg-actions-group')) document.querySelectorAll('.reaction-popup').forEach(p => p.classList.remove('show'));
