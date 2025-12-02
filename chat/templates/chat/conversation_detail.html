@@ -251,11 +251,23 @@
                             {% endif %}
                             <span class="msg-text-content">{{ message.text|linebreaksbr }}</span>
 
-                            <!-- Display Reactions -->
                             <div id="reaction-display-{{ message.id }}" class="msg-reaction-display {% if message.reactions.count == 0 %}d-none{% endif %}">
-                                {% with stats=message.reactions.all %}
-                                    {% if stats %}❤️ {{ stats.count }}{% endif %}
-                                {% endwith %}
+                                {% if message.reactions.count > 0 %}
+                                    <!-- Duyệt qua thống kê reaction đã được tính toán trong views.py -->
+                                    {% for stat in message.reaction_stats %}
+                                        {% if stat.count > 0 %}
+                                            {% if stat.reaction_type == 'LIKE' %}👍{% endif %}
+                                            {% if stat.reaction_type == 'LOVE' %}❤️{% endif %}
+                                            {% if stat.reaction_type == 'HAHA' %}😂{% endif %}
+                                            {% if stat.reaction_type == 'WOW' %}😮{% endif %}
+                                            {% if stat.reaction_type == 'SAD' %}😢{% endif %}
+                                            {% if stat.reaction_type == 'ANGRY' %}😡{% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    <!-- Hiển thị tổng số lượng -->
+                                    <span class="ms-1 small text-muted">{{ message.reactions.count }}</span>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -949,23 +961,46 @@ function reactToMessage(messageId, reactionType) {
     });
 }
 
+// CODE MỚI (Đã sửa)
+const reactionIcons = {
+    'LIKE': '👍',
+    'LOVE': '❤️',
+    'HAHA': '😂',
+    'WOW': '😮',
+    'SAD': '😢',
+    'ANGRY': '😡'
+};
+
 function updateReactionStatsUI(messageId, stats, total) {
-    const statsContainer = document.getElementById(`message-reaction-stats-${messageId}`);
+    const statsContainer = document.getElementById(`reaction-display-${messageId}`);
+    // Lưu ý: ID có thể là reaction-display- hoặc message-reaction-stats- tùy code của bạn
+    
     if (!statsContainer) return;
     
     if (total > 0) {
-        let iconsHTML = '';
-        if (stats.LIKE) iconsHTML += '<span>👍</span>';
-        if (stats.LOVE) iconsHTML += '<span>❤️</span>';
-        if (stats.HAHA) iconsHTML += '<span>😂</span>';
-        if (stats.WOW) iconsHTML += '<span>😮</span>';
-        if (stats.SAD) iconsHTML += '<span>😢</span>';
-        if (stats.ANGRY) iconsHTML += '<span>😡</span>';
-        statsContainer.innerHTML = `${iconsHTML} <span class="reaction-count">${total}</span>`;
-        statsContainer.style.display = 'flex'; 
+        statsContainer.classList.remove('d-none');
+        let html = '';
+        
+        // Duyệt qua từng loại reaction trong stats (ví dụ: {HAHA: 1, LIKE: 2})
+        for (const [rType, count] of Object.entries(stats)) {
+            if (count > 0 && reactionIcons[rType]) {
+                html += `${reactionIcons[rType]} `; // Cộng dồn icon: "😂 👍 "
+            }
+        }
+        
+        // Thêm số lượng tổng nếu cần
+        if (total > 1) {
+            html += `<span class="ms-1 small text-muted">${total}</span>`;
+        } 
+        // Nếu chỉ có 1 reaction và chưa có icon nào được thêm (trường hợp lỗi), mặc định là tim
+        else if (html === '') {
+             html = '❤️';
+        }
+
+        statsContainer.innerHTML = html;
     } else {
         statsContainer.innerHTML = '';
-        statsContainer.style.display = 'none'; 
+        statsContainer.classList.add('d-none');
     }
 }
 
@@ -1075,7 +1110,6 @@ function getCookie(name) {
     let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
     return v ? v[2] : null;
 }
-const reactionIcons = {'LIKE': '👍', 'LOVE': '❤️', 'HAHA': '😂', 'WOW': '😮', 'SAD': '😢', 'ANGRY': '😡'};
 
 function toggleReactionPopup(msgId) {
     const popup = document.getElementById(`reaction-popup-${msgId}`);
