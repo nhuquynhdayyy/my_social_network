@@ -1198,6 +1198,47 @@
             });
         });
 
+        // =======================================================
+        // === LOGIC XỬ LÝ SUBMIT FORM SỬA BÌNH LUẬN (AJAX) ===
+        // =======================================================
+        document.body.addEventListener('submit', function(event) {
+            // Kiểm tra nếu form được submit có class là 'edit-comment-form'
+            if (event.target.classList.contains('edit-comment-form')) {
+                event.preventDefault(); // Chặn việc load lại trang
+                
+                const form = event.target;
+                const url = form.action;
+                const formData = new FormData(form);
+
+                // Gửi dữ liệu lên server bằng fetch (AJAX)
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken },
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Tìm cái thẻ div chứa bình luận cũ (dựa trên class hoặc id cha)
+                        // Form đang nằm bên trong comment-content-wrapper, wrapper nằm trong div#comment-ID
+                        const oldCommentDiv = form.closest('div[id^="comment-"]');
+                        
+                        if (oldCommentDiv) {
+                            // Thay thế hoàn toàn HTML của bình luận cũ bằng HTML mới server trả về
+                            oldCommentDiv.outerHTML = data.comment_html;
+                        }
+                    } else {
+                        // Nếu có lỗi từ server trả về
+                        alert("Lỗi: " + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Đã xảy ra lỗi kết nối.');
+                });
+            }
+        });
+        
         // --- LOGIC MỞ MODAL CHIA SẺ ---
         document.body.addEventListener('click', function(event) {
             const shareBtn = event.target.closest('.share-post-btn');
