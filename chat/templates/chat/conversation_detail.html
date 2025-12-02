@@ -251,7 +251,10 @@
                             {% endif %}
                             <span class="msg-text-content">{{ message.text|linebreaksbr }}</span>
 
-                            <div id="reaction-display-{{ message.id }}" class="msg-reaction-display {% if message.reactions.count == 0 %}d-none{% endif %}">
+                            <div id="reaction-display-{{ message.id }}" 
+                                class="msg-reaction-display {% if message.reactions.count == 0 %}d-none{% endif %}"
+                                style="cursor: pointer;"
+                                onclick="showReactionListModal('{{ message.id }}')"> <!-- Thêm sự kiện onclick -->
                                 {% if message.reactions.count > 0 %}
                                     <!-- Duyệt qua thống kê reaction đã được tính toán trong views.py -->
                                     {% for stat in message.reaction_stats %}
@@ -616,6 +619,28 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Modal Riêng Cho Reaction Tin Nhắn (Để tránh xung đột với Post/Comment) -->
+<div class="modal fade" id="messageReactionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Những người đã bày tỏ cảm xúc</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <!-- Container Tab -->
+      <div class="reaction-tabs-container d-flex flex-wrap gap-2 p-2 border-bottom" id="msgReactionTabs">
+          <!-- JS sẽ điền tab vào đây -->
+      </div>
+
+      <!-- Container Danh sách User -->
+      <div class="modal-body" id="msgReactionBody">
+        <!-- JS sẽ điền user vào đây -->
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -1285,6 +1310,103 @@ function scrollToBottom() {
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.msg-actions-group')) document.querySelectorAll('.reaction-popup').forEach(p => p.classList.remove('show'));
 });
+// --- SỬA LẠI ĐOẠN SCRIPT NÀY ---
+
+// 1. Hàm mở Modal
+function showReactionListModal(messageId) {
+    // ĐỔI ID Ở ĐÂY: Dùng modal riêng 'messageReactionModal'
+    const modalEl = document.getElementById('messageReactionModal'); 
+    const modal = new bootstrap.Modal(modalEl);
+    
+    // Reset nội dung
+    const tabsContainer = document.getElementById('msgReactionTabs'); // ID mới
+    const userListContainer = document.getElementById('msgReactionBody'); // ID mới
+    
+    tabsContainer.innerHTML = '';
+    userListContainer.innerHTML = '<div class="text-center p-5"><div class="spinner-border" role="status"></div></div>';
+    
+    modal.show();
+
+    // Gọi API
+    fetch(`/chat/api/message/${messageId}/reactions/`)
+        .then(response => response.json())
+        .then(data => {
+            const allReactions = data.reactions;
+            const counts = data.reaction_counts;
+            const total = allReactions.length;
+
+            // Vẽ Tabs
+            let tabsHtml = `<button class="reaction-tab active" onclick="filterReactions('ALL', this)">Tất cả <span class="badge bg-secondary rounded-pill">${total}</span></button>`;
+            const icons = {'LIKE': '👍', 'LOVE': '❤️', 'HAHA': '😂', 'WOW': '😮', 'SAD': '😢', 'ANGRY': '😡'};
+            
+            for (const [type, count] of Object.entries(counts)) {
+                if (count > 0) {
+                    tabsHtml += `<button class="reaction-tab" onclick="filterReactions('${type}', this)">${icons[type]} <span class="badge bg-secondary rounded-pill">${count}</span></button>`;
+                }
+            }
+            tabsContainer.innerHTML = tabsHtml;
+
+            // Lưu dữ liệu vào dataset của Modal mới
+            modalEl.dataset.reactions = JSON.stringify(allReactions);
+
+            // Vẽ danh sách
+            renderReactionList(allReactions);
+        })
+        .catch(err => {
+            console.error(err);
+            userListContainer.innerHTML = '<p class="text-center text-danger">Lỗi tải dữ liệu.</p>';
+        });
+}
+
+// 2. Hàm vẽ danh sách (Render) - Sửa lại ID container
+function renderReactionList(reactions) {
+    const container = document.getElementById('msgReactionBody'); // ID mới
+    
+    if (reactions.length === 0) {
+        container.innerHTML = '<p class="text-center text-muted p-3">Không có ai bày tỏ cảm xúc này.</p>';
+        return;
+    }
+
+    let html = '<ul class="list-unstyled mb-0">';
+    const icons = {'LIKE': '👍', 'LOVE': '❤️', 'HAHA': '😂', 'WOW': '😮', 'SAD': '😢', 'ANGRY': '😡'};
+
+    reactions.forEach(r => {
+        html += `
+            <li class="d-flex align-items-center mb-3">
+                <a href="${r.profile_url}" class="me-3 position-relative text-decoration-none">
+                    <img src="${r.avatar_url}" class="rounded-circle" width="40" height="40" style="object-fit: cover;">
+                    <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-circle bg-white border border-light p-0" style="font-size: 1rem;">
+                        ${icons[r.reaction_type]}
+                    </span>
+                </a>
+                <div class="flex-grow-1">
+                    <a href="${r.profile_url}" class="text-decoration-none text-dark fw-bold">${r.full_name}</a>
+                </div>
+                ${ r.is_friend ? '<button class="btn btn-secondary btn-sm disabled">Bạn bè</button>' : '' }
+            </li>`;
+    });
+    html += '</ul>';
+    container.innerHTML = html;
+}
+
+// 3. Hàm lọc (Filter) - Sửa lại ID modal
+window.filterReactions = function(type, btn) {
+    // Đổi style active cho tab
+    const container = document.getElementById('msgReactionTabs');
+    container.querySelectorAll('.reaction-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+
+    // Lấy dữ liệu từ Modal mới
+    const modalEl = document.getElementById('messageReactionModal'); // ID mới
+    const allReactions = JSON.parse(modalEl.dataset.reactions || '[]');
+    
+    if (type === 'ALL') {
+        renderReactionList(allReactions);
+    } else {
+        const filtered = allReactions.filter(r => r.reaction_type === type);
+        renderReactionList(filtered);
+    }
+};
 </script>
 {% endblock content %}
 

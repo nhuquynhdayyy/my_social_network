@@ -41,4 +41,5 @@ urlpatterns = [
     path('api/start-conversation/', views.api_start_conversation, name='api_start_conversation'),
     path('api/get-new-messages/<int:conversation_id>/', views.api_get_new_messages, name='api_get_new_messages'),
     path('<int:conversation_id>/delete/', views.delete_conversation_view, name='delete_conversation'),
+    path('api/message/<int:message_id>/reactions/', views.get_message_reactions, name='message_reactions'),
 ]

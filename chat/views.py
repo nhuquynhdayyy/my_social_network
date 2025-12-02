@@ -703,3 +703,42 @@ def delete_conversation_view(request, conversation_id):
         
     messages.success(request, "Đã xóa cuộc trò chuyện.")
     return redirect('chat:conversation_list')
+
+@login_required
+def get_message_reactions(request, message_id):
+    message = get_object_or_404(Message, id=message_id)
+    
+    # Kiểm tra quyền xem (user phải là thành viên cuộc hội thoại)
+    if not message.conversation.participants.filter(id=request.user.id).exists():
+        return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+
+    reactions = message.reactions.all().select_related('user')
+    
+    data = []
+    reaction_counts = {}
+    
+    current_user = request.user
+
+    for reaction in reactions:
+        user = reaction.user
+        reaction_type = reaction.reaction_type
+        
+        reaction_counts[reaction_type] = reaction_counts.get(reaction_type, 0) + 1
+        
+        # Logic kiểm tra bạn bè (để hiện nút nhắn tin nếu cần - ở đây là chat nên có thể không cần nút nhắn tin)
+        is_friend = False
+        # ... (bạn có thể copy logic check friend từ get_reaction_list ở posts/views.py nếu muốn) ...
+
+        data.append({
+            'username': user.username,
+            'full_name': user.get_full_name() or user.username,
+            'avatar_url': user.avatar.url if user.avatar else '/static/images/default.jpg',
+            'profile_url': reverse('accounts:profile', kwargs={'username': user.username}),
+            'reaction_type': reaction_type,
+            'is_friend': is_friend, 
+        })
+        
+    return JsonResponse({
+        'reactions': data,
+        'reaction_counts': reaction_counts
+    })
