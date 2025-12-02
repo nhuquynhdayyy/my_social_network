@@ -66,7 +66,7 @@
     .chat-footer { padding: 12px 16px; border-top: 1px solid #dbdbdb; flex-shrink: 0; }
     
     /* TIN NHẮN & ACTIONS */
-    .msg-row { display: flex; margin-bottom: 8px; align-items: centre; position: relative; }
+    .msg-row { display: flex; margin-bottom: 8px; align-items: center; position: relative; }
     .msg-row:hover .msg-actions-group { opacity: 1; visibility: visible; } 
     .msg-row.sent { flex-direction: row-reverse; }
     
@@ -1051,51 +1051,6 @@ function getCookie(name) {
     document.getElementById('btnDeleteMe').addEventListener('click', function() {
         performDelete('me');
     });
-
-let deleteMsgModal; 
-document.addEventListener('DOMContentLoaded', function() {
-    deleteMsgModal = new bootstrap.Modal(document.getElementById('deleteMessageModal'));
-});
-const btnDeleteEveryone = document.getElementById('btnDeleteEveryone');
-const btnDeleteMe = document.getElementById('btnDeleteMe');
-
-function deleteMessage(messageId) {
-    messageIdToDelete = messageId;
-    const msgElement = document.getElementById(`message-${messageId}`);
-    const isMyMessage = msgElement.classList.contains('justify-content-end');
-    if (isMyMessage) btnDeleteEveryone.style.display = 'block';
-    else btnDeleteEveryone.style.display = 'none';
-    deleteMsgModal.show();
-}
-
-function executeDelete(type) {
-    if (!messageIdToDelete) return;
-    btnDeleteEveryone.disabled = true;
-    btnDeleteMe.disabled = true;
-
-    fetch(`/chat/api/message/delete/${messageIdToDelete}/`, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ delete_type: type })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'ok') {
-            const msgDiv = document.getElementById(`message-${data.message_id}`);
-            if (msgDiv) msgDiv.remove();
-            deleteMsgModal.hide();
-        } else alert('Lỗi: ' + data.message);
-    })
-    .catch(err => console.error(err))
-    .finally(() => {
-        btnDeleteEveryone.disabled = false;
-        btnDeleteMe.disabled = false;
-        messageIdToDelete = null;
-    });
-}
-
-if (btnDeleteEveryone) btnDeleteEveryone.addEventListener('click', () => executeDelete('everyone'));
-if (btnDeleteMe) btnDeleteMe.addEventListener('click', () => executeDelete('me'));
 
 function showEditForm(messageId) { document.getElementById(`edit-form-${messageId}`).style.display = 'block'; }
 function hideEditForm(messageId) { document.getElementById(`edit-form-${messageId}`).style.display = 'none'; }
