@@ -10,17 +10,17 @@
         font-size: 0.65rem;
         color: #aaa;
         margin: 0 8px;
-        opacity: 0; /* Mặc định ẩn */
-        visibility: hidden;
-        transition: opacity 0.2s;
+        opacity: 0; 
+        transition: opacity 0.2s ease-in-out;
         align-self: center;
         white-space: nowrap;
+        min-width: 50px; /* Đảm bảo có chiều rộng để không bị bóp méo */
+        text-align: center;
     }
 
     /* Khi rê chuột vào dòng tin nhắn thì hiện thời gian */
     .msg-row:hover .msg-timestamp {
         opacity: 1;
-        visibility: visible;
     }
 
     .ts-control {
@@ -66,7 +66,7 @@
     .chat-footer { padding: 12px 16px; border-top: 1px solid #dbdbdb; flex-shrink: 0; }
     
     /* TIN NHẮN & ACTIONS */
-    .msg-row { display: flex; margin-bottom: 8px; align-items: flex-end; position: relative; }
+    .msg-row { display: flex; margin-bottom: 8px; align-items: centre; position: relative; }
     .msg-row:hover .msg-actions-group { opacity: 1; visibility: visible; } 
     .msg-row.sent { flex-direction: row-reverse; }
     
@@ -984,7 +984,74 @@ function getCookie(name) {
     return cookieValue;
 }
 
-let messageIdToDelete = null;
+// --- KHAI BÁO BIẾN TOÀN CỤC ĐỂ LƯU ID TIN NHẮN ĐANG CHỌN ---
+    let messageIdToDelete = null;
+    let deleteModalInstance = null;
+
+    // Khởi tạo Modal khi trang tải xong
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalEl = document.getElementById('deleteMessageModal');
+        if (modalEl) {
+            deleteModalInstance = new bootstrap.Modal(modalEl);
+        }
+    });
+
+    // 1. Hàm được gọi khi bấm nút thùng rác nhỏ ở tin nhắn
+    function deleteMsg(msgId) {
+        messageIdToDelete = msgId; // Lưu ID lại
+        
+        // Kiểm tra xem tin nhắn này là của ai để hiện/ẩn nút "Thu hồi"
+        // (Chỉ hiện nút Thu hồi nếu là tin nhắn của chính mình gửi)
+        const msgRow = document.getElementById(`msg-row-${msgId}`);
+        const btnEveryone = document.getElementById('btnDeleteEveryone');
+        
+        if (msgRow && msgRow.classList.contains('sent')) {
+            btnEveryone.style.display = 'block'; // Của mình thì được thu hồi
+        } else {
+            btnEveryone.style.display = 'none'; // Của người khác chỉ được gỡ phía mình
+        }
+
+        // Mở Modal
+        if (deleteModalInstance) deleteModalInstance.show();
+    }
+
+    // 2. Hàm thực thi xóa (Gọi API)
+    function performDelete(type) {
+        if (!messageIdToDelete) return;
+
+        fetch(`/chat/api/message/delete/${messageIdToDelete}/`, {
+            method: 'POST',
+            headers: { 
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ delete_type: type }) // Gửi loại xóa: 'everyone' hoặc 'me'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                // Xóa tin nhắn khỏi giao diện ngay lập tức
+                const row = document.getElementById(`msg-row-${messageIdToDelete}`);
+                if (row) row.remove();
+                
+                // Đóng modal
+                if (deleteModalInstance) deleteModalInstance.hide();
+            } else {
+                alert("Lỗi: " + data.message);
+            }
+        })
+        .catch(err => console.error(err));
+    }
+
+    // 3. Gắn sự kiện cho các nút trong Modal
+    document.getElementById('btnDeleteEveryone').addEventListener('click', function() {
+        performDelete('everyone');
+    });
+
+    document.getElementById('btnDeleteMe').addEventListener('click', function() {
+        performDelete('me');
+    });
+
 let deleteMsgModal; 
 document.addEventListener('DOMContentLoaded', function() {
     deleteMsgModal = new bootstrap.Modal(document.getElementById('deleteMessageModal'));
@@ -1083,13 +1150,6 @@ function reactToMsg(msgId, type) {
             toggleReactionPopup(msgId);
         }
     });
-}
-
-function deleteMsg(msgId) {
-    if(!confirm('Xóa tin nhắn này?')) return;
-    fetch(`/chat/api/message/delete/${msgId}/`, {
-        method: 'POST', headers: {'X-CSRFToken': getCookie('csrftoken')}
-    }).then(res=>res.json()).then(data=>{ if(data.status==='ok') document.getElementById(`msg-row-${msgId}`).remove(); });
 }
 
 function showEdit(msgId) {
