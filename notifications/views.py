@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.contenttypes.models import ContentType
 from django.template.defaultfilters import truncatewords
 from django.contrib.auth import get_user_model
-
+from django.contrib import messages
 from .models import Notification
 from chat.models import Message
 from posts.models import Comment, Post
@@ -181,4 +181,11 @@ def redirect_notification(request, pk):
     if notif.notification_type == 'GROUP_INVITE_REQUEST' and notif.target:
         return redirect('chat:manage_group', conversation_id=notif.target.id)
     
-    return redirect("home")
+    messages.warning(request, "Nội dung này đã bị xóa hoặc không còn tồn tại.")
+    return redirect("posts:home")
+
+@login_required
+def mark_all_as_read(request):
+    # Cập nhật tất cả thông báo của user hiện tại thành đã đọc
+    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    return JsonResponse({'status': 'ok'})

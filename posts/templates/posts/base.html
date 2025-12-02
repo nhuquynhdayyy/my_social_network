@@ -1005,16 +1005,38 @@
             </a>
         </li>
 
-        <!-- === THÊM ĐOẠN NÀY: KHUNG CHỨA DANH SÁCH THÔNG BÁO (BỊ THIẾU) === -->
         <div class="notification-panel" id="notificationPanel">
-            <div class="notification-header">
+            <!-- THÊM CLASS d-flex... ĐỂ DÀN HÀNG NGANG -->
+            <div class="notification-header d-flex justify-content-between align-items-center">
                 <h3>Thông báo</h3>
+                
+                <!-- ĐƯA DROPDOWN VÀO BÊN TRONG HEADER -->
+                <div class="dropdown">
+                    <button class="btn btn-link text-dark p-0 text-decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 1.5rem; line-height: 1;">
+                        <!-- ĐỔI ICON THÀNH 3 CHẤM NGANG -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
+                            <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+                        </svg>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="min-width: 250px;">
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center py-2" href="#" id="btn-mark-all-read">
+                                <svg class="me-2" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span class="fw-bold" style="font-size: 0.9rem;">Đánh dấu tất cả là đã đọc</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
+
             <div class="notification-body custom-scrollbar" id="notificationListBody">
                 <!-- JS sẽ điền thông báo vào đây -->
                 <div class="text-center p-4 text-muted">Đang tải...</div>
             </div>
         </div>
+
            <li>
             <a href="{% url 'accounts:profile' username=user.username %}">
               <img src="{{ user.avatar.url }}" alt="{{ user.username }}" width="24" height="24" class="rounded-circle nav-icon"/>
@@ -1572,6 +1594,44 @@
                 if (notifPanel.classList.contains('show')) {
                     loadNotificationsToPanel();
                 }
+            });
+        }
+
+        // --- B. Xử lý nút "Đánh dấu tất cả là đã đọc" trong Menu 3 chấm ---
+        const btnMarkAllRead = document.getElementById('btn-mark-all-read');
+        if (btnMarkAllRead) {
+            btnMarkAllRead.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                // 1. Gọi API
+                fetch("/notifications/mark-read/")
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // 2. Cập nhật giao diện ngay lập tức mà không cần load lại trang
+                        
+                        // 2.1. Ẩn Badge đỏ ở Sidebar
+                        if (notifBadge) notifBadge.style.display = 'none';
+
+                        // 2.2. Làm sạch giao diện trong bảng thông báo
+                        // Tìm tất cả các dòng có class 'unread' hoặc 'notification-unread' và xóa class đó đi
+                        const unreadItems = document.querySelectorAll('.notif-item.unread, .notification-unread');
+                        unreadItems.forEach(item => {
+                            item.classList.remove('unread');
+                            item.classList.remove('notification-unread');
+                            item.style.backgroundColor = 'transparent'; // Reset màu nền
+                            
+                            // Tìm và ẩn chấm xanh bên trong từng item (nếu có)
+                            const dot = item.querySelector('.notification-dot, span[style*="background:#0866ff"]');
+                            if (dot) dot.style.display = 'none';
+                        });
+
+                        // Đóng dropdown menu (Bootstrap tự xử lý khi click link, nhưng thêm cho chắc)
+                        // Hoặc hiển thị Toast thông báo thành công
+                        // showToast("Đã đánh dấu tất cả là đã đọc.");
+                    }
+                })
+                .catch(err => console.error("Lỗi:", err));
             });
         }
 
