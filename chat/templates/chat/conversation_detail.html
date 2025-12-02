@@ -831,38 +831,60 @@ document.addEventListener('DOMContentLoaded', function() {
     const messageForm = document.getElementById('message-form');
     const csrftoken = getCookie('csrftoken');
 
+    // --- ĐOẠN JS ĐÃ SỬA ĐỂ GỬI FILE ---
     messageForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        const textInput = document.querySelector('[name="text"]');
-        const text = textInput.value;
+        
+        // 1. Dùng FormData để lấy toàn bộ dữ liệu (Text + File)
+        const formData = new FormData(this);
         const url = this.action;
+
+        // Kiểm tra xem có nội dung gì để gửi không (Text hoặc File)
+        const text = formData.get('text');
+        const file = formData.get('file');
+        
+        // Nếu không có text và file rỗng (file.size === 0) thì không gửi
+        if (!text.trim() && (!file || file.size === 0)) return;
 
         fetch(url, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
+                // QUAN TRỌNG: Không được set Content-Type thủ công khi dùng FormData
+                // Browser sẽ tự động set multipart/form-data kèm boundary
                 'X-CSRFToken': csrftoken,
             },
-            body: `text=${encodeURIComponent(text)}`
+            body: formData // Gửi nguyên cục FormData
         })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'ok') {
                 const displayTime = formatSmartTime(data.timestamp);
 
+                // Logic hiển thị file nếu có
+                let fileHtml = '';
+                if (data.file_url) {
+                    if (data.file_type === 'image') {
+                        fileHtml = `<div class="mb-2"><img src="${data.file_url}" class="img-fluid rounded" style="max-height: 200px;"></div>`;
+                    } else if (data.file_type === 'video') {
+                        fileHtml = `<div class="mb-2"><video src="${data.file_url}" controls class="img-fluid rounded" style="max-height: 200px;"></video></div>`;
+                    } else {
+                        fileHtml = `<div class="mb-2"><a href="${data.file_url}" target="_blank" class="text-decoration-underline text-white">📎 File đính kèm</a></div>`;
+                    }
+                }
+
                 const messageHtml = `
                 <div class="msg-row sent" id="msg-row-${data.message_id}">
                     
-                    <!-- Bong bóng tin nhắn -->
                     <div class="msg-bubble" id="msg-bubble-${data.message_id}">
-                        <!-- Nếu có file (ảnh/video) trả về từ API thì xử lý thêm ở đây, tạm thời hiển thị text -->
+                        <!-- Chèn file vào trước text -->
+                        ${fileHtml}
+                        
                         <span class="msg-text-content">${data.text}</span>
 
-                        <!-- Hiển thị Reaction (mặc định ẩn) -->
                         <div id="reaction-display-${data.message_id}" class="msg-reaction-display d-none"></div>
                     </div>
 
-                    <!-- Hộp thoại Sửa tin nhắn (mặc định ẩn) -->
+                    <!-- Giữ nguyên phần Edit Box và Actions Group như cũ -->
                     <div class="edit-box" id="edit-box-${data.message_id}">
                         <textarea id="edit-input-${data.message_id}" rows="2">${data.text}</textarea>
                         <div class="d-flex justify-content-end mt-1 gap-1">
@@ -871,11 +893,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
 
-                    <!-- Nhóm nút hành động (Mặt cười, Sửa, Xóa) -->
                     <div class="msg-actions-group">
                         <div class="position-relative">
                             <button class="btn-action-tiny" onclick="toggleReactionPopup('${data.message_id}')">☺</button>
-                            <!-- Popup Emoji -->
                             <div class="reaction-popup" id="reaction-popup-${data.message_id}">
                                 <button class="reaction-btn" onclick="reactToMsg('${data.message_id}', 'LOVE')">❤️</button>
                                 <button class="reaction-btn" onclick="reactToMsg('${data.message_id}', 'HAHA')">😂</button>
@@ -890,13 +910,27 @@ document.addEventListener('DOMContentLoaded', function() {
                         <button class="btn-action-tiny text-danger" onclick="deleteMsg('${data.message_id}')">🗑</button>
                     </div>
 
+                    <div class="msg-timestamp">
+                        ${formatSmartTime(data.timestamp)}
+                    </div>
+
                 </div>`;
                 
                 messageContainer.insertAdjacentHTML('beforeend', messageHtml);
-                textInput.value = '';
+                
+                // Reset form sau khi gửi thành công
+                messageForm.reset(); 
+                
+                // Ẩn vùng xem trước file (nếu bạn có code hiển thị tên file khi chọn)
+                const filePreview = document.getElementById('file-preview-container');
+                if(filePreview) filePreview.classList.add('d-none');
+
                 messageContainer.scrollTop = messageContainer.scrollHeight; 
+            } else {
+                alert("Lỗi: " + data.message);
             }
-        });
+        })
+        .catch(err => console.error(err));
     });
 });
 

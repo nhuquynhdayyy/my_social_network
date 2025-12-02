@@ -319,7 +319,7 @@ def conversation_detail_view(request, conversation_id):
 def send_message_api(request, conversation_id):
     if request.method == 'POST':
         conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
-        form = MessageForm(request.POST)
+        form = MessageForm(request.POST, request.FILES)
         if form.is_valid():
             message = form.save(commit=False)
             message.conversation = conversation
