@@ -4,7 +4,7 @@
   <div class="row">
     <div class="col-md-10 offset-md-1">
       <!-- Cover Photo -->
-      <div class="card shadow-sm">
+      <div class="card shadow-sm mb-4">
         <img
           src="{{ profile_user.cover_photo.url }}"
           class="card-img-top"
@@ -101,6 +101,84 @@
           </ul>
         </div>
       </div>
+
+      <!-- === BẮT ĐẦU: KHỐI VIẾT BÀI MỚI (Chỉ hiện ở trang của chính mình) === -->
+      {% if user.is_authenticated and user == profile_user %}
+      <div class="card shadow-sm mb-4">
+          <div class="card-body d-flex align-items-center">
+              <!-- Avatar nhỏ -->
+              <a href="{% url 'accounts:profile' username=user.username %}">
+                  <img src="{{ user.avatar.url }}" class="rounded-circle me-2 border" width="40" height="40" style="object-fit: cover;">
+              </a>
+              
+              <!-- Dòng chữ chào -->
+              <div class="flex-grow-1 me-3 text-muted">
+                  Chào <strong>{{ user.last_name }}</strong>, bạn đang nghĩ gì?
+              </div>
+
+              <!-- Nút mở Modal -->
+              <button class="btn btn-primary fw-bold rounded-pill" data-bs-toggle="modal" data-bs-target="#createPostModal">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square me-1" viewBox="0 0 16 16">
+                      <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                      <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                  </svg>
+                  Viết bài mới
+              </button>
+          </div>
+      </div>
+
+      <!-- MODAL TẠO BÀI VIẾT (Copy từ trang chủ sang để dùng được ở đây) -->
+      <div class="modal fade" id="createPostModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title fw-bold">Tạo bài viết mới</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                      <!-- Form gửi dữ liệu -->
+                      <!-- action để trống hoặc trỏ về post_create, nhưng cần thêm logic xử lý redirect. 
+                          Để đơn giản, ta trỏ về url tạo post và dùng logic mặc định -->
+                      <form method="post" action="{% url 'posts:post_create' %}?next={{ request.path }}" enctype="multipart/form-data">
+                          {% csrf_token %}
+                          
+                          <div class="d-flex align-items-center mb-3">
+                              <img src="{{ user.avatar.url }}" class="rounded-circle me-2" width="40" height="40" style="object-fit: cover;">
+                              <span class="fw-bold">{{ user.username }}</span>
+                          </div>
+
+                          <div class="mb-3">
+                              <!-- Render trường Content của form -->
+                              {{ post_form.content }} 
+                              <!-- Bạn có thể thêm class bootstrap cho form ở forms.py hoặc dùng widget_tweaks -->
+                          </div>
+
+                          <div class="mb-3">
+                              <label class="form-label fw-bold small">Thêm vào bài viết</label>
+                              <div class="border rounded p-2 d-flex justify-content-between align-items-center">
+                                  <span class="text-muted small">Ảnh/Video</span>
+                                  <!-- Render trường Media (File) -->
+                                  <!-- Lưu ý: Trong form của bạn cần có field cho file, nếu dùng multi-upload cần chỉnh input này -->
+                                  <input type="file" name="media_files" multiple class="form-control form-control-sm w-50"> 
+                              </div>
+                          </div>
+                          
+                          <div class="mb-3">
+                              <label class="form-label fw-bold small">Quyền riêng tư</label>
+                              {{ post_form.privacy }}
+                          </div>
+
+                          <div class="d-grid">
+                              <button type="submit" class="btn btn-primary fw-bold">Đăng</button>
+                          </div>
+                      </form>
+                  </div>
+              </div>
+          </div>
+      </div>
+      {% endif %}
+      <!-- === KẾT THÚC KHỐI VIẾT BÀI MỚI === -->
+
       <!-- === HIỂN THỊ BÀI VIẾT === -->
       <h3 class="mb-3">Bài viết</h3>
 

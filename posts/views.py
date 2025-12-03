@@ -17,6 +17,7 @@ from django.views.decorators.http import require_POST
 from django.contrib.contenttypes.models import ContentType
 from django.template.loader import render_to_string
 from notifications.models import Notification
+from django.urls import reverse_lazy
 
 class HomePageView(ListView):
     model = Post
@@ -114,7 +115,6 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
     form_class = PostCreateForm
     template_name = 'posts/post_form.html'
-    success_url = reverse_lazy('posts:home')
 
     def form_valid(self, form):
         form.instance.author = self.request.user
@@ -123,6 +123,17 @@ class PostCreateView(LoginRequiredMixin, CreateView):
             media_type = 'IMAGE' if 'image' in file.content_type else 'VIDEO'
             PostMedia.objects.create(post=self.object, file=file, media_type=media_type)
         return response
+    
+    def get_success_url(self):
+        # 1. Kiểm tra xem trên URL submit có tham số 'next' không
+        next_url = self.request.GET.get('next')
+        
+        # 2. Nếu có 'next', chuyển hướng về đó
+        if next_url:
+            return next_url
+            
+        # 3. Nếu không có (mặc định), quay về trang chủ
+        return reverse_lazy('posts:home')
     
 class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Post

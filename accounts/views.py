@@ -21,6 +21,7 @@ from django.http import HttpResponse
 from .tokens import account_activation_token 
 from django.contrib import messages
 from django.contrib.auth.tokens import default_token_generator
+from posts.forms import PostCreateForm
 
 class SignUpView(CreateView):
     form_class = CustomUserCreationForm
@@ -95,6 +96,7 @@ class ProfileView(DetailView):
                         privacy__in=['PUBLIC', 'FRIENDS']
                     )
 
+        context['post_form'] = PostCreateForm() 
         context['posts'] = queryset.order_by('-created_at')
 
         # === 2. LOGIC KIỂM TRA TRẠNG THÁI BẠN BÈ ĐỂ HIỂN THỊ NÚT (THÊM MỚI ĐOẠN NÀY) ===
