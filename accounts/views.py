@@ -9,16 +9,62 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 from notifications.models import Notification 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
-# ĐÃ SỬA: Bỏ FriendRequest khỏi dòng import dưới đây
 from .models import User, Friendship 
 from posts.models import Post, Reaction, Comment 
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.shortcuts import get_current_site
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
+from django.http import HttpResponse
+from .tokens import account_activation_token 
 
 class SignUpView(CreateView):
-    # ... (Giữ nguyên phần còn lại của file không thay đổi) ...
     form_class = CustomUserCreationForm
-    success_url = reverse_lazy('accounts:login') 
+    # success_url không còn quan trọng ở đây vì ta sẽ override form_valid
     template_name = 'accounts/register.html'
+
+    def form_valid(self, form):
+        # Lưu user nhưng chưa commit vào DB để chỉnh sửa
+        user = form.save(commit=False)
+        user.is_active = False # Vô hiệu hóa tài khoản
+        user.save() # Lưu user vào DB với is_active=False
+
+        # Gửi email xác thực
+        current_site = get_current_site(self.request)
+        mail_subject = 'Kích hoạt tài khoản của bạn.'
+        message = render_to_string('accounts/acc_active_email.html', {
+            'user': user,
+            'domain': current_site.domain,
+            'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+            'token': account_activation_token.make_token(user),
+        })
+        to_email = form.cleaned_data.get('email')
+        email = EmailMessage(
+            mail_subject, message, to=[to_email]
+        )
+        email.send()
+
+        # Trả về trang thông báo yêu cầu check mail
+        return render(self.request, 'accounts/email_sent_confirm.html')
+
+def activate(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except(TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    
+    if user is not None and account_activation_token.check_token(user, token):
+        user.is_active = True
+        user.save()
+        # Tùy chọn: Login luôn cho người dùng
+        # login(request, user) 
+        # return redirect('home')
+        return render(request, 'accounts/activation_complete.html') # Trang báo thành công
+    else:
+        return HttpResponse('Link kích hoạt không hợp lệ hoặc đã hết hạn!')
 
 class ProfileView(DetailView):
     model = User

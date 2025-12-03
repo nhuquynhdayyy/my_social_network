@@ -1,0 +1,8 @@
+{% extends "posts/base.html" %}
+{% block content %}
+<div class="container mt-5 text-center">
+    <h3 class="text-success">Kích hoạt tài khoản thành công!</h3>
+    <p>Tài khoản của bạn đã có thể sử dụng.</p>
+    <a href="{% url 'accounts:login' %}" class="btn btn-primary">Đăng nhập ngay</a>
+</div>
+{% endblock %}
