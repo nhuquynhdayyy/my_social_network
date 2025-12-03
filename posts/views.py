@@ -145,10 +145,6 @@ class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def get_success_url(self):
         return reverse_lazy('posts:home')
 
-# ... Các view hàm khác giữ nguyên như cũ ...
-# (react_to_post, reaction_detail, add_comment, v.v...)
-# ... (Phần code còn lại của bạn giữ nguyên)
-# ...
 @login_required
 @require_POST
 def react_to_post(request, post_id):
@@ -190,7 +186,7 @@ def react_to_post(request, post_id):
                 existing_reaction.reaction_type = reaction_type
                 existing_reaction.save()
                 current_user_reaction = reaction_type
-                # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO KHI THAY ĐỔI REACTION (Code gốc của bạn - Đã giữ lại) ===
+                # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO KHI THAY ĐỔI REACTION ===
                 if viewer != author:
                     Notification.objects.create(
                         recipient=author, sender=viewer, notification_type='POST_REACTION',
@@ -253,7 +249,7 @@ def reaction_detail(request, pk):
 def add_comment(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     
-    # === KIỂM TRA QUYỀN BÌNH LUẬN (Giữ nguyên logic của bạn) ===
+    # === KIỂM TRA QUYỀN BÌNH LUẬN ===
     viewer = request.user
     author = post.author
     can_comment = False
@@ -292,7 +288,7 @@ def add_comment(request, post_id):
         parent=parent_comment
     )
 
-    # === TẠO THÔNG BÁO (Giữ nguyên logic của bạn) ===
+    # === TẠO THÔNG BÁO ===
     if request.user != post.author:
         Notification.objects.create(
             recipient=post.author,
@@ -385,7 +381,6 @@ def react_to_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     post = comment.post
     
-    # ... (Phần kiểm tra quyền giữ nguyên như cũ) ...
     viewer = request.user
     author = post.author
     can_react = False
@@ -421,7 +416,7 @@ def react_to_comment(request, comment_id):
             existing_reaction.reaction_type = reaction_type
             existing_reaction.save()
             current_user_reaction = reaction_type
-            # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO KHI THAY ĐỔI REACTION (Code gốc của bạn - Đã giữ lại) ===
+            # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO KHI THAY ĐỔI REACTION ===
             if viewer != comment.author:
                 Notification.objects.create(
                     recipient=comment.author, sender=viewer, notification_type='COMMENT_REACTION',
@@ -598,7 +593,7 @@ def get_comment_reactions(request, comment_id):
         conversation_id = None
         
         if current_user.is_authenticated and current_user != user:
-            # Logic kiểm tra bạn bè (tùy chỉnh theo model của bạn)
+            # Logic kiểm tra bạn bè 
             if Friendship.objects.filter(
                 (Q(from_user=current_user, to_user=user) | Q(from_user=user, to_user=current_user)),
                 status='ACCEPTED'
@@ -611,7 +606,7 @@ def get_comment_reactions(request, comment_id):
             'username': user.username,
             'full_name': user.get_full_name(),
             'avatar_url': user.avatar.url,
-            'profile_url': f"/user/{user.username}/", # Sửa lại url profile cho đúng với dự án của bạn
+            'profile_url': f"/user/{user.username}/", 
             'reaction_type': reaction_type,
             'is_friend': is_friend,
             'conversation_id': conversation_id, # Cần thiết nếu muốn nút nhắn tin hoạt động

@@ -46,7 +46,6 @@ class Message(models.Model):
     text = models.TextField(blank=True, null=True) 
     # === THÊM TRƯỜNG FILE ===
     file = models.FileField(upload_to='chat_files/', blank=True, null=True)
-    # ========================
 
     timestamp = models.DateTimeField(auto_now_add=True)
     reactions = GenericRelation('posts.Reaction')

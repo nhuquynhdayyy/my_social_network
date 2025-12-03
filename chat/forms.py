@@ -9,7 +9,7 @@ User = get_user_model()
 class MessageForm(forms.ModelForm):
     class Meta:
         model = Message
-        fields = ['text', 'file'] # Thêm 'file'
+        fields = ['text', 'file'] 
         widgets = {
             'text': forms.TextInput(attrs={
                 'class': 'form-control',

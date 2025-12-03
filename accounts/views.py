@@ -24,7 +24,6 @@ from django.contrib.auth.tokens import default_token_generator
 
 class SignUpView(CreateView):
     form_class = CustomUserCreationForm
-    # success_url không còn quan trọng ở đây vì ta sẽ override form_valid
     template_name = 'accounts/register.html'
 
     def form_valid(self, form):
@@ -61,9 +60,6 @@ def activate(request, uidb64, token):
     if user is not None and account_activation_token.check_token(user, token):
         user.is_active = True
         user.save()
-        # Tùy chọn: Login luôn cho người dùng
-        # login(request, user) 
-        # return redirect('home')
         return render(request, 'accounts/activation_complete.html') # Trang báo thành công
     else:
         return HttpResponse('Link kích hoạt không hợp lệ hoặc đã hết hạn!')
@@ -180,7 +176,7 @@ class UserListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         
-        # --- Logic xác định trạng thái bạn bè (Giữ nguyên code cũ của bạn) ---
+        # --- Logic xác định trạng thái bạn bè ---
         friends_q = Friendship.objects.filter(
             (Q(from_user=user) | Q(to_user=user)) & Q(status='ACCEPTED')
         )
@@ -200,7 +196,7 @@ class UserListView(LoginRequiredMixin, ListView):
         context['sent_request_ids'] = sent_request_ids
         context['received_request_ids'] = received_request_ids
         
-        # --- THÊM: Truyền từ khóa tìm kiếm ra template để giữ lại trong ô input ---
+        # --- Truyền từ khóa tìm kiếm ra template để giữ lại trong ô input ---
         context['query'] = self.request.GET.get('q', '') 
         
         return context
@@ -302,7 +298,6 @@ def forgot_password(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         
-        # Dùng User được import từ .models hoặc get_user_model() đều được
         if User.objects.filter(email=email).exists():
             user = User.objects.get(email__exact=email)
 
@@ -322,11 +317,9 @@ def forgot_password(request):
             send_email.send()
 
             messages.success(request, 'Vui lòng kiểm tra email để đặt lại mật khẩu.')
-            # Sửa redirect: thêm 'accounts:'
             return redirect('accounts:login') 
         else:
             messages.error(request, 'Email không tồn tại trong hệ thống!')
-            # Sửa redirect: thêm 'accounts:'
             return redirect('accounts:forgotPassword')
 
     return render(request, 'accounts/forgot_password.html')
@@ -341,11 +334,9 @@ def reset_password_validate(request, uidb64, token):
     if user is not None and default_token_generator.check_token(user, token):
         request.session['uid'] = uid
         messages.success(request, 'Xác thực thành công, vui lòng nhập mật khẩu mới.')
-        # Sửa redirect: thêm 'accounts:'
         return redirect('accounts:reset_password')
     else:
         messages.error(request, 'Đường dẫn đã hết hạn hoặc không hợp lệ!')
-        # Sửa redirect: thêm 'accounts:'
         return redirect('accounts:forgotPassword')
 
 def reset_password(request):

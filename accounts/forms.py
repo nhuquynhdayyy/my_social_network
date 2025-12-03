@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import User
 
 class CustomUserCreationForm(UserCreationForm):
@@ -28,3 +28,20 @@ class CustomUserChangeForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['username'].disabled = True
+
+class UserLoginForm(AuthenticationForm):
+    def __init__(self, *args, **kwargs):
+        super(UserLoginForm, self).__init__(*args, **kwargs)
+        
+        # Sửa nhãn (Label) hiển thị
+        self.fields['username'].label = "Tên đăng nhập hoặc Email"
+        
+        # (Tùy chọn) Thêm class CSS cho đẹp nếu muốn
+        self.fields['username'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Nhập username hoặc email của bạn'
+        })
+        self.fields['password'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Nhập mật khẩu'
+        })

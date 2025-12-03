@@ -1,5 +1,6 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
+from .forms import UserLoginForm 
 from .views import (
     SignUpView, activate, ProfileView, ProfileUpdateView, ProfileDeleteView,
     UserListView, add_friend, 
@@ -14,7 +15,10 @@ app_name = 'accounts'
 urlpatterns = [
     path('register/', SignUpView.as_view(), name='register'),
     path('activate/<uidb64>/<token>/', activate, name='activate'),
-    path('login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
+    path('login/', auth_views.LoginView.as_view(
+        template_name='accounts/login.html',
+        authentication_form=UserLoginForm  
+    ), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('users/', UserListView.as_view(), name='user_list'),
 

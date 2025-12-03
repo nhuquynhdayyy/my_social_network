@@ -1989,11 +1989,8 @@
                 deleteCommentModal.show();
             }
 
-            // ... (Giữ nguyên các logic khác như reply-btn, edit-comment-btn, v.v...) ...
              if (event.target.classList.contains('reply-btn')) {
-                 // ... code cũ giữ nguyên ...
              }
-             // ...
         });
 
         // --- 2. KHI BẤM NÚT "XÓA" TRONG MODAL (GỌI API) ---
@@ -2353,7 +2350,6 @@
             .catch(err => console.error("Lỗi gửi tin nhắn:", err));
         });
         
-        // ... (Phần code tìm kiếm người dùng và gửi tin nhắn giữ nguyên)
         let searchTimeout;
         searchInput.addEventListener("keyup", function () {
             clearTimeout(searchTimeout);

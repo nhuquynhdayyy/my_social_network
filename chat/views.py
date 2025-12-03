@@ -665,7 +665,7 @@ def api_get_new_messages(request, conversation_id):
     for msg in new_messages:
         # Format thời gian
         local_ts = timezone.localtime(msg.timestamp)
-        formatted_ts = local_ts.strftime('%H:%M, %d-%m-%Y') # Hoặc format theo ý bạn
+        formatted_ts = local_ts.strftime('%H:%M, %d-%m-%Y') 
 
         file_url = msg.file.url if msg.file else None
         file_type = None
@@ -725,9 +725,7 @@ def get_message_reactions(request, message_id):
         
         reaction_counts[reaction_type] = reaction_counts.get(reaction_type, 0) + 1
         
-        # Logic kiểm tra bạn bè (để hiện nút nhắn tin nếu cần - ở đây là chat nên có thể không cần nút nhắn tin)
         is_friend = False
-        # ... (bạn có thể copy logic check friend từ get_reaction_list ở posts/views.py nếu muốn) ...
 
         data.append({
             'username': user.username,
