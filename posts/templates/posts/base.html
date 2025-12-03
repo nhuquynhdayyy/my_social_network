@@ -1787,7 +1787,7 @@
                 // 1. Cập nhật số lượng tin chưa đọc (Badge đỏ)
                 if (data.total_unread > 0) {
                     notifBadge.innerText = data.total_unread;
-                    notifBadge.style.display = 'inline-block';
+                    notifBadge.style.display = 'flex';
                 } else {
                     notifBadge.style.display = 'none';
                 }
@@ -1834,7 +1834,7 @@
                     fetch("/notifications/api/").then(r=>r.json()).then(d => {
                         if(d.total_unread > 0) {
                             notifBadge.innerText = d.total_unread;
-                            notifBadge.style.display = 'inline-block';
+                            notifBadge.style.display = 'flex';
                         } else {
                             notifBadge.style.display = 'none';
                         }
@@ -1884,55 +1884,92 @@
                     body: JSON.stringify({ reaction_type: reactionType }),
                 })
                 .then((res) => res.json())
-                // THAY BẰNG ĐOẠN NÀY
                 .then((data) => {
-                    if (data.status === "ok") {
-                        updateReactionStatsUI(postId, data.reaction_stats, data.total_reactions);
+                if (data.status === "ok") {
+                    updateReactionStatsUI(postId, data.reaction_stats, data.total_reactions);
 
-                        // Tìm nút Thích chính của bài viết này
-                        const mainPostReactionButton = document.querySelector(`.reaction-btn[data-post-id='${postId}'].w-100`);
+                    // --- SỬA Ở ĐÂY: Dùng querySelectorAll để lấy TẤT CẢ các nút của bài viết này (cả trong modal và ngoài list) ---
+                    const allPostButtons = document.querySelectorAll(`.reaction-btn[data-post-id='${postId}']`);
 
-                        if (mainPostReactionButton) {
+                    allPostButtons.forEach(btn => {
+                        // Kiểm tra xem nút này có phải là nút nằm trong popup chọn icon không (để tránh sửa nhầm nút bé trong popup)
+                        // Nếu nút có class 'reaction-btn' và KHÔNG nằm trong 'post-reaction-popup' thì mới sửa text/màu
+                        if (!btn.closest('.post-reaction-popup')) {
+                            
                             if (data.current_user_reaction) {
-                                // === TRƯỜNG HỢP 1: ĐANG CÓ REACTION (Vừa thả tim xong) ===
+                                // === TRƯỜNG HỢP 1: ĐANG CÓ REACTION ===
                                 
-                                // 1. Cập nhật giao diện (Màu sắc, Icon)
-                                mainPostReactionButton.classList.add('text-primary', 'fw-bold');
+                                // Thêm class active (để tô màu)
+                                btn.classList.add('text-primary', 'fw-bold', 'reaction-active'); // Thêm reaction-active để hỗ trợ CSS tùy chỉnh
                                 
                                 // Cập nhật text và icon tương ứng
-                                let reactionText = '👍 Thích';
-                                if (data.current_user_reaction === 'LIKE') reactionText = '<span class="reaction-icon-liked">👍</span> Thích';
-                                else if (data.current_user_reaction === 'LOVE') reactionText = '<span class="reaction-icon-loved">❤️</span> Yêu thích';
-                                else if (data.current_user_reaction === 'HAHA') reactionText = '<span class="reaction-icon-haha">😂</span> Haha';
-                                else if (data.current_user_reaction === 'WOW') reactionText = '<span class="reaction-icon-wow">😮</span> Wow';
-                                else if (data.current_user_reaction === 'SAD') reactionText = '<span class="reaction-icon-sad">😢</span> Buồn';
-                                else if (data.current_user_reaction === 'ANGRY') reactionText = '<span class="reaction-icon-angry">😡</span> Phẫn nộ';
-                                mainPostReactionButton.innerHTML = reactionText;
+                                let reactionIconHtml = '';
+                                // Logic chọn icon
+                                if (data.current_user_reaction === 'LIKE') reactionIconHtml = '<span class="reaction-icon-liked">👍</span>';
+                                else if (data.current_user_reaction === 'LOVE') reactionIconHtml = '<span class="reaction-icon-loved">❤️</span>';
+                                else if (data.current_user_reaction === 'HAHA') reactionIconHtml = '<span class="reaction-icon-haha">😂</span>';
+                                else if (data.current_user_reaction === 'WOW') reactionIconHtml = '<span class="reaction-icon-wow">😮</span>';
+                                else if (data.current_user_reaction === 'SAD') reactionIconHtml = '<span class="reaction-icon-sad">😢</span>';
+                                else if (data.current_user_reaction === 'ANGRY') reactionIconHtml = '<span class="reaction-icon-angry">😡</span>';
 
-                                // 2. CẬP NHẬT LOGIC (QUAN TRỌNG NHẤT)
-                                // Gán loại reaction hiện tại vào nút. Để lần sau bấm vào, nó gửi đúng loại này lên server để hủy.
-                                mainPostReactionButton.dataset.reactionType = data.current_user_reaction; 
+                                // Kiểm tra xem nút này là nút to có chữ (ở trang chủ) hay nút chỉ có icon (ở modal)
+                                // Cách đơn giản: Nếu nút đang có text "Thích" hoặc "Yêu thích"... thì cập nhật cả chữ.
+                                // Nếu nút rỗng hoặc chỉ có icon (trong modal ta đã xóa text), ta chỉ cập nhật icon.
+                                
+                                if (btn.innerText.trim().length > 0) {
+                                    // Nút ở trang chủ (có chữ)
+                                    let reactionTextLabel = 'Thích';
+                                    if (data.current_user_reaction === 'LOVE') reactionTextLabel = 'Yêu thích';
+                                    else if (data.current_user_reaction === 'HAHA') reactionTextLabel = 'Haha';
+                                    else if (data.current_user_reaction === 'WOW') reactionTextLabel = 'Wow';
+                                    else if (data.current_user_reaction === 'SAD') reactionTextLabel = 'Buồn';
+                                    else if (data.current_user_reaction === 'ANGRY') reactionTextLabel = 'Phẫn nộ';
+                                    
+                                    btn.innerHTML = `${reactionIconHtml} ${reactionTextLabel}`;
+                                } else {
+                                    // Nút trong Modal (chỉ có icon) -> Chỉ cập nhật icon
+                                    btn.innerHTML = reactionIconHtml;
+                                }
+
+                                // Gán loại reaction hiện tại vào dataset
+                                btn.dataset.reactionType = data.current_user_reaction; 
 
                             } else {
-                                // === TRƯỜNG HỢP 2: ĐÃ HỦY REACTION (Về trạng thái ban đầu) ===
+                                // === TRƯỜNG HỢP 2: ĐÃ HỦY REACTION (UNLIKE) ===
                                 
-                                mainPostReactionButton.classList.remove('text-primary', 'fw-bold');
+                                btn.classList.remove('text-primary', 'fw-bold', 'reaction-active');
                                 
-                                // Trả về icon SVG xám
-                                mainPostReactionButton.innerHTML = `
+                                // 1. Icon TRÁI TIM RỖNG (Dành cho Modal)
+                                const modalHeartIcon = `
+                                    <svg aria-label="Like" class="x1lliihq x1n2onr6" color="rgb(0, 0, 0)" fill="rgb(0, 0, 0)" height="24" role="img" viewBox="0 0 24 24" width="24">
+                                        <title>Like</title>
+                                        <path d="M16.792 3.904A4.989 4.989 0 0 1 21.5 9.122c0 3.072-2.652 4.959-5.197 7.222-2.512 2.243-3.865 3.469-4.303 3.752-.477-.309-2.143-1.823-4.303-3.752C5.141 14.072 2.5 12.167 2.5 9.122a4.989 4.989 0 0 1 4.708-5.218 4.21 4.21 0 0 1 3.675 1.941c.84 1.175.98 1.763 1.12 1.763s.278-.588 1.11-1.766a4.17 4.17 0 0 1 3.679-1.938m0-2a6.04 6.04 0 0 0-4.797 2.127 6.052 6.052 0 0 0-4.787-2.127A6.985 6.985 0 0 0 .5 9.122c0 3.61 2.55 5.827 5.015 7.97.283.246.569.494.853.747l1.027.918a44.998 44.998 0 0 0 3.518 3.018 2 2 0 0 0 2.174 0 45.263 45.263 0 0 0 3.626-3.115l.922-.824c.293-.26.59-.519.885-.774 2.334-2.025 4.98-4.32 4.98-7.94a6.985 6.985 0 0 0-6.708-7.218Z"></path>
+                                    </svg>`;
+
+                                // 2. Icon LIKE NGÓN TAY CÁI (Dành cho Trang chủ)
+                                const homeLikeIcon = `
                                     <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="interactive-icon">
                                         <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                                    </svg>
-                                    Thích`;
+                                    </svg>`;
 
-                                // Reset logic về mặc định là LIKE (để bấm lần tới là Like)
-                                mainPostReactionButton.dataset.reactionType = 'LIKE';
+                                // --- SỬA Ở ĐÂY: Dùng class để phân biệt chính xác ---
+                                // Nếu nút có class 'btn-interactive' (là class của nút ở trang chủ)
+                                if (btn.classList.contains('btn-interactive')) {
+                                    btn.innerHTML = `${homeLikeIcon} Thích`;
+                                } else {
+                                    // Nút ở Modal không có class btn-interactive -> Dùng tim rỗng
+                                    btn.innerHTML = modalHeartIcon;
+                                }
+
+                                // Reset logic về mặc định là LIKE
+                                btn.dataset.reactionType = 'LIKE';
                             }
                         }
-                    } else {
-                        alert(data.message || "Có lỗi xảy ra.");
-                    }
-                })
+                    });
+                } else {
+                    alert(data.message || "Có lỗi xảy ra.");
+                }
+            })
                 .catch((err) => console.error("Error:", err));
             }
         });
