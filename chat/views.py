@@ -260,6 +260,8 @@ def start_conversation_view(request, user_id):
 @login_required
 def conversation_detail_view(request, conversation_id):
     conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+    # Lấy danh sách tất cả cuộc hội thoại của user để hiển thị bên sidebar trái
+    conversations = Conversation.objects.filter(participants=request.user).order_by('-last_message__timestamp')
     other_participant = None
     if conversation.type == 'PRIVATE':
         other_participant = conversation.participants.exclude(id=request.user.id).first()
@@ -296,6 +298,7 @@ def conversation_detail_view(request, conversation_id):
 
     context = {
         'conversation': conversation,
+        'conversations': conversations,
         'chat_messages': messages,
         'form': form,
         'other_participant': other_participant,
@@ -666,7 +669,6 @@ def api_get_new_messages(request, conversation_id):
         # Format thời gian
         local_ts = timezone.localtime(msg.timestamp)
         formatted_ts = local_ts.strftime('%H:%M, %d-%m-%Y') 
-
         file_url = msg.file.url if msg.file else None
         file_type = None
         if msg.file:

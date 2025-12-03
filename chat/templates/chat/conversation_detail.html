@@ -194,8 +194,43 @@
         <div class="search-bar-container" id="chat-search-bar">
             <input type="text" id="filter-conv-input" placeholder="Tìm người hoặc nhóm...">
         </div>
-        <div class="conv-list-container" id="js-conv-list">
-             <div class="text-center mt-3"><div class="spinner-border spinner-border-sm"></div></div>
+        <div class="conv-list-container" id="conversation-list-wrapper">
+            {% for conv in conversations %}
+                <!-- Thêm class 'active' nếu đây là cuộc trò chuyện đang mở -->
+                <a href="{% url 'chat:conversation_detail' conv.id %}" class="conv-item {% if conv.id == conversation.id %}active{% endif %}">
+                    
+                    {% if conv.type == 'GROUP' %}
+                        <!-- Hiển thị cho Nhóm -->
+                        <img src="{{ conv.avatar.url }}" class="conv-avatar" alt="Group">
+                        <div class="conv-info">
+                            <div class="conv-name">{{ conv.name }}</div>
+                            <div class="conv-last">
+                                {% if conv.last_message %}
+                                    {% if conv.last_message.sender == request.user %}Bạn: {% endif %}{{ conv.last_message.text|default:"File đính kèm" }}
+                                {% else %}Nhóm mới{% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Hiển thị cho Cá nhân -->
+                        {% for participant in conv.participants.all %}
+                            {% if participant != request.user %}
+                                <img src="{{ participant.avatar.url }}" class="conv-avatar" alt="{{ participant.username }}">
+                                <div class="conv-info">
+                                    <!-- LẤY HỌ TÊN THAY VÌ USERNAME -->
+                                    <div class="conv-name">{{ participant.first_name }} {{ participant.last_name }}</div>
+                                    <div class="conv-last">
+                                        {% if conv.last_message %}
+                                            {% if conv.last_message.sender == request.user %}Bạn: {% endif %}{{ conv.last_message.text|default:"File đính kèm" }}
+                                        {% else %}Bắt đầu trò chuyện{% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </a>
+            {% empty %}
+                <div class="text-center mt-3 text-muted small">Chưa có tin nhắn nào.</div>
+            {% endfor %}
         </div>
     </div>
 
@@ -741,56 +776,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('right-sidebar');
     toggleBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
-    // 2. Load List Chat
-    const currentConvId = "{{ conversation.id }}";
-    let allConversations = [];
-    
-    function renderList(list) {
-        const listEl = document.getElementById('js-conv-list');
-        listEl.innerHTML = '';
-        if(list.length === 0) { listEl.innerHTML = '<p class="text-center text-muted mt-3 small">Không tìm thấy.</p>'; return; }
-        list.forEach(conv => {
-            const isActive = (conv.conversation_id == currentConvId) ? 'active' : '';
-            listEl.innerHTML += `
-                <a href="${conv.detail_url}" class="conv-item ${isActive}">
-                    <img src="${conv.avatar_url}" class="conv-avatar">
-                    <div class="conv-info">
-                        <div class="conv-name">${conv.name}</div>
-                        <div class="conv-last">${conv.last_message || '...'}</div>
-                    </div>
-                </a>
-            `;
-        });
-    }
-
-    fetch("{% url 'chat:api_get_conversations' %}")
-    .then(res => {
-        if (!res.ok) {
-            throw new Error('Lỗi mạng hoặc lỗi Server (500)');
-        }
-        return res.json();
-    })
-    .then(data => {
-        allConversations = data.conversations;
-        renderList(allConversations);
-    })
-    .catch(error => {
-        console.error('Lỗi tải danh sách chat:', error);
-        // Tắt vòng xoay và hiện thông báo lỗi
-        const listEl = document.getElementById('js-conv-list');
-        listEl.innerHTML = '<p class="text-center text-danger mt-3 small">Lỗi tải danh sách.</p>';
-    });
-
-    // 3. Search Chat (Left Sidebar)
+    // 3. Search Chat (Left Sidebar) - Đã sửa để lọc trực tiếp HTML
     const toggleSearchBtn = document.getElementById('toggle-search-btn');
     const searchBar = document.getElementById('chat-search-bar');
     const filterInput = document.getElementById('filter-conv-input');
+    // Lấy tất cả các item trong danh sách
+    const convItems = document.querySelectorAll('.conv-item'); 
     
     toggleSearchBtn.addEventListener('click', () => {
         if(searchBar.style.display === 'block') {
             searchBar.style.display = 'none';
             filterInput.value = '';
-            renderList(allConversations);
+            // Hiện lại tất cả khi đóng tìm kiếm
+            convItems.forEach(item => item.style.display = 'flex');
         } else {
             searchBar.style.display = 'block';
             filterInput.focus();
@@ -799,8 +797,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     filterInput.addEventListener('keyup', function() {
         const query = this.value.toLowerCase().trim();
-        const filtered = allConversations.filter(c => c.name.toLowerCase().includes(query));
-        renderList(filtered);
+        
+        convItems.forEach(item => {
+            // Tìm class chứa tên (.conv-name)
+            const nameEl = item.querySelector('.conv-name');
+            const nameText = nameEl ? nameEl.innerText.toLowerCase() : '';
+            
+            if (nameText.includes(query)) {
+                item.style.display = 'flex'; // Hiện
+            } else {
+                item.style.display = 'none'; // Ẩn
+            }
+        });
     });
 
     // 4. Scroll Bottom
