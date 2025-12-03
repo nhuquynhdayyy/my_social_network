@@ -78,23 +78,52 @@ class ProfileView(DetailView):
         profile_user = self.get_object()
         visitor = self.request.user
 
+        # === 1. LOGIC LẤY BÀI VIẾT ===
         if visitor.is_authenticated and visitor == profile_user:
             queryset = Post.objects.filter(author=profile_user)
         else:
             queryset = Post.objects.filter(author=profile_user, privacy='PUBLIC')
             if visitor.is_authenticated:
-                are_friends = Friendship.objects.filter(
+                # Kiểm tra bạn bè để hiện bài viết FRIENDS
+                are_friends_check = Friendship.objects.filter(
                     (Q(from_user=profile_user, to_user=visitor) | Q(from_user=visitor, to_user=profile_user)),
                     status='ACCEPTED'
                 ).exists()
-                if are_friends:
+                if are_friends_check:
                     queryset = Post.objects.filter(
                         author=profile_user, 
                         privacy__in=['PUBLIC', 'FRIENDS']
                     )
 
         context['posts'] = queryset.order_by('-created_at')
+
+        # === 2. LOGIC KIỂM TRA TRẠNG THÁI BẠN BÈ ĐỂ HIỂN THỊ NÚT (THÊM MỚI ĐOẠN NÀY) ===
+        is_friend = False
+        sent_request = False
+        received_request = False
+
+        if visitor.is_authenticated and visitor != profile_user:
+            # Kiểm tra đã là bạn chưa
+            if Friendship.objects.filter(
+                (Q(from_user=visitor, to_user=profile_user) | Q(from_user=profile_user, to_user=visitor)),
+                status='ACCEPTED'
+            ).exists():
+                is_friend = True
+            
+            # Kiểm tra mình đã gửi lời mời chưa
+            elif Friendship.objects.filter(from_user=visitor, to_user=profile_user, status='PENDING').exists():
+                sent_request = True
+            
+            # Kiểm tra họ đã gửi lời mời cho mình chưa
+            elif Friendship.objects.filter(from_user=profile_user, to_user=visitor, status='PENDING').exists():
+                received_request = True
         
+        # Truyền biến vào template
+        context['is_friend'] = is_friend
+        context['sent_request'] = sent_request
+        context['received_request'] = received_request
+
+        # === 3. LOGIC REACTION MAP ===
         if self.request.user.is_authenticated:
             posts_on_page = context['posts']
             post_ids = [post.id for post in posts_on_page]
