@@ -18,6 +18,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.template.loader import render_to_string
 from notifications.models import Notification
 from django.urls import reverse_lazy
+from .forms import PostCreateForm 
 
 class HomePageView(ListView):
     model = Post
@@ -64,6 +65,8 @@ class HomePageView(ListView):
                 object_id__in=comment_ids,
                 content_type=comment_content_type
             ).values('object_id', 'reaction_type')
+            
+            context['post_form'] = PostCreateForm()
             
             context['comment_user_reactions_map'] = {
                 reaction['object_id']: reaction['reaction_type']
