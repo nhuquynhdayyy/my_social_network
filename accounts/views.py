@@ -235,6 +235,15 @@ def add_friend(request, username):
     to_user = get_object_or_404(User, username=username)
     from_user = request.user
     Friendship.objects.get_or_create(from_user=from_user, to_user=to_user)
+    # === LOGIC CHUYỂN HƯỚNG ===
+    # 1. Kiểm tra xem URL có gửi kèm tham số 'next' không
+    next_url = request.GET.get('next')
+    
+    # 2. Nếu có, chuyển hướng về trang đó (Trang bạn đang đứng)
+    if next_url:
+        return redirect(next_url)
+        
+    # 3. Nếu không (mặc định), về trang danh sách tìm bạn
     return redirect('accounts:user_list')
 
 class FriendRequestListView(LoginRequiredMixin, ListView):
@@ -319,7 +328,17 @@ def unfriend(request, username):
         & Q(status='ACCEPTED')
     )
     friendship.delete()
-    return redirect('accounts:friend_list', username=current_user.username)
+
+    # === LOGIC CHUYỂN HƯỚNG ===
+    # 1. Kiểm tra xem URL có gửi kèm tham số 'next' không
+    next_url = request.GET.get('next')
+    
+    # 2. Nếu có 'next', chuyển hướng về trang đó (Trang bạn đang đứng)
+    if next_url:
+        return redirect(next_url)
+    
+    # 3. Nếu không có (fallback), mặc định về trang cá nhân của người bị hủy
+    return redirect('accounts:profile', username=friend_to_remove.username)
 
 # --- PHẦN FORGOT PASSWORD & RESET PASSWORD ---
 

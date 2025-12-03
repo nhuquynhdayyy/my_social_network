@@ -54,15 +54,20 @@
                               Bạn bè
                           </button>
                           <!-- Nút hủy kết bạn (Optional - nếu muốn thêm) -->
-                          <a href="{% url 'accounts:unfriend' username=profile_user.username %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Bạn có chắc muốn hủy kết bạn?');">Hủy kết bạn</a>
-
+                          <button type="button" class="btn btn-light text-danger btn-sm fw-bold border" data-bs-toggle="modal" data-bs-target="#unfriendModal">
+                              Hủy kết bạn
+                          </button>
                       {% elif sent_request %}
                           <button class="btn btn-secondary btn-sm" disabled>Đã gửi lời mời</button>
                       {% elif received_request %}
                           <a href="{% url 'accounts:friend_requests' %}" class="btn btn-info btn-sm text-white">Phản hồi lời mời</a>
                       {% else %}
-                          <a href="{% url 'accounts:add_friend' username=profile_user.username %}" class="btn btn-primary btn-sm">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-person-plus-fill" viewBox="0 0 16 16"><path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path fill-rule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"/></svg>
+                          <a href="{% url 'accounts:add_friend' username=profile_user.username %}?next={{ request.path }}" 
+                            class="btn btn-primary btn-sm">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-person-plus-fill" viewBox="0 0 16 16">
+                                  <path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                                  <path fill-rule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"/>
+                              </svg>
                               Thêm bạn
                           </a>
                       {% endif %}
@@ -111,4 +116,29 @@
     </div>
   </div>
 </div>
+
+<!-- MODAL XÁC NHẬN HỦY KẾT BẠN -->
+<div class="modal fade" id="unfriendModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"> <!-- modal-dialog-centered để căn giữa màn hình -->
+    <div class="modal-content">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold">Hủy kết bạn với {{ profile_user.first_name }} {{ profile_user.last_name }}?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-muted">
+        Bạn có chắc chắn muốn hủy kết bạn với <strong>{{ profile_user.first_name }} {{ profile_user.last_name }}</strong> không?
+      </div>
+      <div class="modal-footer border-top-0 pt-0">
+        <!-- Nút Hủy (Màu xám) -->
+        <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold" data-bs-dismiss="modal">Hủy</button>
+        
+        <!-- Nút Xác nhận (Màu xanh - Giống Facebook) -->
+        <a href="{% url 'accounts:unfriend' username=profile_user.username %}?next={{ request.path }}" class="btn btn-primary px-4 fw-bold rounded-pill">
+            Xác nhận
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock content %}

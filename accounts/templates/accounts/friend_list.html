@@ -19,7 +19,9 @@
                         </div>
                         <!-- Nút Hủy kết bạn chỉ hiện ra nếu đang xem danh sách bạn bè của chính mình -->
                         {% if user.is_authenticated and user == profile_user %}
-                            <a href="{% url 'accounts:unfriend' username=friend.username %}" class="btn btn-danger btn-sm">Hủy kết bạn</a>
+                            <a href="{% url 'accounts:unfriend' username=friend.username %}?next={{ request.path }}" 
+                            class="btn btn-danger btn-sm"
+                            onclick="return confirm('Bạn có chắc muốn hủy kết bạn với {{ friend.username }}?');">Hủy kết bạn</a>
                         {% endif %}
                     </div>
                 </div>
