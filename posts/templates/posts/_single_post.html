@@ -16,7 +16,9 @@
                 <small class="text-muted">
                     {{ post.created_at|timesince }} trước · 
                     <!-- Icon privacy -->
-                    {% if post.privacy == 'PUBLIC' %}🌏{% elif post.privacy == 'FRIENDS' %}👥{% else %}🔒{% endif %}
+                    <span id="post-privacy-icon-{{ post.id }}" class="privacy-display" data-privacy="{{ post.privacy }}">
+                        {% if post.privacy == 'PUBLIC' %}🌏{% elif post.privacy == 'FRIENDS' %}👥{% else %}🔒{% endif %}
+                    </span>
                 </small>
             </div>
         </div>
@@ -29,7 +31,16 @@
                         <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
                     </svg>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end">
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center btn-change-privacy" 
+                        href="#" 
+                        data-post-id="{{ post.id }}"
+                        data-current-privacy="{{ post.privacy }}"> <!-- Lưu trạng thái hiện tại -->
+                            <svg class="me-2" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                            Chỉnh sửa đối tượng
+                        </a>
+                    </li>
                     <li>
                         <a class="dropdown-item" href="{% url 'posts:post_edit' pk=post.pk %}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-fill me-2" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/></svg>

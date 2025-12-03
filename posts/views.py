@@ -6,7 +6,7 @@ from django.urls import reverse_lazy, reverse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView, DetailView
 from django.db.models import Q, Count
-from .models import Post, PostMedia, Reaction, Comment
+from .models import Post, PostMedia, Reaction, Comment, PRIVACY_CHOICES
 from .forms import PostCreateForm, CommentCreateForm
 from accounts.models import Friendship, User
 from chat.models import Conversation
@@ -690,3 +690,24 @@ def share_post(request, post_id):
         )
 
     return JsonResponse({'status': 'ok', 'message': 'Đã chia sẻ bài viết!'})
+
+@login_required
+@require_POST
+def change_post_privacy(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    
+    # Kiểm tra quyền: Chỉ tác giả mới được đổi
+    if post.author != request.user:
+        return JsonResponse({'status': 'error', 'message': 'Bạn không có quyền thực hiện hành động này'}, status=403)
+    
+    new_privacy = request.POST.get('privacy')
+    
+    # Kiểm tra giá trị gửi lên có hợp lệ không
+    valid_privacy_keys = [choice[0] for choice in PRIVACY_CHOICES] # ['PUBLIC', 'FRIENDS', 'PRIVATE']
+    
+    if new_privacy in valid_privacy_keys:
+        post.privacy = new_privacy
+        post.save()
+        return JsonResponse({'status': 'ok', 'new_privacy': new_privacy})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Dữ liệu không hợp lệ'}, status=400)
