@@ -5,7 +5,8 @@ from .views import (
     UserListView, add_friend, 
     FriendRequestListView, accept_friend_request, decline_friend_request,
     SentRequestListView, cancel_friend_request,
-    FriendListView, unfriend
+    FriendListView, unfriend,
+    forgot_password, reset_password_validate, reset_password
 )
 
 app_name = 'accounts'
@@ -17,14 +18,14 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('users/', UserListView.as_view(), name='user_list'),
 
+    path('forgotPassword/', forgot_password, name='forgotPassword'),
+    path('reset_password_validate/<uidb64>/<token>/', reset_password_validate, name='reset_password_validate'),
+    path('reset_password/', reset_password, name='reset_password'),
+
     path('requests/', FriendRequestListView.as_view(), name='friend_requests'),
-    
     path('requests/sent/', SentRequestListView.as_view(), name='sent_requests'),
-
     path('requests/accept/<int:request_id>/', accept_friend_request, name='accept_request'),
-
     path('requests/decline/<int:request_id>/', decline_friend_request, name='decline_request'),
-
     path('requests/cancel/<int:request_id>/', cancel_friend_request, name='cancel_request'),
 
     path('unfriend/<str:username>/', unfriend, name='unfriend'),

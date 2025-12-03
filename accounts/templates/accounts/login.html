@@ -12,6 +12,10 @@
                     <form method="post">
                         {% csrf_token %}
                         {{ form.as_p }}
+                        
+                        <div class="forgot-pass-link">
+                            <a href="{% url 'accounts:forgotPassword' %}">Quên mật khẩu?</a>
+                        </div>
 
                         <button type="submit" class="btn btn-success w-100 py-2 rounded-pill">
                             Đăng nhập

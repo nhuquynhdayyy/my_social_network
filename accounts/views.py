@@ -19,6 +19,8 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 from django.http import HttpResponse
 from .tokens import account_activation_token 
+from django.contrib import messages
+from django.contrib.auth.tokens import default_token_generator
 
 class SignUpView(CreateView):
     form_class = CustomUserCreationForm
@@ -293,3 +295,84 @@ def unfriend(request, username):
     )
     friendship.delete()
     return redirect('accounts:friend_list', username=current_user.username)
+
+# --- PHẦN FORGOT PASSWORD & RESET PASSWORD ---
+
+def forgot_password(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        
+        # Dùng User được import từ .models hoặc get_user_model() đều được
+        if User.objects.filter(email=email).exists():
+            user = User.objects.get(email__exact=email)
+
+            # Tạo nội dung email
+            current_site = get_current_site(request)
+            mail_subject = 'Yêu cầu đặt lại mật khẩu'
+            
+            message = render_to_string('accounts/reset_password_email.html', {
+                'user': user,
+                'domain': current_site.domain,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'token': default_token_generator.make_token(user),
+            })
+            
+            to_email = email
+            send_email = EmailMessage(mail_subject, message, to=[to_email])
+            send_email.send()
+
+            messages.success(request, 'Vui lòng kiểm tra email để đặt lại mật khẩu.')
+            # Sửa redirect: thêm 'accounts:'
+            return redirect('accounts:login') 
+        else:
+            messages.error(request, 'Email không tồn tại trong hệ thống!')
+            # Sửa redirect: thêm 'accounts:'
+            return redirect('accounts:forgotPassword')
+
+    return render(request, 'accounts/forgot_password.html')
+
+def reset_password_validate(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        request.session['uid'] = uid
+        messages.success(request, 'Xác thực thành công, vui lòng nhập mật khẩu mới.')
+        # Sửa redirect: thêm 'accounts:'
+        return redirect('accounts:reset_password')
+    else:
+        messages.error(request, 'Đường dẫn đã hết hạn hoặc không hợp lệ!')
+        # Sửa redirect: thêm 'accounts:'
+        return redirect('accounts:forgotPassword')
+
+def reset_password(request):
+    if request.method == 'POST':
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if password != confirm_password:
+            messages.error(request, 'Mật khẩu xác nhận không khớp!')
+            return redirect('accounts:reset_password')
+        
+        uid = request.session.get('uid')
+        if not uid:
+            messages.error(request, 'Phiên làm việc hết hạn, vui lòng thử lại.')
+            return redirect('accounts:forgotPassword')
+            
+        try:
+            user = User.objects.get(pk=uid)
+            user.set_password(password)
+            user.save()
+            
+            del request.session['uid']
+            
+            messages.success(request, 'Đổi mật khẩu thành công, vui lòng đăng nhập lại.')
+            return redirect('accounts:login')
+        except:
+             messages.error(request, 'Đã có lỗi xảy ra.')
+             return redirect('accounts:reset_password')
+
+    return render(request, 'accounts/reset_password.html')
