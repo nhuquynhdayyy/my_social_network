@@ -19,9 +19,14 @@
                         </div>
                         <!-- Nút Hủy kết bạn chỉ hiện ra nếu đang xem danh sách bạn bè của chính mình -->
                         {% if user.is_authenticated and user == profile_user %}
-                            <a href="{% url 'accounts:unfriend' username=friend.username %}?next={{ request.path }}" 
-                            class="btn btn-danger btn-sm"
-                            onclick="return confirm('Bạn có chắc muốn hủy kết bạn với {{ friend.username }}?');">Hủy kết bạn</a>
+                            <button type="button" 
+                                    class="btn btn-danger btn-sm"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#unfriendModal"
+                                    data-friend-name="{{ friend.first_name }} {{ friend.last_name }}"
+                                    data-unfriend-url="{% url 'accounts:unfriend' username=friend.username %}?next={{ request.path }}">
+                                Hủy kết bạn
+                            </button>
                         {% endif %}
                     </div>
                 </div>
@@ -32,4 +37,51 @@
         <p>{{ profile_user.username }} chưa có bạn bè nào.</p>
     {% endif %}
 </div>
+
+<!-- MODAL DÙNG CHUNG CHO CẢ DANH SÁCH -->
+<div class="modal fade" id="unfriendModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold">Hủy kết bạn?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-muted">
+        Bạn có chắc chắn muốn hủy kết bạn với <strong id="modalFriendName"></strong> không?
+      </div>
+      <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold" data-bs-dismiss="modal">Hủy</button>
+        
+        <!-- Nút Xác nhận: href sẽ được JS cập nhật động -->
+        <a href="#" id="confirmUnfriendBtn" class="btn btn-primary px-4 fw-bold rounded-pill">
+            Xác nhận
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var unfriendModal = document.getElementById('unfriendModal');
+        
+        // Lắng nghe sự kiện khi Modal chuẩn bị hiện ra
+        unfriendModal.addEventListener('show.bs.modal', function (event) {
+            // 1. Tìm cái nút vừa được bấm
+            var button = event.relatedTarget;
+            
+            // 2. Lấy thông tin từ các thẻ data-... của nút đó
+            var friendName = button.getAttribute('data-friend-name');
+            var unfriendUrl = button.getAttribute('data-unfriend-url');
+            
+            // 3. Cập nhật nội dung Modal
+            var modalTitleName = unfriendModal.querySelector('#modalFriendName');
+            var confirmBtn = unfriendModal.querySelector('#confirmUnfriendBtn');
+            
+            modalTitleName.textContent = friendName; // Điền tên vào câu hỏi
+            confirmBtn.setAttribute('href', unfriendUrl); // Gán link hủy vào nút Xác nhận
+        });
+    });
+</script>
+
 {% endblock content %}
