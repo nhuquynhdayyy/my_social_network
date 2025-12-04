@@ -30,11 +30,11 @@ class Post(models.Model):
     
     @property
     def comment_count(self):
-        """Trả về tổng số bình luận (chỉ tính bình luận gốc, không tính reply)."""
+        # Trả về tổng số bình luận (chỉ tính bình luận gốc, không tính reply
         return self.comments.filter(parent__isnull=True).count()
 
     def get_initial_comments(self, limit=3):
-        """Trả về các bình luận gốc gần nhất, giới hạn bởi `limit`."""
+        # Trả về các bình luận gốc gần nhất, giới hạn bởi `limit`
         return self.comments.filter(parent__isnull=True).order_by('-created_at')[:limit]
     
 class PostMedia(models.Model):
@@ -61,7 +61,6 @@ class Comment(models.Model):
         return f"Comment by {self.author.username} on {self.post}"
     
     reactions = GenericRelation('Reaction')
-
     def get_reaction_stats(self):
         stats = self.reactions.values('reaction_type').annotate(count=Count('id'))
         return {item['reaction_type']: item['count'] for item in stats}

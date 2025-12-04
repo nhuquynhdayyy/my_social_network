@@ -74,16 +74,11 @@ class HomePageView(ListView):
             }
         return context
 
-# ==========================================================
-# === THÊM CLASS VIEW MỚI NÀY VÀO ===
-# ==========================================================
 class PostDetailView(DetailView):
     model = Post
     template_name = 'posts/post_detail.html'
-    context_object_name = 'post' # Tên biến trong template sẽ là 'post'
+    context_object_name = 'post' 
 
-    # Bạn có thể thêm get_context_data ở đây nếu cần truyền thêm dữ liệu
-    # Ví dụ: truyền map reaction cho bài viết và bình luận
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_authenticated:
@@ -110,9 +105,6 @@ class PostDetailView(DetailView):
                 r['object_id']: r['reaction_type'] for r in user_comment_reactions
             }
         return context
-# ==========================================================
-# === KẾT THÚC PHẦN THÊM MỚI ===
-# ==========================================================
     
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
@@ -164,7 +156,6 @@ class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             return next_url
 
         # 2. Tiếp theo: Lấy URL của trang mà người dùng đang đứng khi bấm nút Lưu
-        # (HTTP_REFERER sẽ là trang chứa Modal: Home, Profile, v.v.)
         referer = self.request.META.get('HTTP_REFERER')
         if referer:
             return referer
@@ -208,18 +199,16 @@ def react_to_post(request, post_id):
         if existing_reaction:
             if existing_reaction.reaction_type == reaction_type:
                 existing_reaction.delete()
-                current_user_reaction = None # Đã bỏ react
+                current_user_reaction = None 
             else:
                 existing_reaction.reaction_type = reaction_type
                 existing_reaction.save()
                 current_user_reaction = reaction_type
-                # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO KHI THAY ĐỔI REACTION ===
                 if viewer != author:
                     Notification.objects.create(
                         recipient=author, sender=viewer, notification_type='POST_REACTION',
                         target_content_type=content_type, target_object_id=post.id
                     )
-                # === KẾT THÚC SỬA ===
         else:
             Reaction.objects.create(
                 user=viewer,
@@ -229,7 +218,6 @@ def react_to_post(request, post_id):
             )
             current_user_reaction = reaction_type
         
-            # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO CHO REACTION BÀI VIẾT ===
             if viewer != author:
                 Notification.objects.create(
                     recipient=author,
@@ -238,7 +226,6 @@ def react_to_post(request, post_id):
                     target_content_type=content_type,
                     target_object_id=post.id
                 )
-            # === KẾT THÚC SỬA ===
             
         reaction_stats = post.reactions.values('reaction_type').annotate(count=Count('id')).order_by('-count')
         stats_dict = {item['reaction_type']: item['count'] for item in reaction_stats}
@@ -248,7 +235,7 @@ def react_to_post(request, post_id):
             'status': 'ok',
             'total_reactions': total_reactions,
             'reaction_stats': stats_dict,
-            'current_user_reaction': current_user_reaction # Reaction hiện tại của user
+            'current_user_reaction': current_user_reaction 
         })
 
     except Exception as e:
@@ -276,7 +263,6 @@ def reaction_detail(request, pk):
 def add_comment(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     
-    # === KIỂM TRA QUYỀN BÌNH LUẬN ===
     viewer = request.user
     author = post.author
     can_comment = False
@@ -293,9 +279,7 @@ def add_comment(request, post_id):
     if not can_comment:
         return JsonResponse({'status': 'error', 'message': 'Không có quyền bình luận'}, status=403)
 
-    # === SỬA LỖI LOGIC TẠO COMMENT ===
     content = request.POST.get('content')
-    # SỬA Ở ĐÂY: Lấy đúng tên trường 'parent' từ form
     parent_id = request.POST.get('parent') 
 
     if not content or not content.strip():
@@ -329,12 +313,11 @@ def add_comment(request, post_id):
          Notification.objects.create(
             recipient=parent_comment.author,
             sender=request.user,
-            notification_type='POST_COMMENT', # Bạn có thể tạo type mới 'COMMENT_REPLY' nếu muốn
+            notification_type='POST_COMMENT', 
             target_content_type=ContentType.objects.get_for_model(parent_comment),
             target_object_id=parent_comment.id
         )
 
-    # SỬA Ở ĐÂY: Tạo context đầy đủ để render HTML
     context = {
         'comment': new_comment,
         'post': post,
@@ -343,7 +326,6 @@ def add_comment(request, post_id):
     }
     comment_html = render_to_string('posts/_single_comment.html', context, request=request)
     
-    # SỬA Ở ĐÂY: Trả về JSON response với thông tin chính xác
     response_data = {
         'status': 'ok',
         'comment_html': comment_html,
@@ -362,10 +344,8 @@ def delete_comment(request, comment_id):
         return JsonResponse({'status': 'ok'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Không có quyền xóa'}, status=403)
-        
-# View cho việc sửa sẽ phức tạp hơn, chúng ta sẽ làm sau nếu bạn muốn
-
-# View để lấy form chỉnh sửa (GET request) - Đã hoàn thiện
+     
+# View để lấy form chỉnh sửa (GET request) 
 @login_required
 def get_comment_edit_form(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
@@ -377,7 +357,7 @@ def get_comment_edit_form(request, comment_id):
     form_html = render_to_string('posts/_comment_edit_form.html', {'comment': comment}, request=request)
     return JsonResponse({'status': 'ok', 'form_html': form_html})
 
-# View để xử lý dữ liệu chỉnh sửa (POST request) - Đã hoàn thiện
+# View để xử lý dữ liệu chỉnh sửa (POST request) 
 @login_required
 @require_POST
 def edit_comment(request, comment_id):
@@ -390,7 +370,6 @@ def edit_comment(request, comment_id):
     form = CommentCreateForm(request.POST, instance=comment)
     if form.is_valid():
         updated_comment = form.save()
-        # SỬA Ở ĐÂY
         context = {
             'comment': updated_comment,
             'post': updated_comment.post,
@@ -399,7 +378,6 @@ def edit_comment(request, comment_id):
         comment_html = render_to_string('posts/_single_comment.html', context, request=request)
         return JsonResponse({'status': 'ok', 'comment_html': comment_html})
     else:
-        # Trả về lỗi nếu form không hợp lệ (ví dụ: nội dung trống)
         return JsonResponse({'status': 'error', 'message': 'Dữ liệu không hợp lệ'}, status=400)
     
 @login_required
@@ -420,7 +398,6 @@ def react_to_comment(request, comment_id):
     if not can_react:
         return JsonResponse({'status': 'error', 'message': 'Không có quyền thực hiện hành động này'}, status=403)
     
-    # === NÂNG CẤP LOGIC REACTION ===
     data = json.loads(request.body)
     reaction_type = data.get('reaction_type')
 
@@ -443,20 +420,17 @@ def react_to_comment(request, comment_id):
             existing_reaction.reaction_type = reaction_type
             existing_reaction.save()
             current_user_reaction = reaction_type
-            # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO KHI THAY ĐỔI REACTION ===
             if viewer != comment.author:
                 Notification.objects.create(
                     recipient=comment.author, sender=viewer, notification_type='COMMENT_REACTION',
                     target_content_type=content_type, target_object_id=comment.id
                 )
-            # === KẾT THÚC SỬA ===
     else:
         Reaction.objects.create(
             user=viewer, content_type=content_type, object_id=comment.id, reaction_type=reaction_type
         )
         current_user_reaction = reaction_type
 
-        # === BẮT ĐẦU SỬA: TẠO THÔNG BÁO CHO REACTION BÌNH LUẬN ===
         if viewer != comment.author:
             Notification.objects.create(
                 recipient=comment.author,
@@ -465,10 +439,7 @@ def react_to_comment(request, comment_id):
                 target_content_type=content_type,
                 target_object_id=comment.id
             )
-        # === KẾT THÚC SỬA ===
         
-    # === NÂNG CẤP PHẦN TRẢ VỀ ===
-    # Thống kê chi tiết
     reaction_stats = comment.reactions.values('reaction_type').annotate(count=Count('id'))
     stats_dict = {item['reaction_type']: item['count'] for item in reaction_stats}
     total_reactions = comment.reactions.count()
@@ -484,7 +455,7 @@ def react_to_comment(request, comment_id):
 def load_more_comments(request, pk):
     post = get_object_or_404(Post, pk=pk)
     offset = int(request.GET.get('offset', 0))
-    limit = 5  # Tải 5 bình luận mỗi lần bấm
+    limit = 3  # Tải 3 bình luận mỗi lần bấm
 
     # Lấy các bình luận tiếp theo
     comments = post.comments.filter(parent__isnull=True).order_by('-created_at')[offset:offset + limit]
@@ -565,7 +536,6 @@ def get_reaction_list(request, post_id):
             'reaction_type': reaction.reaction_type,
             'is_friend': is_friend,
             'conversation_id': conversation_id,
-            # Sửa lại logic bạn chung để nó không bị gọi cho người không phải bạn bè
             'mutual_friends_count': mutual_friends_count,
         })
         
@@ -583,13 +553,11 @@ def post_detail_modal(request, post_id):
     # Kiểm tra like của user hiện tại để hiển thị đúng trạng thái nút Like
     user_reactions_map = {}
     if request.user.is_authenticated:
-        # Giả sử bạn có logic lấy reaction của user (tương tự view home)
-        # Ví dụ logic đơn giản:
         user_reaction = post.reactions.filter(user=request.user).first()
         if user_reaction:
             user_reactions_map[post.id] = user_reaction.reaction_type
 
-    # Lấy comments (có thể lấy hết hoặc limit tùy bạn)
+    # Lấy comments
     comments = post.comments.filter(parent=None).order_by('-created_at')
 
     context = {
@@ -605,7 +573,6 @@ def get_comment_reactions(request, comment_id):
     
     data = []
     reaction_counts = {}
-    
     current_user = request.user
 
     for reaction in reactions:
@@ -626,18 +593,16 @@ def get_comment_reactions(request, comment_id):
                 status='ACCEPTED'
             ).exists():
                 is_friend = True
-                # Giả sử bạn có logic lấy conversation_id ở đây, nếu chưa có thì để null
-                # conversation_id = ... 
 
         data.append({
             'username': user.username,
             'full_name': user.get_full_name(),
             'avatar_url': user.avatar.url,
-            'profile_url': f"/user/{user.username}/", 
+            'profile_url': f"/accounts/{user.username}/",
             'reaction_type': reaction_type,
             'is_friend': is_friend,
-            'conversation_id': conversation_id, # Cần thiết nếu muốn nút nhắn tin hoạt động
-            'mutual_friends_count': 0 # Tính năng nâng cao, để 0 tạm
+            'conversation_id': conversation_id, 
+            'mutual_friends_count': 0 
         })
         
     return JsonResponse({
@@ -647,10 +612,8 @@ def get_comment_reactions(request, comment_id):
 
 @login_required
 def get_share_modal(request, post_id):
-    # Lấy bài viết gốc
     post = get_object_or_404(Post, id=post_id)
     
-    # KIỂM TRA QUYỀN XEM BÀI VIẾT (Logic tương tự như react/comment)
     viewer = request.user
     author = post.author
     can_view = False
@@ -678,25 +641,22 @@ def get_share_modal(request, post_id):
 def share_post(request, post_id):
     original_post = get_object_or_404(Post, id=post_id)
     
-    # 1. Logic kiểm tra quyền xem (như trên)
-    # ... (Để ngắn gọn, giả sử đã check quyền xem ở đây giống hàm trên) ...
+    # 1. Logic kiểm tra quyền xem (Giả sử đã check quyền xem ở đây giống hàm trên)
     
     # 2. Lấy dữ liệu từ form
     content = request.POST.get('content', '')
     new_privacy = request.POST.get('privacy', 'PUBLIC')
     
-    # 3. LOGIC QUYỀN RIÊNG TƯ (QUAN TRỌNG)
+    # 3. LOGIC QUYỀN RIÊNG TƯ 
     # Phạm vi chia sẻ không được rộng hơn bài gốc
     if original_post.privacy == 'FRIENDS' and new_privacy == 'PUBLIC':
         return JsonResponse({'status': 'error', 'message': 'Bài viết gốc ở chế độ Bạn bè, bạn không thể chia sẻ Công khai.'}, status=400)
     
-    # Nếu bài gốc là PRIVATE, lẽ ra không vào được đây, nhưng check thêm cho chắc
     if original_post.privacy == 'PRIVATE':
         return JsonResponse({'status': 'error', 'message': 'Không thể chia sẻ bài viết riêng tư.'}, status=400)
 
     # 4. Tạo bài viết mới (là bài chia sẻ)
-    # Nếu bài gốc vốn đã là một bài chia sẻ, ta chia sẻ bài gốc CỦA bài chia sẻ đó (để tránh chuỗi dài)
-    # Hoặc đơn giản là chia sẻ trực tiếp bài hiện tại. Ở đây ta chọn chia sẻ bài hiện tại.
+    # Nếu bài gốc vốn đã là một bài chia sẻ, ta chia sẻ bài gốc CỦA bài chia sẻ đó 
     source_post = original_post.shared_from if original_post.shared_from else original_post
 
     new_post = Post.objects.create(
@@ -730,7 +690,7 @@ def change_post_privacy(request, pk):
     new_privacy = request.POST.get('privacy')
     
     # Kiểm tra giá trị gửi lên có hợp lệ không
-    valid_privacy_keys = [choice[0] for choice in PRIVACY_CHOICES] # ['PUBLIC', 'FRIENDS', 'PRIVATE']
+    valid_privacy_keys = [choice[0] for choice in PRIVACY_CHOICES] 
     
     if new_privacy in valid_privacy_keys:
         post.privacy = new_privacy
@@ -741,9 +701,7 @@ def change_post_privacy(request, pk):
     
 @login_required
 def get_post_edit_form(request, pk):
-    """
-    View này trả về HTML của form sửa bài viết để nạp vào Modal
-    """
+    # View này trả về HTML của form sửa bài viết để nạp vào Modal
     post = get_object_or_404(Post, pk=pk)
     
     # Kiểm tra quyền (chỉ tác giả mới được sửa)

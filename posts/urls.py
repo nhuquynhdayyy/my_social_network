@@ -13,10 +13,7 @@ app_name = 'posts'
 urlpatterns = [
     path('', HomePageView.as_view(), name='home'),
     path('post/new/', PostCreateView.as_view(), name='post_create'),
-    
-    # THÊM DÒNG NÀY VÀO: Đây chính là URL mà template đang tìm kiếm
     path('post/<int:pk>/', PostDetailView.as_view(), name='post_detail'),
-    
     path('post/<int:pk>/delete/', PostDeleteView.as_view(), name='post_delete'),
     path('post/<int:pk>/edit/', PostUpdateView.as_view(), name='post_edit'),
     path('post/<int:post_id>/react/', react_to_post, name='react_to_post'),
