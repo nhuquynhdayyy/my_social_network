@@ -143,6 +143,8 @@ def get_notifications(request):
 @login_required
 def redirect_notification(request, pk):
     notif = get_object_or_404(Notification, pk=pk, recipient=request.user)
+    
+    # 1. Xử lý Tin nhắn (logic cũ của bạn giữ nguyên)
     if notif.notification_type == "MESSAGE" and notif.target:
         conv_id = notif.target.conversation_id
         message_ct = ContentType.objects.get_for_model(Message)
@@ -155,39 +157,58 @@ def redirect_notification(request, pk):
             is_read=False
         ).update(is_read=True)
         return redirect('chat:conversation_detail', conversation_id=conv_id)
+    
+    # 2. Đánh dấu đã đọc cho các loại thông báo khác
     else:
         notif.is_read = True
         notif.save()
 
-    if notif.notification_type == "FRIEND_REQUEST":
-        return redirect("accounts:friend_requests")
+    # 3. Xử lý chuyển hướng từng loại
+    try:
+        # === THÊM PHẦN NÀY: Xử lý Chia sẻ bài viết ===
+        if notif.notification_type == "POST_SHARE" and notif.target:
+            # notif.target chính là bài viết mới (bài chia sẻ)
+            # Chuyển hướng thẳng đến trang chi tiết bài viết đó
+            return redirect('posts:post_detail', pk=notif.target.id)
+        # ============================================
 
-    if notif.notification_type == "FRIEND_ACCEPT" and notif.target:
-        new_friend = notif.target # Target chính là user đã chấp nhận lời mời
-        return redirect("accounts:profile", username=new_friend.username)
-    
-    if notif.notification_type in ["POST_REACTION", "POST_COMMENT"] and notif.target:
-        post = notif.target
-        profile_url = reverse("accounts:profile", kwargs={'username': post.author.username})
-        return redirect(f"{profile_url}#post-{post.id}")
+        if notif.notification_type == "FRIEND_REQUEST":
+            return redirect("accounts:friend_requests")
 
-    if notif.notification_type == "COMMENT_REACTION" and notif.target:
-        comment = notif.target
-        post = comment.post
-        profile_url = reverse("accounts:profile", kwargs={'username': post.author.username})
-        return redirect(f"{profile_url}#post-{post.id}")
+        if notif.notification_type == "FRIEND_ACCEPT" and notif.target:
+            new_friend = notif.target 
+            return redirect("accounts:profile", username=new_friend.username)
+        
+        # Sửa lại logic này một chút để ưu tiên trang chi tiết bài viết nếu có thể
+        if notif.notification_type in ["POST_REACTION", "POST_COMMENT"] and notif.target:
+            post = notif.target
+            # Cách 1: Chuyển về trang cá nhân và cuộn tới bài viết (cách cũ của bạn)
+            # profile_url = reverse("accounts:profile", kwargs={'username': post.author.username})
+            # return redirect(f"{profile_url}#post-{post.id}")
+            
+            # Cách 2 (Khuyên dùng): Chuyển thẳng đến trang chi tiết bài viết
+            return redirect('posts:post_detail', pk=post.id)
+
+        if notif.notification_type == "COMMENT_REACTION" and notif.target:
+            comment = notif.target
+            post = comment.post
+            return redirect('posts:post_detail', pk=post.id)
+        
+        if notif.notification_type == "MESSAGE_REACTION" and notif.target:
+            message = notif.target
+            return redirect("chat:conversation_detail", conversation_id=message.conversation_id)
+        
+        if notif.notification_type == 'ADDED_TO_GROUP' and notif.target:
+            return redirect('chat:conversation_detail', conversation_id=notif.target.id)
     
-    if notif.notification_type == "MESSAGE_REACTION" and notif.target:
-        message = notif.target
-        return redirect("chat:conversation_detail", conversation_id=message.conversation_id)
-    
-    if notif.notification_type == 'ADDED_TO_GROUP' and notif.target:
-        return redirect('chat:conversation_detail', conversation_id=notif.target.id)
-   
-    if notif.notification_type == 'GROUP_INVITE_REQUEST' and notif.target:
-        return redirect('chat:manage_group', conversation_id=notif.target.id)
-    
-    messages.warning(request, "Nội dung này đã bị xóa hoặc không còn tồn tại.")
+        if notif.notification_type == 'GROUP_INVITE_REQUEST' and notif.target:
+            return redirect('chat:manage_group', conversation_id=notif.target.id)
+
+    except AttributeError:
+        # Phòng trường hợp target bị xóa (ví dụ bài viết bị xóa)
+        messages.warning(request, "Nội dung này không còn tồn tại.")
+
+    # Mặc định về trang chủ
     return redirect("posts:home")
 
 @login_required
