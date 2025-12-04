@@ -140,8 +140,9 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     
 class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Post
-    template_name = 'posts/post_confirm_delete.html'
-    success_url = reverse_lazy('posts:home')
+    def get_success_url(self):
+        # Ưu tiên quay lại trang trước đó, nếu không có thì về Home
+        return self.request.META.get('HTTP_REFERER') or reverse_lazy('posts:home')
 
     def test_func(self):
         post = self.get_object()

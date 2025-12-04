@@ -1201,6 +1201,31 @@
         </div>
     </div>
 
+    <!-- MODAL XÁC NHẬN XÓA BÀI VIẾT -->
+    <div class="modal fade" id="deletePostModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">Xác nhận xóa</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bạn có chắc chắn muốn xóa bài viết này không?</p>
+                    <p class="text-muted small">Hành động này không thể hoàn tác.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    
+                    <!-- Form gửi yêu cầu xóa -->
+                    <form id="deletePostForm" method="POST" action="">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger fw-bold">Xóa bài viết</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Thay Đổi Quyền Riêng Tư -->
     <div class="modal fade" id="changePrivacyModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -2135,6 +2160,22 @@
                 }
             }
         });
+
+        // === LOGIC MODAL XÓA BÀI VIẾT ===
+        const deletePostModal = document.getElementById('deletePostModal');
+        if (deletePostModal) {
+            deletePostModal.addEventListener('show.bs.modal', function (event) {
+                // 1. Tìm nút đã bấm để mở modal
+                const button = event.relatedTarget;
+                
+                // 2. Lấy URL xóa từ data-delete-url của nút đó
+                const deleteUrl = button.getAttribute('data-delete-url');
+                
+                // 3. Tìm cái Form trong Modal và gán Action cho nó
+                const form = deletePostModal.querySelector('#deletePostForm');
+                form.setAttribute('action', deleteUrl);
+            });
+        }
         
         // ---------------------------------------------------------
         // LOGIC XÓA BÌNH LUẬN (KIỂU FACEBOOK MODAL)
