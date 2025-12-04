@@ -462,7 +462,7 @@ def api_get_conversations(request):
                         conv_name = full_name
                     else:
                         conv_name = other_participant.username
-                        
+
                     # Kiểm tra kỹ avatar của user
                     if other_participant.avatar:
                         conv_avatar_url = other_participant.avatar.url
@@ -607,30 +607,42 @@ def react_to_message_api(request, message_id):
 
 @login_required
 def api_get_messages(request, conversation_id):
-    # Đảm bảo người dùng hiện tại là một phần của cuộc hội thoại này để bảo mật
+    # Kiểm tra quyền truy cập
     conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
     
-    # 1. Truy vấn đúng trường 'sender_id'.
-    # 2. Dùng annotate() để đổi tên 'sender_id' thành 'author_id' ngay trong câu lệnh query.
-    #    Đây là cách hiệu quả nhất.
-    messages = conversation.messages.exclude(hidden_by=request.user).order_by('timestamp').annotate(
-        author_id=F('sender_id')
-    ).values('author_id', 'text', 'timestamp')
+    # Lấy danh sách Object tin nhắn để có thể truy cập msg.file, msg.sender...
+    messages = conversation.messages.exclude(hidden_by=request.user).order_by('timestamp')
     
-    # Chuyển QuerySet thành list of dicts
-    messages_data = list(messages)
+    messages_data = []
     for msg in messages:
-        file_url = msg.file.url if msg.file else None
+        # Xử lý File URL
+        file_url = None
         file_type = None
+        
         if msg.file:
-            if msg.is_image: file_type = 'image'
-            elif msg.is_video: file_type = 'video'
-            else: file_type = 'file'
+            try:
+                file_url = msg.file.url
+                if msg.is_image:
+                    file_type = 'image'
+                elif msg.is_video:
+                    file_type = 'video'
+                else:
+                    file_type = 'file'
+            except ValueError:
+                # Phòng trường hợp file bị xóa vật lý nhưng DB vẫn còn
+                file_url = None
+
+        # Format thời gian
+        formatted_time = timezone.localtime(msg.timestamp).strftime('%H:%M, %d-%m-%Y')
+
         messages_data.append({
-            'author_id': msg.sender_id if msg.sender else None, 'text': msg.text,
-            'timestamp': timezone.localtime(msg.timestamp).strftime('%H:%M, %d-%m-%Y'),
-            'file_url': file_url, 'file_type': file_type
+            'author_id': msg.sender_id, # Lấy ID người gửi
+            'text': msg.text,
+            'timestamp': formatted_time,
+            'file_url': file_url,
+            'file_type': file_type
         })
+
     return JsonResponse({'messages': messages_data})
 
 @require_POST
