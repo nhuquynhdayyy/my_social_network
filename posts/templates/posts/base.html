@@ -2791,6 +2791,15 @@
             const toast = new bootstrap.Toast(toastElement, { delay: 3000 }); // Tự tắt sau 3 giây
             toast.show();
         }
+        {% if messages %}
+            {% for message in messages %}
+                // Ưu tiên dùng showToast cho đẹp, nếu không có thì dùng alert
+                // Lưu ý: message.tags trong Django thường là 'success', 'warning', 'error'...
+                // Bootstrap cần 'danger' thay vì 'error', nên có thể cần xử lý một chút nếu dùng class bootstrap
+                
+                showToast("{{ message }}", "{{ message.tags }}"); 
+            {% endfor %}
+        {% endif %}
       });
     </script>
     <!-- TOAST NOTIFICATION CONTAINER (Góc trên bên phải) -->

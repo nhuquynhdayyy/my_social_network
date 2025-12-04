@@ -144,6 +144,16 @@ def get_notifications(request):
 def redirect_notification(request, pk):
     notif = get_object_or_404(Notification, pk=pk, recipient=request.user)
     
+    if notif.target is None:
+        # 1. Xóa ngay thông báo "rác" này khỏi Database
+        notif.delete()
+        
+        # 2. Báo cho người dùng biết (chỉ 1 lần này thôi)
+        messages.warning(request, "Nội dung này đã bị xóa hoặc không còn tồn tại.")
+        
+        # 3. Quay về trang chủ
+        return redirect("posts:home")
+    
     # 1. Xử lý Tin nhắn (logic cũ của bạn giữ nguyên)
     if notif.notification_type == "MESSAGE" and notif.target:
         conv_id = notif.target.conversation_id
