@@ -2322,8 +2322,9 @@
         // =======================================================
         {% if user.is_authenticated %}
         const openChatBtn = document.getElementById("openChatBtn");
-        const closeChatBtn = document.getElementById("closeChatBtn");
         const chatPopup = document.getElementById("chatPopup");
+        if (openChatBtn && chatPopup) { 
+        const closeChatBtn = document.getElementById("closeChatBtn");
         const chatPopupBodyContent = document.getElementById("chatPopupBodyContent");
         const newMessageBtn = document.getElementById("newMessageBtn");
         const backFromSearchBtn = document.getElementById("back-from-search-btn");
@@ -2460,33 +2461,48 @@
             }
         });
 
-        // --- Load danh sách hội thoại ban đầu ---
+        // Tìm hàm này trong script ở cuối base.html
         function loadConversations() {
-          fetch("{% url 'chat:api_get_conversations' %}")
+        fetch("{% url 'chat:api_get_conversations' %}")
             .then(res => res.json())
             .then(data => {
-              chatPopupBodyContent.innerHTML = "";
-              if (data.conversations && data.conversations.length > 0) {
+            chatPopupBodyContent.innerHTML = ""; // Bước này nó xóa trắng để chuẩn bị render
+            
+            if (data.conversations && data.conversations.length > 0) {
                 data.conversations.forEach(conv => {
-                  const avatarUrl = conv.other_participant.avatar_url || '/static/images/default_avatar.png'; // Thay bằng đường dẫn ảnh mặc định của bạn
-                  
-                  // SỬA DÒNG "data-conversation-id" BÊN DƯỚI
-                  chatPopupBodyContent.innerHTML += `
+                
+                // === SỬA ĐOẠN NÀY (Dữ liệu trả về từ view là conv.avatar_url chứ không phải conv.other_participant...) ===
+                
+                // 1. Lấy đúng key từ views.py trả về
+                const avatarUrl = conv.avatar_url || '/static/images/default_avatar.png'; 
+                const name = conv.name || "Người dùng";
+                const lastMsg = conv.last_message || "Bắt đầu trò chuyện";
+                
+                chatPopupBodyContent.innerHTML += `
                     <a href="#" class="conversation-item" 
-                      data-conversation-id="${conv.conversation_id}" 
-                      data-username="${conv.other_participant.username}"
-                      data-avatar-url="${avatarUrl}">
-                      <img src="${avatarUrl}" class="avatar" alt="${conv.other_participant.username}">
-                      <div class="message-details">
-                        <p class="username">${conv.other_participant.username}</p>
-                        <p class="last-message">${conv.last_message || "Bắt đầu trò chuyện"}</p>
-                      </div>
+                    data-conversation-id="${conv.conversation_id}" 
+                    data-username="${name}"
+                    data-avatar-url="${avatarUrl}">
+                    
+                    <img src="${avatarUrl}" class="avatar" alt="${name}">
+                    
+                    <div class="message-details">
+                        <p class="username">${name}</p>
+                        <p class="last-message">${lastMsg}</p>
+                    </div>
                     </a>`;
+                    
+                // === KẾT THÚC ĐOẠN SỬA ===
+                
                 });
-              } else {
+            } else {
                 chatPopupBodyContent.innerHTML = '<p class="text-center text-muted p-5">Không có cuộc trò chuyện nào.</p>';
-              }
-              conversationsLoaded = true;
+            }
+            conversationsLoaded = true;
+            })
+            .catch(err => {
+                console.error("Lỗi load chat:", err);
+                chatPopupBodyContent.innerHTML = '<p class="text-center text-danger p-3">Lỗi tải dữ liệu.</p>';
             });
         }
 
@@ -2593,6 +2609,7 @@
                 });
             }
         });
+        }
         {% endif %}
         
         // =======================================================

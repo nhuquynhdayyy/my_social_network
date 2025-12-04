@@ -457,7 +457,12 @@ def api_get_conversations(request):
                     if not other_participant: 
                         continue
                     
-                    conv_name = other_participant.username
+                    full_name = other_participant.get_full_name()
+                    if full_name and full_name.strip():
+                        conv_name = full_name
+                    else:
+                        conv_name = other_participant.username
+                        
                     # Kiểm tra kỹ avatar của user
                     if other_participant.avatar:
                         conv_avatar_url = other_participant.avatar.url
