@@ -1,0 +1,66 @@
+<!-- posts/templates/posts/_post_edit_modal_body.html -->
+{% load static %}
+
+<!-- Form này sẽ gửi POST request về PostUpdateView hiện tại của bạn -->
+<form method="post" action="{% url 'posts:post_edit' pk=post.id %}" enctype="multipart/form-data" id="editPostForm">
+    {% csrf_token %}
+    
+    <!-- 1. Hiển thị Media hiện tại -->
+    {% if post.media.all %}
+    <div class="mb-3">
+        <label class="fw-bold small text-muted">Media hiện tại:</label>
+        <div class="d-flex gap-2 overflow-auto" style="white-space: nowrap;">
+            {% for media in post.media.all %}
+                {% if media.media_type == 'IMAGE' %}
+                    <img src="{{ media.file.url }}" class="rounded border" style="height: 80px; width: 80px; object-fit: cover;">
+                {% else %}
+                    <video src="{{ media.file.url }}" class="rounded border" style="height: 80px; width: 80px; object-fit: cover;"></video>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <small class="text-danger" style="font-size: 0.75rem;">* Lưu ý: Tải lên media mới sẽ thay thế toàn bộ media cũ.</small>
+    </div>
+    {% endif %}
+
+    <!-- 2. Nội dung bài viết -->
+    <div class="mb-3">
+        <label for="id_content" class="fw-bold small">Nội dung:</label>
+        <!-- Render field content từ form Django -->
+        {{ form.content }} 
+    </div>
+
+    <!-- 3. Chọn quyền riêng tư -->
+    <div class="mb-3">
+        <label for="id_privacy" class="fw-bold small">Quyền riêng tư:</label>
+        {{ form.privacy }}
+    </div>
+
+    <!-- 4. Upload ảnh mới -->
+    <div class="mb-3">
+        <label class="fw-bold small">Thay đổi ảnh/video:</label>
+        <input type="file" name="media_files" multiple class="form-control form-control-sm">
+    </div>
+
+    <!-- Nút Submit -->
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+        <button type="submit" class="btn btn-primary btn-sm fw-bold">Lưu thay đổi</button>
+    </div>
+</form>
+
+<!-- CSS nhỏ để chỉnh lại widget của Django nếu cần -->
+<style>
+    #editPostForm textarea {
+        width: 100%;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        padding: 0.5rem;
+        min-height: 100px;
+    }
+    #editPostForm select {
+        width: 100%;
+        padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+    }
+</style>

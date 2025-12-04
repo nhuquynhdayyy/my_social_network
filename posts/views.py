@@ -158,6 +158,18 @@ class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return self.request.user == post.author
 
     def get_success_url(self):
+        # 1. Ưu tiên: Kiểm tra xem form có gửi kèm tham số 'next' không
+        next_url = self.request.POST.get('next')
+        if next_url:
+            return next_url
+
+        # 2. Tiếp theo: Lấy URL của trang mà người dùng đang đứng khi bấm nút Lưu
+        # (HTTP_REFERER sẽ là trang chứa Modal: Home, Profile, v.v.)
+        referer = self.request.META.get('HTTP_REFERER')
+        if referer:
+            return referer
+
+        # 3. Mặc định: Nếu không xác định được thì về trang chủ
         return reverse_lazy('posts:home')
 
 @login_required
@@ -726,3 +738,25 @@ def change_post_privacy(request, pk):
         return JsonResponse({'status': 'ok', 'new_privacy': new_privacy})
     else:
         return JsonResponse({'status': 'error', 'message': 'Dữ liệu không hợp lệ'}, status=400)
+    
+@login_required
+def get_post_edit_form(request, pk):
+    """
+    View này trả về HTML của form sửa bài viết để nạp vào Modal
+    """
+    post = get_object_or_404(Post, pk=pk)
+    
+    # Kiểm tra quyền (chỉ tác giả mới được sửa)
+    if post.author != request.user:
+        return JsonResponse({'status': 'error', 'message': 'Bạn không có quyền sửa bài viết này.'}, status=403)
+    
+    # Tạo form với instance là bài viết hiện tại
+    form = PostCreateForm(instance=post)
+    
+    # Render ra HTML
+    html = render_to_string('posts/_post_edit_modal_body.html', {
+        'form': form,
+        'post': post
+    }, request=request)
+    
+    return JsonResponse({'status': 'ok', 'html': html})

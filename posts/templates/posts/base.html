@@ -1226,6 +1226,26 @@
         </div>
     </div>
 
+    <!-- MODAL CHỈNH SỬA BÀI VIẾT -->
+    <div class="modal fade" id="editPostModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold">Chỉnh sửa bài viết</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="editPostModalBody">
+                    <!-- Nội dung Form sẽ được AJAX nạp vào đây -->
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Thay Đổi Quyền Riêng Tư -->
     <div class="modal fade" id="changePrivacyModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -2176,6 +2196,47 @@
                 form.setAttribute('action', deleteUrl);
             });
         }
+
+        // === LOGIC MODAL SỬA BÀI VIẾT ===
+        const editPostModalEl = document.getElementById('editPostModal');
+        const editPostModal = new bootstrap.Modal(editPostModalEl);
+        const editPostModalBody = document.getElementById('editPostModalBody');
+
+        // Sử dụng Event Delegation (bắt sự kiện click từ body) để xử lý cho cả bài viết mới tải thêm
+        document.body.addEventListener('click', function(e) {
+            // Tìm xem click có phải vào nút sửa bài viết không
+            const editBtn = e.target.closest('.open-edit-post-modal');
+            
+            if (editBtn) {
+                e.preventDefault();
+                const postId = editBtn.dataset.postId;
+                
+                // 1. Hiển thị modal với spinner loading trước
+                editPostModalBody.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>`;
+                editPostModal.show();
+
+                // 2. Gọi API lấy HTML form
+                fetch(`/post/${postId}/get-edit-form/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'ok') {
+                            // 3. Nạp HTML vào modal
+                            editPostModalBody.innerHTML = data.html;
+                        } else {
+                            editPostModalBody.innerHTML = `<p class="text-danger text-center">${data.message}</p>`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        editPostModalBody.innerHTML = `<p class="text-danger text-center">Có lỗi xảy ra. Vui lòng thử lại.</p>`;
+                    });
+            }
+        });
         
         // ---------------------------------------------------------
         // LOGIC XÓA BÌNH LUẬN (KIỂU FACEBOOK MODAL)

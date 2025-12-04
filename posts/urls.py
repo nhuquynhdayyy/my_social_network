@@ -33,4 +33,5 @@ urlpatterns = [
     path('post/<int:post_id>/get-share-modal/', views.get_share_modal, name='get_share_modal'),
     path('post/<int:post_id>/share/', views.share_post, name='share_post'),
     path('post/<int:pk>/change-privacy/', views.change_post_privacy, name='change_post_privacy'),
+    path('post/<int:pk>/get-edit-form/', views.get_post_edit_form, name='get_post_edit_form'),
 ]
