@@ -1019,6 +1019,8 @@
                         </svg>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="min-width: 250px;">
+                        
+                        <!-- 1. Nút Đánh dấu đã đọc (Cũ) -->
                         <li>
                             <a class="dropdown-item d-flex align-items-center py-2" href="#" id="btn-mark-all-read">
                                 <svg class="me-2" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -1027,6 +1029,22 @@
                                 <span class="fw-bold" style="font-size: 0.9rem;">Đánh dấu tất cả là đã đọc</span>
                             </a>
                         </li>
+
+                        <!-- === THÊM ĐOẠN NÀY VÀO ĐÂY === -->
+                        <li><hr class="dropdown-divider"></li> <!-- Đường kẻ ngang phân cách cho đẹp -->
+                        
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center py-2" href="{% url 'notifications:notification_list' %}">
+                                <!-- Icon Con Mắt -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="me-2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                <span class="fw-bold" style="font-size: 0.9rem;">Xem tất cả thông báo</span>
+                            </a>
+                        </li>
+                        <!-- === KẾT THÚC ĐOẠN THÊM === -->
+
                     </ul>
                 </div>
             </div>
@@ -1843,28 +1861,105 @@
                 } else {
                     let html = '';
                     data.notifications.forEach(n => {
-                        // Nếu chưa đọc thì thêm class 'unread' để tô màu nền xanh nhạt
-                        let unreadClass = !n.is_read ? 'unread' : '';
-                        
-                        // Render từng dòng thông báo
+                        // Nếu chưa đọc thì thêm class để tô màu nền
+                        let unreadClass = !n.is_read ? 'bg-light' : ''; // Sửa lại class bg-light cho rõ
+                        let unreadDot = !n.is_read ? '<span class="d-inline-block rounded-circle bg-primary ms-2" style="width: 8px; height: 8px;"></span>' : '';
+
+                        // URL xóa (bạn phải đảm bảo đã có URL này trong urls.py)
+                        let deleteUrl = `/notifications/delete/${n.id}/`;
+
                         html += `
-                        <a href="${n.link}" class="notif-item ${unreadClass}">
-                            <img src="${n.avatar_url}" alt="${n.sender}">
-                            <div class="notif-content">
-                                <div>
-                                    <strong>${n.sender}</strong> ${n.type}
+                        <div class="d-flex align-items-center border-bottom position-relative hover-bg-gray ${unreadClass}" id="sidebar-noti-${n.id}">
+                            
+                            <!-- PHẦN 1: LINK NỘI DUNG (Click vào là chuyển trang) -->
+                            <a href="${n.link}" class="d-flex align-items-center p-2 text-decoration-none text-dark flex-grow-1" style="min-width: 0;">
+                                <img src="${n.avatar_url}" alt="${n.sender}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%; margin-right: 10px;">
+                                <div class="flex-grow-1" style="font-size: 0.9rem; line-height: 1.2;">
+                                    <div>
+                                        <strong>${n.sender}</strong> ${n.type}
+                                    </div>
+                                    <div class="text-muted small mt-1">${n.timestamp}</div>
                                 </div>
-                                <div class="notif-time">${n.timestamp}</div>
+                                ${unreadDot}
+                            </a>
+
+                            <!-- PHẦN 2: NÚT 3 CHẤM (Xóa thông báo) -->
+                            <div class="dropdown pe-2">
+                                <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 30px; height: 30px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
+                                        <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+                                    </svg>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow">
+                                    <li>
+                                        <a class="dropdown-item text-danger small sidebar-delete-btn" href="#" 
+                                        data-url="${deleteUrl}" 
+                                        data-id="${n.id}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-trash me-2" viewBox="0 0 16 16">
+                                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
+                                                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z"/>
+                                            </svg>
+                                        Xóa thông báo này
+                                        </a>
+                                    </li>
+                                </ul>
                             </div>
-                            <!-- Nếu chưa đọc thì hiện chấm xanh dương nhỏ -->
-                            ${!n.is_read ? '<span style="width:8px;height:8px;background:#0095f6;border-radius:50%;margin-left:auto;"></span>' : ''}
-                        </a>
+                        </div>
                         `;
                     });
                     notifBody.innerHTML = html;
                 }
             })
             .catch(err => console.error("Lỗi tải thông báo:", err));
+        }
+
+        // === LOGIC XÓA THÔNG BÁO TỪ SIDEBAR (QUAN TRỌNG) ===
+        const notifListBody = document.getElementById('notificationListBody');
+
+        if (notifListBody) {
+            notifListBody.addEventListener('click', function(e) {
+                // Kiểm tra xem cái được click có phải là nút xóa (hoặc con của nó) không
+                const deleteBtn = e.target.closest('.sidebar-delete-btn');
+                
+                if (deleteBtn) {
+                    e.preventDefault(); // Chặn chuyển trang
+                    e.stopPropagation(); // Chặn sự kiện nổi bọt (để menu không đóng ngay lập tức)
+
+                    const deleteUrl = deleteBtn.dataset.url;
+                    const notiId = deleteBtn.dataset.id;
+                    const notiItem = document.getElementById(`sidebar-noti-${notiId}`);
+
+                    // Gọi API xóa
+                    fetch(deleteUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrftoken, // Biến csrftoken đã có sẵn trong file của bạn
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            // Hiệu ứng xóa đẹp mắt
+                            if (notiItem) {
+                                notiItem.style.transition = 'all 0.3s ease';
+                                notiItem.style.opacity = '0';
+                                notiItem.style.transform = 'translateX(20px)';
+                                setTimeout(() => {
+                                    notiItem.remove();
+                                    // Nếu xóa hết thì hiện thông báo trống
+                                    if (notifListBody.children.length === 0) {
+                                        notifListBody.innerHTML = '<div class="text-center p-4 text-muted">Không có thông báo nào.</div>';
+                                    }
+                                }, 300);
+                            }
+                        } else {
+                            alert("Lỗi: " + data.message);
+                        }
+                    })
+                    .catch(err => console.error("Lỗi:", err));
+                }
+            });
         }
 
         // --- D. Chạy tự động ---

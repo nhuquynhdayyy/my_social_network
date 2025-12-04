@@ -12,6 +12,7 @@ from django.contrib import messages
 from .models import Notification
 from chat.models import Message
 from posts.models import Comment, Post
+from django.views.decorators.http import require_POST
 
 User = get_user_model()
 
@@ -23,7 +24,7 @@ def notification_list_view(request):
     )
 
     # Bước 2: Lấy toàn bộ danh sách thông báo để hiển thị.
-    notifications = Notification.objects.filter(recipient=request.user)
+    notifications = Notification.objects.filter(recipient=request.user).order_by('-timestamp') 
 
     # Bước 3: Bây giờ mới thực hiện việc đánh dấu là đã đọc.
     # Việc này không ảnh hưởng đến biến 'notifications' đã lấy ở trên.
@@ -226,3 +227,16 @@ def mark_all_as_read(request):
     # Cập nhật tất cả thông báo của user hiện tại thành đã đọc
     Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
     return JsonResponse({'status': 'ok'})
+
+@login_required
+@require_POST # Chỉ chấp nhận lệnh POST (để bảo mật)
+def delete_notification(request, notification_id):
+    # 1. Tìm thông báo, đảm bảo nó tồn tại
+    notification = get_object_or_404(Notification, id=notification_id)
+
+    # 2. Kiểm tra chính chủ: Chỉ người nhận mới được quyền xóa
+    if request.user == notification.recipient:
+        notification.delete() # Xóa khỏi Database
+        return JsonResponse({'status': 'success', 'message': 'Đã xóa thông báo'})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Không có quyền xóa'}, status=403)

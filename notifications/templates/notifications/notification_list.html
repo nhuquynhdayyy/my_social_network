@@ -11,74 +11,161 @@
 
             <div class="list-group">
                 {% for notif in notifications %}
-                <a href="{% url 'notifications:redirect' pk=notif.pk %}" 
-                   class="list-group-item list-group-item-action {% if notif.id in unread_ids %}notification-unread{% endif %}">
+                <!-- 1. Đổi thẻ a thành div để chứa được nút dropdown -->
+                <!-- Thêm id để JS biết dòng nào mà xóa -->
+                <div class="list-group-item list-group-item-action d-flex align-items-center p-3 {% if notif.id in unread_ids %}notification-unread bg-light{% endif %}" 
+                     id="notification-{{ notif.id }}">
                     
-                    <div class="d-flex w-100 justify-content-between align-items-center">
-                        <div class="d-flex align-items-center">
+                    <!-- 2. PHẦN NỘI DUNG (BÊN TRÁI) - Click vào đây thì chuyển hướng -->
+                    <a href="{% url 'notifications:redirect' pk=notif.pk %}" class="text-decoration-none text-dark flex-grow-1 pe-3">
+                        <div class="d-flex align-items-center mb-1">
+                            <!-- Chấm đỏ chưa đọc -->
                             {% if notif.id in unread_ids %}
-                                <span class="notification-dot me-3"></span>
+                                <span class="notification-dot me-2 text-primary" style="font-size: 2rem; line-height: 0;">&bull;</span>
                             {% endif %}
-                            <p class="mb-1">
-                                <strong>{{ notif.sender.username }}</strong>
                             
-                                {% if notif.notification_type == 'FRIEND_REQUEST' %}
-                                    đã gửi cho bạn một lời mời kết bạn.
-                                {% elif notif.notification_type == 'FRIEND_ACCEPT' %}
-                                    đã chấp nhận lời mời kết bạn của bạn.
-                                {% elif notif.notification_type == 'POST_LIKE' %} 
-                                    đã bày tỏ cảm xúc về bài viết của bạn.
-                                {% elif notif.notification_type == 'POST_COMMENT' %}
-                                    đã bình luận về bài viết của bạn.
-                                {% elif notif.notification_type == 'COMMENT_REACTION' %}
-                                    đã bày tỏ cảm xúc về bình luận của bạn.
-                                {% elif notif.notification_type == 'MESSAGE' %}
-                                    {% if notif.target and notif.target.file %}
-                                        {% if notif.target.is_image %}
-                                            đã gửi cho bạn một hình ảnh.
-                                        {% elif notif.target.is_video %}
-                                            đã gửi cho bạn một video.
+                            <!-- Avatar người gửi (Nên thêm vào cho đẹp giống FB) -->
+                            <img src="{{ notif.sender.avatar.url }}" class="rounded-circle me-2 border" width="40" height="40" style="object-fit: cover;">
+
+                            <div>
+                                <p class="mb-0">
+                                    <strong>{{ notif.sender.username }}</strong>
+                                
+                                    {% if notif.notification_type == 'FRIEND_REQUEST' %}
+                                        đã gửi cho bạn một lời mời kết bạn.
+                                    {% elif notif.notification_type == 'FRIEND_ACCEPT' %}
+                                        đã chấp nhận lời mời kết bạn của bạn.
+                                    {% elif notif.notification_type == 'POST_LIKE' %} 
+                                        đã bày tỏ cảm xúc về bài viết của bạn.
+                                    {% elif notif.notification_type == 'POST_COMMENT' %}
+                                        đã bình luận về bài viết của bạn.
+                                    {% elif notif.notification_type == 'COMMENT_REACTION' %}
+                                        đã bày tỏ cảm xúc về bình luận của bạn.
+                                    {% elif notif.notification_type == 'MESSAGE' %}
+                                        {% if notif.target and notif.target.file %}
+                                            {% if notif.target.is_image %}
+                                                đã gửi cho bạn một hình ảnh.
+                                            {% elif notif.target.is_video %}
+                                                đã gửi cho bạn một video.
+                                            {% else %}
+                                                đã gửi cho bạn một tập tin đính kèm.
+                                            {% endif %}
                                         {% else %}
-                                            đã gửi cho bạn một tập tin đính kèm.
+                                            đã gửi cho bạn một tin nhắn mới.
                                         {% endif %}
-                                    {% else %}
-                                        đã gửi cho bạn một tin nhắn mới.
+                                    {% elif notif.notification_type == 'MESSAGE_REACTION' %}
+                                        đã bày tỏ cảm xúc về tin nhắn của bạn.
+                                    {% elif notif.notification_type == 'ADDED_TO_GROUP' %}
+                                        đã thêm bạn vào nhóm
+                                        {% if notif.target %}
+                                            <strong>{{ notif.target.name|default:"(Nhóm chưa đặt tên)" }}</strong>.
+                                        {% else %}
+                                            một nhóm chat.
+                                        {% endif %}
+                                
+                                    {% elif notif.notification_type == 'GROUP_INVITE_REQUEST' %}
+                                        muốn thêm thành viên vào nhóm
+                                        {% if notif.target %}
+                                            <strong>{{ notif.target.name|default:"(Nhóm chưa đặt tên)" }}</strong>.
+                                        {% else %}
+                                            nhóm chat của bạn.
+                                        {% endif %}
                                     {% endif %}
-                                {% elif notif.notification_type == 'MESSAGE_REACTION' %}
-                                    đã bày tỏ cảm xúc về tin nhắn của bạn.
-                                {% elif notif.notification_type == 'ADDED_TO_GROUP' %}
-                                    đã thêm bạn vào nhóm
-                                    {% if notif.target %}
-                                        <strong>{{ notif.target.name|default:"(Nhóm chưa đặt tên)" }}</strong>.
-                                    {% else %}
-                                        một nhóm chat.
-                                    {% endif %}
-                            
-                                {% elif notif.notification_type == 'GROUP_INVITE_REQUEST' %}
-                                    muốn thêm thành viên vào nhóm
-                                    {% if notif.target %}
-                                        <strong>{{ notif.target.name|default:"(Nhóm chưa đặt tên)" }}</strong>.
-                                    {% else %}
-                                        nhóm chat của bạn.
-                                    {% endif %}
-                                {% endif %}
-                            </p>
+                                </p>
+                                <small class="text-muted">{{ notif.timestamp|timesince }} trước</small>
+                            </div>
                         </div>
-                        <small class="text-muted">{{ notif.timestamp|timesince }} trước</small>
+
+                        {% if notif.target and notif.target.content %}
+                        <div class="ms-5 text-muted fst-italic small">
+                            "{{ notif.target.content|truncatewords:15 }}"
+                        </div>
+                        {% endif %}
+                    </a>
+
+                    <!-- 3. PHẦN MENU 3 CHẤM (BÊN PHẢI) -->
+                    <div class="dropdown ms-2">
+                        <button class="btn btn-light btn-sm rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <!-- Icon 3 chấm (Dùng Bootstrap Icon) -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
+                                <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+                            </svg>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item text-danger delete-noti-btn" 
+                                   href="#" 
+                                   data-id="{{ notif.id }}"
+                                   data-url="{% url 'notifications:delete_notification' notification_id=notif.id %}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash me-2" viewBox="0 0 16 16">
+                                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
+                                        <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z"/>
+                                    </svg>
+                                    Xóa thông báo này
+                                </a>
+                            </li>
+                        </ul>
                     </div>
 
-                    {% if notif.target and notif.target.content %}
-                        <em>"{{ notif.target.content|truncatewords:15 }}"</em>
-                    </p>
-                    {% endif %}
-                </a>
+                </div>
                 {% empty %}
-                <div class="list-group-item">
-                    <p class="text-center text-muted mb-0">Bạn chưa có thông báo nào.</p>
+                <div class="list-group-item text-center py-5">
+                    <p class="text-muted mb-0">Bạn chưa có thông báo nào.</p>
                 </div>
                 {% endfor %}
             </div>
         </div>
     </div>
 </div>
+
+<!-- 4. JAVASCRIPT XỬ LÝ XÓA KHÔNG CẦN LOAD LẠI TRANG -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteButtons = document.querySelectorAll('.delete-noti-btn');
+
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault(); // Chặn việc bấm link bị nhảy lên đầu trang
+
+            const notiId = this.getAttribute('data-id');
+            const deleteUrl = this.getAttribute('data-url');
+            const notificationItem = document.getElementById(`notification-${notiId}`);
+
+            // Xác nhận trước khi xóa (có thể bỏ nếu muốn xóa nhanh)
+            if (confirm('Bạn muốn xóa thông báo này?')) {
+                fetch(deleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Hiệu ứng xóa đẹp mắt
+                        notificationItem.style.transition = 'all 0.3s ease';
+                        notificationItem.style.opacity = '0';
+                        notificationItem.style.transform = 'translateX(20px)';
+                        
+                        setTimeout(() => {
+                            notificationItem.remove();
+                            
+                            // Kiểm tra nếu xóa hết thì hiện thông báo trống
+                            const listGroup = document.querySelector('.list-group');
+                            if (listGroup.children.length === 0) {
+                                listGroup.innerHTML = '<div class="list-group-item text-center py-5"><p class="text-muted mb-0">Bạn chưa có thông báo nào.</p></div>';
+                            }
+                        }, 300);
+                    } else {
+                        alert('Lỗi: ' + data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        });
+    });
+});
+</script>
+
 {% endblock content %}

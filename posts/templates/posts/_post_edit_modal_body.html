@@ -1,7 +1,7 @@
 <!-- posts/templates/posts/_post_edit_modal_body.html -->
 {% load static %}
 
-<!-- Form này sẽ gửi POST request về PostUpdateView hiện tại của bạn -->
+<!-- Form gửi POST request về PostUpdateView -->
 <form method="post" action="{% url 'posts:post_edit' pk=post.id %}" enctype="multipart/form-data" id="editPostForm">
     {% csrf_token %}
     
@@ -48,7 +48,6 @@
     </div>
 </form>
 
-<!-- CSS nhỏ để chỉnh lại widget của Django nếu cần -->
 <style>
     #editPostForm textarea {
         width: 100%;
