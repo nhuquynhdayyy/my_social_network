@@ -5,7 +5,7 @@ from django.contrib.auth.admin import UserAdmin
 from .models import User, Friendship
 
 class CustomUserAdmin(UserAdmin):
-    # Thêm các trường tùy chỉnh vào màn hình chỉnh sửa user
+    # Thêm các trường chỉnh sửa user
     fieldsets = UserAdmin.fieldsets + (
         (None, {'fields': ('avatar', 'cover_photo', 'bio', 'birth_date')}),
     )

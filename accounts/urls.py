@@ -34,8 +34,6 @@ urlpatterns = [
 
     path('unfriend/<str:username>/', unfriend, name='unfriend'),
 
-    # CÁC URL ĐỘNG PHẢI ĐẶT BÊN DƯỚI
-    # Chúng sẽ được kiểm tra sau khi các URL cụ thể ở trên không khớp
     path('add-friend/<str:username>/', add_friend, name='add_friend'),
     path('<str:username>/', ProfileView.as_view(), name='profile'),
     path('<str:username>/edit/', ProfileUpdateView.as_view(), name='profile_edit'),

@@ -30,7 +30,7 @@ class SignUpView(CreateView):
     def form_valid(self, form):
         # Lưu user nhưng chưa commit vào DB để chỉnh sửa
         user = form.save(commit=False)
-        user.is_active = False # Vô hiệu hóa tài khoản
+        user.is_active = False # Vô hiệu hóa tài khoản chưa kích hoạt email 
         user.save() # Lưu user vào DB với is_active=False
 
         # Gửi email xác thực
@@ -241,7 +241,7 @@ def add_friend(request, username):
     # 1. Kiểm tra xem URL có gửi kèm tham số 'next' không
     next_url = request.GET.get('next')
     
-    # 2. Nếu có, chuyển hướng về trang đó (Trang bạn đang đứng)
+    # 2. Nếu có, chuyển hướng về trang đang đứng
     if next_url:
         return redirect(next_url)
         
@@ -268,7 +268,7 @@ def accept_friend_request(request, request_id):
             recipient=friend_request.from_user,  # Người nhận thông báo là người gửi lời mời
             sender=request.user,                   # Người gửi thông báo là người chấp nhận
             notification_type='FRIEND_ACCEPT',
-            # Target là người bạn mới, để khi click vào sẽ tới trang cá nhân của họ
+            # Target để khi click vào sẽ tới trang cá nhân của người chấp nhận
             target_content_type=ContentType.objects.get_for_model(request.user),
             target_object_id=request.user.id
         )
@@ -335,7 +335,7 @@ def unfriend(request, username):
     # 1. Kiểm tra xem URL có gửi kèm tham số 'next' không
     next_url = request.GET.get('next')
     
-    # 2. Nếu có 'next', chuyển hướng về trang đó (Trang bạn đang đứng)
+    # 2. Nếu có 'next', chuyển hướng về trang đang đứng
     if next_url:
         return redirect(next_url)
     

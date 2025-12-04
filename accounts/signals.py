@@ -8,9 +8,7 @@ from notifications.models import Notification
 
 @receiver(post_save, sender=Friendship)
 def create_friend_request_notification(sender, instance, created, **kwargs):
-    """
-    Tự động tạo thông báo khi một lời mời kết bạn (Friendship) được tạo.
-    """
+    # Tự động tạo thông báo khi một lời mời kết bạn (Friendship) được tạo
     # Chỉ chạy khi một bản ghi MỚI được tạo và có status là PENDING
     if created and instance.status == 'PENDING':
         # Tạo thông báo

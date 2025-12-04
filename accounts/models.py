@@ -4,11 +4,10 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Q
 
-# Lấy User model một cách linh hoạt
 User = AbstractUser
 
 class User(AbstractUser):
-    # Kế thừa AbstractUser đã có sẵn các trường username, password, email...
+    # Kế thừa AbstractUser đã có sẵn vài trường cơ bản
     avatar = models.ImageField(default='default.jpg', upload_to='profile_images')
     cover_photo = models.ImageField(default='cover_default.jpg', upload_to='cover_images')
     bio = models.TextField(blank=True, null=True)
@@ -31,9 +30,7 @@ class Friendship(models.Model):
     
     @staticmethod
     def get_friends(user):
-        """
-        Trả về một danh sách các đối tượng User là bạn của `user` được cung cấp.
-        """
+        # Trả về một danh sách các đối tượng User là bạn của `user` được cung cấp
         friend_ids = set()
         # Query để lấy các mối quan hệ 'ACCEPTED' mà user có tham gia
         friendships = Friendship.objects.filter(
@@ -43,5 +40,5 @@ class Friendship(models.Model):
         for f in friendships:
             friend_ids.add(f.to_user.id if f.from_user == user else f.from_user.id)
         
-        # Trả về một QuerySet các đối tượng User từ danh sách ID đã thu thập
+        # Trả về QuerySet để View và Template có thể xử lý tiếp
         return User.objects.filter(id__in=friend_ids)
