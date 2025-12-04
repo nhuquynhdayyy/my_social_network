@@ -698,7 +698,7 @@ def share_post(request, post_id):
         Notification.objects.create(
             recipient=source_post.author,
             sender=request.user,
-            notification_type='POST_SHARE', # Bạn cần thêm loại này vào model Notification nếu chưa có
+            notification_type='POST_SHARE', 
             target_content_type=ContentType.objects.get_for_model(new_post),
             target_object_id=new_post.id
         )

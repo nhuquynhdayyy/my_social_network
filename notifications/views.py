@@ -108,6 +108,12 @@ def get_notifications(request):
             notif_text = f"đã bày tỏ cảm xúc về bình luận của bạn: \"{target_content}...\""
         elif n.notification_type == 'MESSAGE_REACTION': 
             notif_text = f"đã bày tỏ cảm xúc về tin nhắn của bạn: \"{target_content}...\""
+        elif n.notification_type == 'POST_SHARE':
+            # Nếu người chia sẻ có viết thêm caption (target_content)
+            if target_content:
+                notif_text = f"đã chia sẻ bài viết của bạn: \"{target_content}...\""
+            else:
+                notif_text = "đã chia sẻ bài viết của bạn."
         elif n.notification_type == 'ADDED_TO_GROUP':
             group_name = n.target.name if n.target else "Nhóm chưa đặt tên"
             notif_text = f"đã thêm bạn vào nhóm <strong>{group_name}</strong>."

@@ -14,6 +14,7 @@ class Notification(models.Model):
         ('MESSAGE_REACTION', 'Bày tỏ cảm xúc về tin nhắn'),
         ('ADDED_TO_GROUP', 'Được thêm vào nhóm'),          
         ('GROUP_INVITE_REQUEST', 'Yêu cầu phê duyệt thành viên'),
+        ('POST_SHARE', 'Chia sẻ bài viết'), 
     ]
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
