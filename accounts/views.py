@@ -190,8 +190,8 @@ class UserListView(LoginRequiredMixin, ListView):
     context_object_name = 'users'
 
     def get_queryset(self):
-        # 1. Lấy queryset gốc: Loại trừ user hiện tại
-        queryset = User.objects.exclude(id=self.request.user.id)
+        # 1. Lấy queryset gốc: Loại trừ user hiện tại và superuser
+        queryset = User.objects.exclude(id=self.request.user.id).exclude(is_superuser=True)
         
         # 2. Xử lý tìm kiếm
         query = self.request.GET.get('q') # Lấy tham số 'q' từ URL
