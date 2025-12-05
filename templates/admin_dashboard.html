@@ -1,0 +1,181 @@
+{% extends 'posts/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4 fw-bold text-primary">
+        <i class="bi bi-speedometer2 me-2"></i>Admin Dashboard
+    </h1>
+
+    <!-- Hàng 1: Biểu đồ -->
+    <div class="row mb-4">
+        <!-- Biểu đồ tăng trưởng -->
+        <div class="col-md-8 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-graph-up-arrow me-2 text-success"></i>Tăng trưởng người dùng (7 ngày)
+                </div>
+                <div class="card-body">
+                    <canvas id="userGrowthChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Biểu đồ tỷ lệ tương tác -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-pie-chart-fill me-2 text-warning"></i>Tỷ lệ tương tác
+                </div>
+                <div class="card-body d-flex justify-content-center align-items-center">
+                    <div style="width: 250px;">
+                        <canvas id="interactionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hàng 2: Bảng xếp hạng -->
+    <div class="row">
+        <!-- Top Users -->
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white fw-bold">
+                    <i class="bi bi-people-fill me-2"></i>Top 5 Người dùng tích cực
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">User</th>
+                                <th>Số bài viết</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in top_users %}
+                            <tr>
+                                <td class="ps-3 fw-bold">{{ user.username }}</td>
+                                <td><span class="badge bg-success rounded-pill">{{ user.num_posts }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="2" class="text-center">Chưa có dữ liệu</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Posts -->
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white fw-bold">
+                    <i class="bi bi-heart-fill me-2"></i>Top 5 Bài viết Hot nhất
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">Tác giả</th>
+                                <th>Cảm xúc</th>
+                                <th>Ngày đăng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for post in top_posts %}
+                            <tr>
+                                <td class="ps-3">{{ post.author.username }}</td>
+                                <td><span class="badge bg-danger rounded-pill">{{ post.reactions.count }} ❤️</span></td>
+                                <td class="small text-muted">{{ post.created_at|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center">Chưa có dữ liệu</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dữ liệu ẩn dùng để chuyển từ Django sang JS -->
+{{ dates|json_script:"dates-data" }}
+{{ user_counts|json_script:"user-counts-data" }}
+{{ total_reactions|json_script:"total-reactions-data" }}
+{{ total_comments|json_script:"total-comments-data" }}
+{{ total_posts|json_script:"total-posts-data" }}
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // === LẤY DỮ LIỆU TỪ DJANGO (Cách an toàn) ===
+    const dates = JSON.parse(document.getElementById('dates-data').textContent);
+    const userCounts = JSON.parse(document.getElementById('user-counts-data').textContent);
+
+    // Số liệu cho biểu đồ tròn
+    const totalReactions = JSON.parse(document.getElementById('total-reactions-data').textContent);
+    const totalComments = JSON.parse(document.getElementById('total-comments-data').textContent);
+    const totalPosts = JSON.parse(document.getElementById('total-posts-data').textContent);
+
+    // 1. Biểu đồ Line (User Growth)
+    const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+    new Chart(userGrowthCtx, {
+        type: 'line',
+        data: {
+            labels: dates, // Dùng biến đã parse ở trên
+            datasets: [{
+                label: 'Người dùng mới',
+                data: userCounts, // Dùng biến đã parse
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // 2. Biểu đồ Pie (Interaction)
+    const interactionCtx = document.getElementById('interactionChart').getContext('2d');
+    new Chart(interactionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Cảm xúc', 'Bình luận', 'Bài viết'],
+            datasets: [{
+                data: [totalReactions, totalComments, totalPosts], // Dùng biến đã parse
+                backgroundColor: [
+                    '#dc3545', // Đỏ
+                    '#0dcaf0', // Xanh lơ
+                    '#ffc107'  // Vàng
+                ],
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+{% endblock %}
