@@ -240,3 +240,18 @@ def delete_notification(request, notification_id):
         return JsonResponse({'status': 'success', 'message': 'Đã xóa thông báo'})
     else:
         return JsonResponse({'status': 'error', 'message': 'Không có quyền xóa'}, status=403)
+    
+@login_required
+@require_POST
+def mark_as_unread(request, notification_id):
+    # 1. Tìm thông báo
+    notification = get_object_or_404(Notification, id=notification_id)
+
+    # 2. Kiểm tra chính chủ
+    if request.user == notification.recipient:
+        # 3. Đổi trạng thái thành CHƯA ĐỌC
+        notification.is_read = False
+        notification.save()
+        return JsonResponse({'status': 'success', 'message': 'Đã đánh dấu là chưa đọc'})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Không có quyền thao tác'}, status=403)

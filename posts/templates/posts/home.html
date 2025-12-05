@@ -3,14 +3,11 @@
 
 {% block content %}
 <div class="container-fluid">
-  <!-- BƯỚC 1: Xóa 'justify-content-center' -->
   <div class="row">
 
-    <!-- BƯỚC 2: Thêm class offset để tạo khoảng trống bên trái,
-         đồng thời điều chỉnh cho màn hình vừa (md) -->
     <div class="col-lg-7 offset-lg-1 col-md-10 offset-md-1">
       
-      <!-- Phần tạo bài viết (Không thay đổi) -->
+      <!-- Phần tạo bài viết -->
       <!-- KHỐI "BẠN ĐANG NGHĨ GÌ?" (Nút kích hoạt Modal) -->
       {% if user.is_authenticated %}
       <div class="card shadow-sm mb-4">
@@ -28,7 +25,7 @@
                         data-bs-toggle="modal" data-bs-target="#createPostModal" readonly>
               </div>
 
-              <!-- Nút hình ảnh (trang trí) -->
+              <!-- Nút hình ảnh -->
               <button class="btn btn-light rounded-circle text-success" data-bs-toggle="modal" data-bs-target="#createPostModal" title="Ảnh/Video">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-image" viewBox="0 0 16 16">
                       <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
@@ -38,7 +35,7 @@
           </div>
       </div>
 
-      <!-- MODAL TẠO BÀI VIẾT (Giống hệt bên Profile) -->
+      <!-- MODAL TẠO BÀI VIẾT (Giống bên Profile) -->
       <div class="modal fade" id="createPostModal" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
               <div class="modal-content">
@@ -47,7 +44,6 @@
                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
-                      <!-- Action trỏ về post_create kèm theo tham số ?next={{ request.path }} để quay lại trang chủ -->
                       <form method="post" action="{% url 'posts:post_create' %}?next={{ request.path }}" enctype="multipart/form-data">
                           {% csrf_token %}
                           
@@ -90,7 +86,7 @@
       </div>
       {% endif %}
 
-      <!-- Danh sách bài viết (Không thay đổi) -->
+      <!-- Danh sách bài viết -->
       {% for post in posts %}
         {% include 'posts/_single_post.html' %}
       {% empty %}

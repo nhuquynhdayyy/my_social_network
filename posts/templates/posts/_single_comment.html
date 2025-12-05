@@ -18,7 +18,6 @@
                 </div>
             </div>
 
-            <!-- NÚT 3 CHẤM ĐÃ ĐƯỢC DI CHUYỂN VÀO ĐÂY -->
             {% if user.is_authenticated and user == comment.author %}
                 <div class="dropdown comment-options-dropdown">
                     <button class="btn btn-link text-muted btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -39,7 +38,7 @@
             style="z-index: 1; {% if comment.reactions.count == 0 %}display: none;{% endif %}"
             data-bs-toggle="modal" 
             data-bs-target="#reactionListModal"
-            data-comment-id="{{ comment.id }}"> <!-- QUAN TRỌNG: Thêm data-comment-id -->
+            data-comment-id="{{ comment.id }}"> 
 
                 {% with stats=comment.get_reaction_stats %}
                     {% if stats %}
@@ -95,7 +94,7 @@
             </form>
         </div>
         
-        <!-- VÙNG HIỂN THỊ CÁC CÂU TRẢ LỜI (ĐÃ SỬA LỖI) -->
+        <!-- VÙNG HIỂN THỊ CÁC CÂU TRẢ LỜI -->
         <div class="replies-container comment-thread" id="replies-for-{{ comment.id }}">
             {% for reply in comment.replies.all %}
                 {% include 'posts/_single_comment.html' with comment=reply post=post comment_user_reactions_map=comment_user_reactions_map %}
