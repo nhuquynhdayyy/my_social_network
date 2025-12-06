@@ -19,6 +19,33 @@
     <a href="{% url 'accounts:logout' %}" class="text-decoration-none fw-bold" style="font-size: 0.75rem; color: #0095f6;">Đăng xuất</a>
 </div>
 
+<!-- Phần thẻ xu hướng -->
+{% if trending_tags %}
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fw-bold text-muted" style="font-size: 0.9rem;">Xu hướng hôm nay</span>
+    </div>
+    
+    <ul class="list-unstyled">
+        {% for tag in trending_tags %}
+        <li class="mb-2">
+            <!-- Link trỏ đến trang danh sách bài viết của tag đó -->
+            <a href="{% url 'posts:tag_detail' slug=tag.name %}" class="d-flex justify-content-between align-items-center text-decoration-none text-dark p-1 rounded hover-bg-light">
+                <div>
+                    <p class="fw-bold mb-0" style="font-size: 0.9rem;">#{{ tag.name }}</p>
+                    <p class="text-muted mb-0" style="font-size: 0.75rem;">{{ tag.num_posts }} bài viết</p>
+                </div>
+                <!-- Icon mũi tên nhỏ cho đẹp -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#8e8e8e" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                </svg>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 <!-- Phần người liên hệ -->
 <div class="d-flex justify-content-between align-items-center mb-2">
     <span class="fw-bold text-muted" style="font-size: 0.9rem;">Bạn bè</span>

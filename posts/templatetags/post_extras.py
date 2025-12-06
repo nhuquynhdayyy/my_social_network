@@ -49,3 +49,22 @@ def linkify_mentions(text):
     # Thay thế tất cả các mention tìm thấy
     linked_text = re.sub(pattern, replace_mention, text)
     return format_html(linked_text)
+
+@register.filter(name='linkify_hashtags')
+def linkify_hashtags(text):
+    """
+    Biến #tag thành đường link
+    """
+    if not text: return ""
+    
+    # Regex tìm #tag
+    pattern = r"#(\w+)"
+    
+    def replace_tag(match):
+        tag_name = match.group(1)
+        # Đường dẫn đến trang danh sách bài viết theo tag
+        url = reverse('posts:tag_detail', kwargs={'slug': tag_name.lower()})
+        return format_html('<a href="{}" class="fw-bold text-decoration-none">#{}</a>', url, tag_name)
+
+    linked_text = re.sub(pattern, replace_tag, text)
+    return format_html(linked_text)

@@ -1,4 +1,6 @@
 <!-- posts/templates/posts/_single_post.html -->
+ {% load post_extras %} 
+
 <div class="card mb-4 shadow-sm border-0" id="post-{{ post.id }}">
     <!-- === PHẦN 1: HEADER CỦA BÀI VIẾT CHÍNH (Người đăng hoặc Người chia sẻ) === -->
     <div class="p-3 d-flex align-items-center justify-content-between">
@@ -66,7 +68,7 @@
 
     <!-- === PHẦN 2: NỘI DUNG CỦA BÀI VIẾT CHÍNH === -->
     <div class="px-3 pb-2">
-        {{ post.content|linebreaksbr }}
+        {{ post.content|linkify_mentions|linkify_hashtags|linebreaksbr }}
     </div>
 
     <!-- === PHẦN 3: NỘI DUNG (CHIA SẺ HOẶC MEDIA GỐC) === -->
@@ -87,7 +89,7 @@
                     </div>
                 </div>
                 <div class="mt-2 small">
-                    {{ post.shared_from.content|linebreaksbr }}
+                    {{ post.shared_from.content|linkify_mentions|linkify_hashtags|linebreaksbr }}
                 </div>
             </div>
             

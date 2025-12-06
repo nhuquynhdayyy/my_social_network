@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
+from django.urls import reverse
 
 PRIVACY_CHOICES = [
     ('PUBLIC', 'Công khai'),
@@ -10,12 +11,24 @@ PRIVACY_CHOICES = [
     ('PRIVATE', 'Chỉ mình tôi'),
 ]
 
+class Tag(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+    
+    def get_absolute_url(self):
+        # Đường dẫn để xem tất cả bài viết của tag này
+        return reverse('posts:tag_detail', kwargs={'slug': self.name})
+    
 class Post(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='posts')
     content = models.TextField()
     privacy = models.CharField(max_length=10, choices=PRIVACY_CHOICES, default='PUBLIC')
     created_at = models.DateTimeField(auto_now_add=True)
     shared_from = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='shares')
+    tags = models.ManyToManyField(Tag, blank=True, related_name='posts')
     
     reactions = GenericRelation('Reaction')
     def get_reaction_stats(self):

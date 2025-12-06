@@ -6,7 +6,7 @@ from django.urls import reverse_lazy, reverse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView, DetailView
 from django.db.models import Q, Count
-from .models import Post, PostMedia, Reaction, Comment, PRIVACY_CHOICES
+from .models import Post, PostMedia, Reaction, Comment, PRIVACY_CHOICES, Tag
 from .forms import PostCreateForm, CommentCreateForm
 from accounts.models import Friendship, User
 from chat.models import Conversation
@@ -718,3 +718,17 @@ def get_post_edit_form(request, pk):
     }, request=request)
     
     return JsonResponse({'status': 'ok', 'html': html})
+
+class PostByTagListView(ListView):
+    model = Post
+    template_name = 'posts/tag_feed.html' # Tạo file này giống home.html
+    context_object_name = 'posts'
+
+    def get_queryset(self):
+        slug = self.kwargs.get('slug')
+        return Post.objects.filter(tags__name=slug).order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tag_name'] = self.kwargs.get('slug')
+        return context

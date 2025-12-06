@@ -31,4 +31,5 @@ urlpatterns = [
     path('post/<int:post_id>/share/', views.share_post, name='share_post'),
     path('post/<int:pk>/change-privacy/', views.change_post_privacy, name='change_post_privacy'),
     path('post/<int:pk>/get-edit-form/', views.get_post_edit_form, name='get_post_edit_form'),
+    path('tag/<str:slug>/', views.PostByTagListView.as_view(), name='tag_detail'),
 ]

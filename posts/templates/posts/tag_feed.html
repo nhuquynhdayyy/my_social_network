@@ -1,0 +1,44 @@
+<!-- templates/posts/tag_feed.html -->
+{% extends "posts/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    
+    <!-- Cột trái: Danh sách bài viết -->
+    <div class="col-lg-7 offset-lg-1 col-md-10 offset-md-1">
+      
+      <!-- Header tiêu đề hashtag -->
+      <div class="card mb-4 shadow-sm border-0 bg-light">
+          <div class="card-body d-flex align-items-center">
+              <div class="display-4 text-primary me-3">#</div>
+              <div>
+                  <h3 class="mb-0 fw-bold">#{{ tag_name }}</h3>
+                  <p class="text-muted mb-0">Danh sách các bài viết có gắn thẻ này</p>
+              </div>
+          </div>
+      </div>
+
+      <!-- Danh sách bài viết -->
+      {% for post in posts %}
+        {% include 'posts/_single_post.html' %}
+      {% empty %}
+        <div class="text-center p-5 bg-white rounded shadow-sm border">
+            <p class="text-muted">Chưa có bài viết nào gắn thẻ <strong>#{{ tag_name }}</strong>.</p>
+            <a href="{% url 'posts:home' %}" class="btn btn-outline-primary mt-2">Quay lại trang chủ</a>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Cột phải: Sidebar (Giữ nguyên như trang chủ) -->
+    <div class="col-lg-4 d-none d-lg-block">
+      <div class="right-sidebar">
+        {% if user.is_authenticated %}
+          {% include 'posts/_right_sidebar.html' %}
+        {% endif %}
+      </div>
+    </div>
+    
+  </div>
+</div>
+{% endblock content %}

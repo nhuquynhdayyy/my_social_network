@@ -1,7 +1,10 @@
 # accounts/context_processors.py
 
 from .models import Friendship, User
-from django.db.models import Q
+from django.db.models import Q, Count
+from posts.models import Tag
+from django.utils import timezone
+from datetime import timedelta
 
 def friends_sidebar_processor(request):
     # Cung cấp danh sách bạn bè cho sidebar bên phải trên mọi trang
@@ -31,3 +34,16 @@ def friends_sidebar_processor(request):
         
     # Nếu người dùng chưa đăng nhập, trả về dictionary rỗng
     return {}
+
+def trending_tags_processor(request):
+    # Lấy top 5 tag được dùng nhiều nhất trong 24h qua
+    # Logic: Lọc các tag có bài viết (post) được tạo trong 24h qua -> Đếm -> Sắp xếp
+    time_threshold = timezone.now() - timedelta(days=1)
+    
+    trending_tags = Tag.objects.filter(
+        posts__created_at__gte=time_threshold
+    ).annotate(
+        num_posts=Count('posts')
+    ).order_by('-num_posts')[:5]
+    
+    return {'trending_tags': trending_tags}
