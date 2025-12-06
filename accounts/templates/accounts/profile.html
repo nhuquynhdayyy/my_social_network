@@ -1,4 +1,54 @@
 <!-- accounts/templates/accounts/profile.html -->
+ <style>
+    /* CSS cho Tab đẹp hơn */
+    .nav-tabs .nav-link {
+        color: #65676b;
+        font-weight: 600;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 15px 0;
+        margin: 0 20px;
+    }
+    .nav-tabs .nav-link:hover {
+        color: #000;
+        isolation: isolate; /* Fix lỗi nhỏ */
+    }
+    .nav-tabs .nav-link.active {
+        color: #0866ff; /* Màu xanh Facebook */
+        border-bottom: 3px solid #0866ff;
+        background: none;
+    }
+    
+    /* CSS cho Lưới ảnh (Photo Grid) - Giống Instagram */
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* 3 cột đều nhau */
+        gap: 5px; /* Khoảng cách giữa các ảnh */
+    }
+    .photo-grid-item {
+        position: relative;
+        width: 100%;
+        padding-bottom: 100%; /* Tạo khung vuông tỉ lệ 1:1 */
+        overflow: hidden;
+        cursor: pointer;
+        border-radius: 4px;
+        background-color: #f0f2f5;
+    }
+    .photo-grid-item img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Cắt ảnh vừa khung, không méo */
+        transition: transform 0.2s;
+    }
+    .photo-grid-item:hover img {
+        transform: scale(1.05); /* Phóng to nhẹ khi hover */
+        filter: brightness(0.9);
+    }
+</style>
+
 {% extends "posts/base.html" %} {% block content %}
 <div class="container">
   <div class="row">
@@ -102,93 +152,143 @@
         </div>
       </div>
 
-      <!-- === KHỐI VIẾT BÀI MỚI (Chỉ hiện ở trang của chính mình) === -->
-      {% if user.is_authenticated and user == profile_user %}
-      <div class="card shadow-sm mb-4">
-          <div class="card-body d-flex align-items-center">
-              <!-- Avatar nhỏ -->
-              <a href="{% url 'accounts:profile' username=user.username %}">
-                  <img src="{{ user.avatar.url }}" class="rounded-circle me-2 border" width="40" height="40" style="object-fit: cover;">
-              </a>
-              
-              <div class="flex-grow-1 me-3 text-muted">
-                  Chào <strong>{{ user.last_name }}</strong>, bạn đang nghĩ gì?
-              </div>
-
-              <!-- Nút mở Modal -->
-              <button class="btn btn-primary fw-bold rounded-pill" data-bs-toggle="modal" data-bs-target="#createPostModal">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square me-1" viewBox="0 0 16 16">
-                      <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
-                      <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
-                  </svg>
-                  Viết bài mới
+      <!-- 1. THANH ĐIỀU HƯỚNG TAB -->
+      <ul class="nav nav-tabs mb-3 justify-content-center" id="profileTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button" role="tab">
+                  Dòng thời gian
               </button>
+          </li>
+          <li class="nav-item" role="presentation">
+              <button class="nav-link" id="photos-tab" data-bs-toggle="tab" data-bs-target="#photos" type="button" role="tab">
+                  Ảnh
+              </button>
+          </li>
+      </ul>
+
+      <!-- 2. NỘI DUNG CỦA CÁC TAB -->
+      <div class="tab-content" id="profileTabsContent">
+          
+          <!-- TAB 1: DÒNG THỜI GIAN (Chứa code cũ của bạn) -->
+          <div class="tab-pane fade show active" id="timeline" role="tabpanel">
+              
+                <!-- === KHỐI VIẾT BÀI MỚI (Chỉ hiện ở trang của chính mình) === -->
+                {% if user.is_authenticated and user == profile_user %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body d-flex align-items-center">
+                        <!-- Avatar nhỏ -->
+                        <a href="{% url 'accounts:profile' username=user.username %}">
+                            <img src="{{ user.avatar.url }}" class="rounded-circle me-2 border" width="40" height="40" style="object-fit: cover;">
+                        </a>
+                        
+                        <div class="flex-grow-1 me-3 text-muted">
+                            Chào <strong>{{ user.last_name }}</strong>, bạn đang nghĩ gì?
+                        </div>
+
+                        <!-- Nút mở Modal -->
+                        <button class="btn btn-primary fw-bold rounded-pill" data-bs-toggle="modal" data-bs-target="#createPostModal">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square me-1" viewBox="0 0 16 16">
+                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                                <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                            </svg>
+                            Viết bài mới
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MODAL TẠO BÀI VIẾT -->
+                <div class="modal fade" id="createPostModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title fw-bold">Tạo bài viết mới</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <!-- Form gửi dữ liệu -->
+                                <!-- action để trống hoặc trỏ về post_create, nhưng cần thêm logic xử lý redirect. 
+                                    Để đơn giản, ta trỏ về url tạo post và dùng logic mặc định -->
+                                <form method="post" action="{% url 'posts:post_create' %}?next={{ request.path }}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    
+                                    <div class="d-flex align-items-center mb-3">
+                                        <img src="{{ user.avatar.url }}" class="rounded-circle me-2" width="40" height="40" style="object-fit: cover;">
+                                        <span class="fw-bold">{{ user.username }}</span>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <!-- Render trường Content của form -->
+                                        {{ post_form.content }} 
+                                        <!-- Bạn có thể thêm class bootstrap cho form ở forms.py hoặc dùng widget_tweaks -->
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small">Thêm vào bài viết</label>
+                                        <div class="border rounded p-2 d-flex justify-content-between align-items-center">
+                                            <span class="text-muted small">Ảnh/Video</span>
+                                            <!-- Render trường Media (File) -->
+                                            <!-- Lưu ý: Trong form của bạn cần có field cho file, nếu dùng multi-upload cần chỉnh input này -->
+                                            <input type="file" name="media_files" multiple class="form-control form-control-sm w-50"> 
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small">Quyền riêng tư</label>
+                                        {{ post_form.privacy }}
+                                    </div>
+
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary fw-bold">Đăng</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- === Dán lại vòng lặp HIỂN THỊ BÀI VIẾT vào đây === -->
+                <h5 class="mb-3 fw-bold">Bài viết</h5>
+                {% for post in posts %}
+                    {% include 'posts/_single_post.html' %}
+                {% empty %}
+                    <div class="card text-center p-5">
+                        <p class="text-muted">Chưa có bài viết nào.</p>
+                    </div>
+                {% endfor %}
           </div>
-      </div>
 
-      <!-- MODAL TẠO BÀI VIẾT -->
-      <div class="modal fade" id="createPostModal" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content">
-                  <div class="modal-header">
-                      <h5 class="modal-title fw-bold">Tạo bài viết mới</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <!-- TAB 2: ALBUM ẢNH (Phần mới) -->
+          <div class="tab-pane fade" id="photos" role="tabpanel">
+              <div class="card shadow-sm border-0">
+                  <div class="card-header bg-white">
+                      <h5 class="mb-0 fw-bold">Ảnh của {{ profile_user.first_name }}</h5>
                   </div>
-                  <div class="modal-body">
-                      <!-- Form gửi dữ liệu -->
-                      <!-- action để trống hoặc trỏ về post_create, nhưng cần thêm logic xử lý redirect. 
-                          Để đơn giản, ta trỏ về url tạo post và dùng logic mặc định -->
-                      <form method="post" action="{% url 'posts:post_create' %}?next={{ request.path }}" enctype="multipart/form-data">
-                          {% csrf_token %}
-                          
-                          <div class="d-flex align-items-center mb-3">
-                              <img src="{{ user.avatar.url }}" class="rounded-circle me-2" width="40" height="40" style="object-fit: cover;">
-                              <span class="fw-bold">{{ user.username }}</span>
+                  <div class="card-body">
+                      {% if profile_photos %}
+                          <div class="photo-grid">
+                              {% for media in profile_photos %}
+                                  <!-- Mỗi ảnh là một ô vuông -->
+                                  <!-- Bấm vào ảnh -> Mở Modal bài viết gốc (dùng lại class open-post-modal) -->
+                                  <div class="photo-grid-item open-post-modal" data-post-id="{{ media.post.id }}">
+                                      <img src="{{ media.file.url }}" alt="Photo">
+                                  </div>
+                              {% endfor %}
                           </div>
-
-                          <div class="mb-3">
-                              <!-- Render trường Content của form -->
-                              {{ post_form.content }} 
-                              <!-- Bạn có thể thêm class bootstrap cho form ở forms.py hoặc dùng widget_tweaks -->
+                      {% else %}
+                          <div class="text-center py-5">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="#e4e6eb" class="bi bi-images mb-3" viewBox="0 0 16 16">
+                                  <path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+                                  <path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 15 11V3a1 1 0 0 0-1-1zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/>
+                              </svg>
+                              <p class="text-muted">Chưa có ảnh nào.</p>
                           </div>
-
-                          <div class="mb-3">
-                              <label class="form-label fw-bold small">Thêm vào bài viết</label>
-                              <div class="border rounded p-2 d-flex justify-content-between align-items-center">
-                                  <span class="text-muted small">Ảnh/Video</span>
-                                  <!-- Render trường Media (File) -->
-                                  <!-- Lưu ý: Trong form của bạn cần có field cho file, nếu dùng multi-upload cần chỉnh input này -->
-                                  <input type="file" name="media_files" multiple class="form-control form-control-sm w-50"> 
-                              </div>
-                          </div>
-                          
-                          <div class="mb-3">
-                              <label class="form-label fw-bold small">Quyền riêng tư</label>
-                              {{ post_form.privacy }}
-                          </div>
-
-                          <div class="d-grid">
-                              <button type="submit" class="btn btn-primary fw-bold">Đăng</button>
-                          </div>
-                      </form>
+                      {% endif %}
                   </div>
               </div>
           </div>
+
       </div>
-      {% endif %}
-
-      <!-- === HIỂN THỊ BÀI VIẾT === -->
-      <h3 class="mb-3">Bài viết</h3>
-
-      {% for post in posts %}
-        {% include 'posts/_single_post.html' %}
-      {% empty %}
-        <div class="card">
-          <div class="card-body">
-            <p class="text-muted">Không có bài viết nào để hiển thị.</p>
-          </div>
-        </div>
-      {% endfor %}
     </div>
   </div>
 </div>

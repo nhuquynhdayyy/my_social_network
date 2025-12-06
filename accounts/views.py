@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from notifications.models import Notification 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from .models import User, Friendship 
-from posts.models import Post, Reaction, Comment 
+from posts.models import Post, Reaction, Comment, PostMedia
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import force_bytes, force_str
@@ -79,7 +79,7 @@ class ProfileView(DetailView):
         profile_user = self.get_object()
         visitor = self.request.user
 
-        # === 1. LOGIC LẤY BÀI VIẾT ===
+        # === 1. LOGIC LẤY BÀI VIẾT (GIỮ NGUYÊN) ===
         if visitor.is_authenticated and visitor == profile_user:
             queryset = Post.objects.filter(author=profile_user)
         else:
@@ -99,33 +99,37 @@ class ProfileView(DetailView):
         context['post_form'] = PostCreateForm() 
         context['posts'] = queryset.order_by('-created_at')
 
-        # === 2. LOGIC KIỂM TRA TRẠNG THÁI BẠN BÈ ĐỂ HIỂN THỊ NÚT (THÊM MỚI ĐOẠN NÀY) ===
+        # ===================================================================
+        # === [ĐOẠN MỚI THÊM] LOGIC LẤY ALBUM ẢNH ===
+        # Lấy tất cả ảnh từ những bài viết đã được lọc (biến context['posts'] ở trên)
+        # Nghĩa là: Bài nào xem được thì ảnh đó mới hiện ra
+        context['profile_photos'] = PostMedia.objects.filter(
+            post__in=context['posts'],
+            media_type='IMAGE'
+        ).order_by('-post__created_at')
+        # ===================================================================
+
+        # === 2. LOGIC KIỂM TRA TRẠNG THÁI BẠN BÈ (GIỮ NGUYÊN) ===
         is_friend = False
         sent_request = False
         received_request = False
 
         if visitor.is_authenticated and visitor != profile_user:
-            # Kiểm tra đã là bạn chưa
             if Friendship.objects.filter(
                 (Q(from_user=visitor, to_user=profile_user) | Q(from_user=profile_user, to_user=visitor)),
                 status='ACCEPTED'
             ).exists():
                 is_friend = True
-            
-            # Kiểm tra mình đã gửi lời mời chưa
             elif Friendship.objects.filter(from_user=visitor, to_user=profile_user, status='PENDING').exists():
                 sent_request = True
-            
-            # Kiểm tra họ đã gửi lời mời cho mình chưa
             elif Friendship.objects.filter(from_user=profile_user, to_user=visitor, status='PENDING').exists():
                 received_request = True
         
-        # Truyền biến vào template
         context['is_friend'] = is_friend
         context['sent_request'] = sent_request
         context['received_request'] = received_request
 
-        # === 3. LOGIC REACTION MAP ===
+        # === 3. LOGIC REACTION MAP (GIỮ NGUYÊN) ===
         if self.request.user.is_authenticated:
             posts_on_page = context['posts']
             post_ids = [post.id for post in posts_on_page]
