@@ -732,3 +732,30 @@ class PostByTagListView(ListView):
         context = super().get_context_data(**kwargs)
         context['tag_name'] = self.kwargs.get('slug')
         return context
+
+# Thêm class này
+class SavedPostsView(LoginRequiredMixin, ListView):
+    model = Post
+    template_name = 'posts/saved_posts.html'
+    context_object_name = 'posts'
+
+    def get_queryset(self):
+        # Lấy danh sách bài post mà user hiện tại đã lưu
+        return self.request.user.saved_posts.all().order_by('-created_at')
+    
+@login_required
+@require_POST
+def save_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    user = request.user
+
+    # Logic: Nếu có rồi thì xóa, chưa có thì thêm (Toggle)
+    if post in user.saved_posts.all():
+        user.saved_posts.remove(post)
+        is_saved = False
+    else:
+        user.saved_posts.add(post)
+        is_saved = True
+        
+    return JsonResponse({'status': 'ok', 'is_saved': is_saved})
+

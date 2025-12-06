@@ -1048,6 +1048,17 @@
             </div>
         </div>
 
+        <!-- === CHÈN MỤC "ĐÃ LƯU" VÀO ĐÂY === -->
+        <li>
+            <a href="{% url 'posts:saved_posts' %}">
+                <!-- Icon Bookmark (Hình cái nơ) -->
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                </svg>
+                <span>Đã lưu</span>
+            </a>
+        </li>
+
            <li>
             <a href="{% url 'accounts:profile' username=user.username %}">
               <img src="{{ user.avatar.url }}" alt="{{ user.username }}" width="24" height="24" class="rounded-circle nav-icon"/>
@@ -1316,6 +1327,44 @@
                     counter.textContent = event.to + 1;
                 }
             });
+        });
+
+        // === LOGIC LƯU BÀI VIẾT ===
+        document.body.addEventListener('click', function(event) {
+            const btn = event.target.closest('.save-post-btn');
+            if (btn) {
+                event.preventDefault();
+                const postId = btn.dataset.postId;
+                
+                fetch(`/post/${postId}/save/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Cập nhật giao diện nút bấm ngay lập tức
+                        const iconSpan = btn.querySelector('.save-icon');
+                        const textSpan = btn.querySelector('.save-text');
+                        
+                        if (data.is_saved) {
+                            // Đổi thành trạng thái ĐÃ LƯU
+                            iconSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bookmark-fill" viewBox="0 0 16 16"><path d="M2 2v13.5a.5.5 0 0 0 .74.439L8 13.069l5.26 2.87A.5.5 0 0 0 14 15.5V2a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>';
+                            textSpan.textContent = 'Bỏ lưu bài viết';
+                            showToast('Đã lưu bài viết vào bộ sưu tập.');
+                        } else {
+                            // Đổi thành trạng thái CHƯA LƯU
+                            iconSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bookmark" viewBox="0 0 16 16"><path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5V2zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1H4z"/></svg>';
+                            textSpan.textContent = 'Lưu bài viết';
+                            showToast('Đã bỏ lưu bài viết.');
+                        }
+                    }
+                })
+                .catch(err => console.error(err));
+            }
         });
 
         // =======================================================

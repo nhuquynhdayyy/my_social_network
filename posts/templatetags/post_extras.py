@@ -68,3 +68,8 @@ def linkify_hashtags(text):
 
     linked_text = re.sub(pattern, replace_tag, text)
     return format_html(linked_text)
+
+@register.filter(name='is_saved_by')
+def is_saved_by(post, user):
+    """Kiểm tra xem user đã lưu bài viết này chưa"""
+    return user.saved_posts.filter(id=post.id).exists()

@@ -12,7 +12,8 @@ class User(AbstractUser):
     cover_photo = models.ImageField(default='cover_default.jpg', upload_to='cover_images')
     bio = models.TextField(blank=True, null=True)
     birth_date = models.DateField(null=True, blank=True)
-
+    saved_posts = models.ManyToManyField('posts.Post', blank=True, related_name='saved_by_users')
+    
     def __str__(self):
         return self.username
 
