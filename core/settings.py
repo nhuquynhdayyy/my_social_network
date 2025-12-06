@@ -72,6 +72,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.friends_sidebar_processor',
+                'posts.context_processors.trending_tags_processor',
             ],
             'libraries': {
                 'post_extras': 'posts.templatetags.post_extras',

@@ -68,3 +68,43 @@
     </li>
     {% endfor %}
 </ul>
+
+<!-- GỢI Ý KẾT BẠN -->
+{% if friend_suggestions %}
+<div class="mt-4">
+    <h6 class="text-muted fw-bold mb-3">Những người bạn có thể biết</h6>
+    <div class="list-group list-group-flush">
+        {% for item in friend_suggestions %}
+        <div class="list-group-item px-0 d-flex align-items-center border-0 bg-transparent">
+            <!-- Avatar -->
+            <a href="{% url 'accounts:profile' username=item.user.username %}">
+                <img src="{{ item.user.avatar.url }}" class="rounded-circle me-2 border" width="40" height="40" style="object-fit: cover;">
+            </a>
+            
+            <div class="flex-grow-1" style="min-width: 0;">
+                <!-- Tên -->
+                <a href="{% url 'accounts:profile' username=item.user.username %}" class="text-decoration-none text-dark fw-bold d-block text-truncate" style="font-size: 0.9rem;">
+                    {{ item.user.first_name }} {{ item.user.last_name }}
+                </a>
+                
+                <!-- Số bạn chung -->
+                <small class="text-muted" style="font-size: 0.75rem;">
+                    {{ item.mutual_count }} bạn chung
+                </small>
+            </div>
+
+            <!-- Nút thêm bạn nhanh -->
+            <a href="{% url 'accounts:add_friend' username=item.user.username %}?next={{ request.path }}" 
+               class="btn btn-primary btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center" 
+               style="width: 30px; height: 30px;"
+               title="Thêm bạn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-plus-fill" viewBox="0 0 16 16">
+                    <path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                    <path fill-rule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"/>
+                </svg>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
