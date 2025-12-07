@@ -12,6 +12,7 @@ urlpatterns = [
     path('notifications/', include('notifications.urls')),
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('redirect-after-login/', views.redirect_after_login, name='redirect_after_login'),
+    path('dashboard/report/<int:report_id>/handle/', views.handle_report, name='handle_report'),
 ]
 
 # Cấu hình để Django phục vụ các file media (như avatar) trong môi trường phát triển

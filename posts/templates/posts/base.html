@@ -1367,6 +1367,44 @@
             }
         });
 
+        // === LOGIC BÁO CÁO BÀI VIẾT ===
+        const reportModalEl = document.getElementById('reportPostModal');
+        const reportModal = new bootstrap.Modal(reportModalEl);
+
+        // 1. Mở Modal
+        document.body.addEventListener('click', function(e) {
+            const btn = e.target.closest('.open-report-modal');
+            if (btn) {
+                e.preventDefault();
+                document.getElementById('reportPostId').value = btn.dataset.postId;
+                reportModal.show();
+            }
+        });
+
+        // 2. Gửi báo cáo
+        document.getElementById('submitReportBtn').addEventListener('click', function() {
+            const postId = document.getElementById('reportPostId').value;
+            const reason = document.querySelector('input[name="reason"]:checked').value;
+            
+            fetch(`/post/${postId}/report/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrftoken
+                },
+                body: `reason=${reason}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                reportModal.hide();
+                if (data.status === 'ok') {
+                    showToast(data.message); // Dùng hàm Toast có sẵn của bạn
+                } else {
+                    alert(data.message);
+                }
+            });
+        });
+
         // =======================================================
         // === LOGIC XỬ LÝ SUBMIT FORM SỬA BÌNH LUẬN (AJAX) ===
         // =======================================================

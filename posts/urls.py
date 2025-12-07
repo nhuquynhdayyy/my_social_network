@@ -34,4 +34,5 @@ urlpatterns = [
     path('tag/<str:slug>/', views.PostByTagListView.as_view(), name='tag_detail'),
     path('saved/', views.SavedPostsView.as_view(), name='saved_posts'),
     path('post/<int:post_id>/save/', views.save_post, name='save_post'),
+    path('post/<int:post_id>/report/', views.report_post, name='report_post'),
 ]

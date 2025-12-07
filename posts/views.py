@@ -6,7 +6,7 @@ from django.urls import reverse_lazy, reverse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, DeleteView, UpdateView, DetailView
 from django.db.models import Q, Count
-from .models import Post, PostMedia, Reaction, Comment, PRIVACY_CHOICES, Tag
+from .models import Post, PostMedia, Reaction, Comment, PRIVACY_CHOICES, Tag, Report
 from .forms import PostCreateForm, CommentCreateForm
 from accounts.models import Friendship, User
 from chat.models import Conversation
@@ -759,3 +759,27 @@ def save_post(request, post_id):
         
     return JsonResponse({'status': 'ok', 'is_saved': is_saved})
 
+@login_required
+@require_POST
+def report_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    reason = request.POST.get('reason')
+    
+    # Kiểm tra xem user này đã báo cáo bài này chưa (tránh spam report)
+    existing_report = Report.objects.filter(
+        reporter=request.user, 
+        post=post, 
+        status='PENDING'
+    ).exists()
+    
+    if existing_report:
+        return JsonResponse({'status': 'error', 'message': 'Bạn đã báo cáo bài viết này rồi và đang chờ xử lý.'})
+
+    # Tạo report mới
+    Report.objects.create(
+        reporter=request.user,
+        post=post,
+        reason=reason
+    )
+    
+    return JsonResponse({'status': 'ok', 'message': 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét.'})

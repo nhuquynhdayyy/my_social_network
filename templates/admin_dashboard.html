@@ -101,6 +101,135 @@
             </div>
         </div>
     </div>
+    <!-- BẢNG QUẢN LÝ BÁO CÁO -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Báo cáo vi phạm cần xử lý
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Người báo cáo</th>
+                                <th>Lý do</th>
+                                <th>Nội dung bài viết (Tóm tắt)</th>
+                                <th>Ngày báo</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in pending_reports %}
+                            <tr id="report-row-{{ report.id }}">
+                                <td>{{ report.reporter.username }}</td>
+                                <td><span class="badge bg-secondary">{{ report.get_reason_display }}</span></td>
+                                <td>
+                                    <!-- Link để Admin bấm vào xem chi tiết bài gốc -->
+                                    <a href="{% url 'posts:post_detail' pk=report.post.id %}" target="_blank">
+                                        {{ report.post.content|truncatewords:10 }}
+                                    </a>
+                                </td>
+                                <td>{{ report.created_at|date:"d/m H:i" }}</td>
+                                <td>
+                                    <!-- Nút Xóa bài -->
+                                    <button class="btn btn-danger btn-sm handle-report-btn" 
+                                            data-report-id="{{ report.id }}" 
+                                            data-action="delete">
+                                        Xóa bài
+                                    </button>
+                                    <!-- Nút Bỏ qua -->
+                                    <button class="btn btn-secondary btn-sm handle-report-btn" 
+                                            data-report-id="{{ report.id }}" 
+                                            data-action="ignore">
+                                        Bỏ qua
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">Không có báo cáo nào mới.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Xử lý nút bấm của Admin -->
+    <script>
+        // 1. Hàm lấy CSRF Token từ Cookie (Đảm bảo luôn lấy được token đúng)
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // 2. Gắn sự kiện Click
+        document.querySelectorAll('.handle-report-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Xác nhận trước khi làm
+                const actionText = this.dataset.action === 'delete' ? 'XÓA bài viết này' : 'BỎ QUA báo cáo này';
+                if(!confirm(`Bạn chắc chắn muốn ${actionText}?`)) return;
+                
+                const reportId = this.dataset.reportId;
+                const action = this.dataset.action;
+                const row = document.getElementById(`report-row-${reportId}`);
+                const csrftoken = getCookie('csrftoken'); // Lấy token
+
+                // Gửi yêu cầu lên Server
+                fetch(`/dashboard/report/${reportId}/handle/`, { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrftoken // Biến token lấy từ cookie
+                    },
+                    body: `action=${action}`
+                })
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error("Lỗi mạng hoặc lỗi server");
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if(data.status === 'ok') {
+                        // Hiệu ứng mờ dần rồi xóa dòng
+                        if (row) {
+                            row.style.backgroundColor = '#ffcccc'; // Đổi màu đỏ nhạt báo hiệu
+                            row.style.transition = 'all 0.5s';
+                            setTimeout(() => {
+                                row.remove();
+                                // Kiểm tra nếu bảng trống thì hiện thông báo
+                                const tbody = document.querySelector('tbody');
+                                if (tbody && tbody.children.length === 0) {
+                                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Không có báo cáo nào mới.</td></tr>';
+                                }
+                            }, 500);
+                        }
+                        // alert(data.message); // Có thể bỏ alert nếu thấy phiền
+                    } else {
+                        alert('Lỗi: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Đã xảy ra lỗi khi xử lý. Vui lòng thử lại (F5).');
+                });
+            });
+        });
+    </script>
 </div>
 
 <!-- Dữ liệu ẩn dùng để chuyển từ Django sang JS -->

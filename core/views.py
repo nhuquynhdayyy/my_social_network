@@ -1,10 +1,13 @@
-from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth import get_user_model
 from django.db.models import Count
 from django.utils import timezone
 from datetime import timedelta
-from posts.models import Post, Comment, Reaction
+from posts.models import Post, Comment, Reaction, Report
+from django.views.decorators.http import require_POST
+
 # from django.contrib.contenttypes.models import ContentType # Nếu cần query phức tạp hơn
 
 User = get_user_model()
@@ -52,6 +55,9 @@ def admin_dashboard(request):
     # Nếu bạn đã cấu hình Reverse Relation trong GenericRelation ở model Post, 
     # bạn có thể dùng: Post.objects.annotate(total_reacts=Count('reactions')).order_by('-total_reacts')[:5]
 
+    # Lấy danh sách báo cáo đang CHỜ XỬ LÝ (Mới nhất lên đầu)
+    pending_reports = Report.objects.filter(status='PENDING').select_related('reporter', 'post').order_by('-created_at')
+
     context = {
         'dates': formatted_dates,
         'user_counts': user_counts,
@@ -60,5 +66,33 @@ def admin_dashboard(request):
         'total_reactions': total_reactions,
         'top_users': top_users,
         'top_posts': top_posts,
+        'pending_reports': pending_reports,
     }
     return render(request, 'admin_dashboard.html', context)
+
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def handle_report(request, report_id):
+    report = get_object_or_404(Report, id=report_id)
+    action = request.POST.get('action')
+    
+    if action == 'delete':
+        # 1. Xóa bài viết gốc
+        if report.post:
+            report.post.delete() 
+            # LƯU Ý QUAN TRỌNG:
+            # Vì trong models.py bạn để on_delete=models.CASCADE
+            # Nên dòng này sẽ xóa luôn cả cái 'report' hiện tại khỏi Database.
+        
+        # 2. KHÔNG ĐƯỢC GỌI report.save() Ở ĐÂY NỮA
+        # Vì report đã bị xóa rồi, gọi save() sẽ gây lỗi hoặc tạo ra dữ liệu rác.
+        
+        msg = 'Đã xóa bài viết và báo cáo liên quan.'
+        
+    elif action == 'ignore':
+        # Chỉ đổi trạng thái report, không xóa bài
+        report.status = 'IGNORED'
+        report.save() # Dòng này chỉ chạy khi action là ignore
+        msg = 'Đã bỏ qua báo cáo.'
+        
+    return JsonResponse({'status': 'ok', 'message': msg})

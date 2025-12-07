@@ -4,6 +4,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
 from django.urls import reverse
+from django.conf import settings
 
 PRIVACY_CHOICES = [
     ('PUBLIC', 'Công khai'),
@@ -100,3 +101,27 @@ class Reaction(models.Model):
 
     def __str__(self):
         return f"{self.user.username} reacted {self.reaction_type} on {self.content_object}"
+    
+class Report(models.Model):
+    REPORT_REASONS = [
+        ('SPAM', 'Spam/Tin rác'),
+        ('INAPPROPRIATE', 'Nội dung không phù hợp'),
+        ('HATE_SPEECH', 'Ngôn từ thù ghét'),
+        ('VIOLENCE', 'Bạo lực'),
+        ('OTHER', 'Lý do khác'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('PENDING', 'Chờ xử lý'),
+        ('RESOLVED', 'Đã xử lý (Xóa bài)'),
+        ('IGNORED', 'Bỏ qua (Không vi phạm)'),
+    ]
+
+    reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reports_sent')
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='reports')
+    reason = models.CharField(max_length=20, choices=REPORT_REASONS)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Report {self.post.id} by {self.reporter.username}"

@@ -53,6 +53,17 @@
                         </a>
                     </li>
                     
+                    <li>
+                        <a class="dropdown-item text-warning open-report-modal" 
+                        href="#" 
+                        data-post-id="{{ post.id }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-flag-fill me-2" viewBox="0 0 16 16">
+                                <path d="M14.778.085A.5.5 0 0 1 15 .5V8a.5.5 0 0 1-.314.464L14.5 8l.186.464-.003.001-.006.003-.023.009a12.435 12.435 0 0 1-.397.15c-.264.095-.631.223-1.047.35-.816.252-1.879.523-2.71.523-.847 0-1.548-.28-2.158-.525l-.028-.01C7.68 8.71 7.14 8.5 6.5 8.5c-.7 0-1.638.23-2.437.477A19.626 19.626 0 0 0 3 9.342V15.5a.5.5 0 0 1-1 0V.5a.5.5 0 0 1 1 0v.282c.226-.079.496-.17.79-.26C4.606.272 5.67 0 6.5 0c.84 0 1.524.277 2.121.519l.043.018C9.286.788 9.828 1 10.5 1c.7 0 1.638-.23 2.437-.477a19.587 19.587 0 0 0 1.349-.476l.019-.007.004-.002h.001"/>
+                            </svg>
+                            Báo cáo bài viết
+                        </a>
+                    </li>
+
                     <!-- 2. CÁC NÚT QUẢN LÝ (Chỉ Tác giả mới thấy) -->
                     {% if user == post.author %}
                         <li><hr class="dropdown-divider"></li>
@@ -178,5 +189,45 @@
     <!-- === PHẦN 4: TƯƠNG TÁC (Reaction, Comment) - Hiển thị cho cả 2 trường hợp === -->
     <div class="px-3">
         {% include 'posts/_post_interactive_section.html' %}
+    </div>
+</div>
+
+<!-- MODAL BÁO CÁO BÀI VIẾT -->
+<div class="modal fade" id="reportPostModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Báo cáo bài viết</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportPostForm">
+                    <input type="hidden" id="reportPostId" name="post_id">
+                    <p class="mb-3">Tại sao bạn muốn báo cáo bài viết này?</p>
+                    
+                    <div class="list-group">
+                        <label class="list-group-item">
+                            <input class="form-check-input me-1" type="radio" name="reason" value="SPAM" checked> Spam / Tin rác
+                        </label>
+                        <label class="list-group-item">
+                            <input class="form-check-input me-1" type="radio" name="reason" value="INAPPROPRIATE"> Nội dung không phù hợp
+                        </label>
+                        <label class="list-group-item">
+                            <input class="form-check-input me-1" type="radio" name="reason" value="HATE_SPEECH"> Ngôn từ thù ghét
+                        </label>
+                        <label class="list-group-item">
+                            <input class="form-check-input me-1" type="radio" name="reason" value="VIOLENCE"> Bạo lực
+                        </label>
+                        <label class="list-group-item">
+                            <input class="form-check-input me-1" type="radio" name="reason" value="OTHER"> Lý do khác
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-warning fw-bold" id="submitReportBtn">Gửi báo cáo</button>
+            </div>
+        </div>
     </div>
 </div>
