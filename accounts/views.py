@@ -211,28 +211,34 @@ class UserListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         
-        # --- Logic xác định trạng thái bạn bè ---
-        friends_q = Friendship.objects.filter(
-            (Q(from_user=user) | Q(to_user=user)) & Q(status='ACCEPTED')
-        )
-        friend_ids = set()
-        for friendship in friends_q:
-            friend_ids.add(friendship.from_user_id if friendship.to_user_id == user.id else friendship.to_user_id)
+        # 1. Lấy tập hợp ID bạn bè của TÔI (Set A)
+        my_friends_qs = Friendship.get_friends(user)
+        my_friend_ids = set(my_friends_qs.values_list('id', flat=True))
+
+        # 2. Logic xác định trạng thái (Bạn bè/Đã gửi/Đã nhận) - Code cũ của bạn
+        context['friend_ids'] = my_friend_ids # Tận dụng luôn biến set ở trên
         
-        sent_request_ids = set(
+        context['sent_request_ids'] = set(
             Friendship.objects.filter(from_user=user, status='PENDING').values_list('to_user_id', flat=True)
         )
-        
-        received_request_ids = set(
+        context['received_request_ids'] = set(
             Friendship.objects.filter(to_user=user, status='PENDING').values_list('from_user_id', flat=True)
         )
-
-        context['friend_ids'] = friend_ids
-        context['sent_request_ids'] = sent_request_ids
-        context['received_request_ids'] = received_request_ids
         
-        # --- Truyền từ khóa tìm kiếm ra template để giữ lại trong ô input ---
         context['query'] = self.request.GET.get('q', '') 
+
+        # === 3. TÍNH BẠN CHUNG CHO TỪNG NGƯỜI TRONG DANH SÁCH ===
+        # context['users'] chính là danh sách người dùng đang được hiển thị ở trang hiện tại
+        for u in context['users']:
+            # Lấy tập hợp ID bạn bè của NGƯỜI ĐÓ (Set B)
+            their_friends_qs = Friendship.get_friends(u)
+            their_friend_ids = set(their_friends_qs.values_list('id', flat=True))
+            
+            # Tính giao điểm (Intersection): Những ID vừa có trong A, vừa có trong B
+            mutual_count = len(my_friend_ids.intersection(their_friend_ids))
+            
+            # Gắn trực tiếp con số này vào object user 'u' (như một thuộc tính tạm thời)
+            u.mutual_friends_count = mutual_count
         
         return context
 

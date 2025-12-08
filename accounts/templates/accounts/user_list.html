@@ -41,6 +41,12 @@
                             <a href="{% url 'accounts:profile' username=u.username %}" class="text-decoration-none text-dark fw-bold">{{ u.first_name }} {{ u.last_name }}</a>
                         </h5>
                         <p class="card-subtitle mb-2 text-muted small">@{{ u.username }}</p>
+                        
+                        {% if u.mutual_friends_count > 0 %}
+                            <p class="card-text mb-2 text-muted small">
+                                <span class="fw-bold">{{ u.mutual_friends_count }}</span> bạn chung
+                            </p>
+                        {% endif %}
 
                         <!-- Nhóm các nút hành động lại với nhau -->
                         <div class="mt-2 d-flex flex-wrap gap-2">
