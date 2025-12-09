@@ -776,7 +776,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('right-sidebar');
     toggleBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
-    // 3. Search Chat (Left Sidebar) - Đã sửa để lọc trực tiếp HTML
+    // 3. Search Chat (Left Sidebar) 
     const toggleSearchBtn = document.getElementById('toggle-search-btn');
     const searchBar = document.getElementById('chat-search-bar');
     const filterInput = document.getElementById('filter-conv-input');
@@ -878,7 +878,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const messageForm = document.getElementById('message-form');
     const csrftoken = getCookie('csrftoken');
 
-    // --- ĐOẠN JS ĐÃ SỬA ĐỂ GỬI FILE ---
+    // --- ĐOẠN JS ĐỂ GỬI FILE ---
     messageForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -993,7 +993,7 @@ function reactToMessage(messageId, reactionType) {
     });
 }
 
-// CODE MỚI (Đã sửa)
+// CODE MỚI 
 const reactionIcons = {
     'LIKE': '👍',
     'LOVE': '❤️',
@@ -1257,7 +1257,7 @@ function scrollToBottom() {
                         // Xác định class CSS (Gửi hay Nhận)
                         const rowClass = msg.is_me ? 'sent' : 'received';
                         
-                        // HTML hiển thị tin nhắn (giống cấu trúc bạn đã sửa ở bước trước)
+                        // HTML hiển thị tin nhắn 
                         // Chú ý: Phần avatar chỉ hiện nếu là 'received' và là nhóm (tùy logic của bạn)
                         let avatarHtml = '';
                         if (!msg.is_me && "{{ conversation.type }}" === "GROUP") {

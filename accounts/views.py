@@ -79,7 +79,7 @@ class ProfileView(DetailView):
         profile_user = self.get_object()
         visitor = self.request.user
 
-        # === 1. LOGIC LẤY BÀI VIẾT (GIỮ NGUYÊN) ===
+        # === 1. LOGIC LẤY BÀI VIẾT ===
         if visitor.is_authenticated and visitor == profile_user:
             queryset = Post.objects.filter(author=profile_user)
         else:
@@ -109,7 +109,7 @@ class ProfileView(DetailView):
         ).order_by('-post__created_at')
         # ===================================================================
 
-        # === 2. LOGIC KIỂM TRA TRẠNG THÁI BẠN BÈ (GIỮ NGUYÊN) ===
+        # === 2. LOGIC KIỂM TRA TRẠNG THÁI BẠN BÈ ===
         is_friend = False
         sent_request = False
         received_request = False
@@ -129,7 +129,7 @@ class ProfileView(DetailView):
         context['sent_request'] = sent_request
         context['received_request'] = received_request
 
-        # === 3. LOGIC REACTION MAP (GIỮ NGUYÊN) ===
+        # === 3. LOGIC REACTION MAP ===
         if self.request.user.is_authenticated:
             posts_on_page = context['posts']
             post_ids = [post.id for post in posts_on_page]
