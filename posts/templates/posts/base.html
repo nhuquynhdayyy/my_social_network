@@ -1013,7 +1013,7 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="min-width: 250px;">
                         
-                        <!-- 1. Nút Đánh dấu đã đọc (Cũ) -->
+                        <!-- 1. Nút Đánh dấu đã đọc -->
                         <li>
                             <a class="dropdown-item d-flex align-items-center py-2" href="#" id="btn-mark-all-read">
                                 <svg class="me-2" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -2361,7 +2361,6 @@
                             }
 
                             // B. Xử lý hiển thị trên TRANG CHỦ (Home Feed) - Để đồng bộ dữ liệu
-                            // Logic cũ: tìm theo class cha
                             const homeSection = document.getElementById(`comments-section-${postId}`); 
                             // Hoặc tìm theo cách cũ nếu bạn chưa đặt ID cho section trang chủ
                             const oldStyleList = form.closest('.comments-section')?.querySelector('.comment-list');

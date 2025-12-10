@@ -34,7 +34,7 @@ def friends_sidebar_processor(request):
         else:
             my_friend_ids.add(friendship.from_user.id)
     
-    # Query lấy User object để hiển thị lên Sidebar (Code cũ của bạn)
+    # Query lấy User object để hiển thị lên Sidebar
     # Lấy 7 người ngẫu nhiên
     context['sidebar_friends_list'] = User.objects.filter(id__in=my_friend_ids).order_by('?')[:7]
 

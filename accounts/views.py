@@ -215,7 +215,7 @@ class UserListView(LoginRequiredMixin, ListView):
         my_friends_qs = Friendship.get_friends(user)
         my_friend_ids = set(my_friends_qs.values_list('id', flat=True))
 
-        # 2. Logic xác định trạng thái (Bạn bè/Đã gửi/Đã nhận) - Code cũ của bạn
+        # 2. Logic xác định trạng thái (Bạn bè/Đã gửi/Đã nhận) 
         context['friend_ids'] = my_friend_ids # Tận dụng luôn biến set ở trên
         
         context['sent_request_ids'] = set(

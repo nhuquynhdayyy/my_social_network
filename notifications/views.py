@@ -155,7 +155,7 @@ def redirect_notification(request, pk):
         # 3. Quay về trang chủ
         return redirect("posts:home")
     
-    # 1. Xử lý Tin nhắn (logic cũ của bạn giữ nguyên)
+    # 1. Xử lý Tin nhắn
     if notif.notification_type == "MESSAGE" and notif.target:
         conv_id = notif.target.conversation_id
         message_ct = ContentType.objects.get_for_model(Message)
@@ -193,7 +193,7 @@ def redirect_notification(request, pk):
         # Sửa lại logic này một chút để ưu tiên trang chi tiết bài viết nếu có thể
         if notif.notification_type in ["POST_REACTION", "POST_COMMENT"] and notif.target:
             post = notif.target
-            # Cách 1: Chuyển về trang cá nhân và cuộn tới bài viết (cách cũ của bạn)
+            # Cách 1: Chuyển về trang cá nhân và cuộn tới bài viết 
             # profile_url = reverse("accounts:profile", kwargs={'username': post.author.username})
             # return redirect(f"{profile_url}#post-{post.id}")
             
