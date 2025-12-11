@@ -17,7 +17,7 @@ def friends_sidebar_processor(request):
     context = {}
 
     # =======================================================
-    # PHẦN 1: LẤY DANH SÁCH BẠN BÈ HIỆN TẠI (Của bạn & Sidebar)
+    # PHẦN 1: LẤY DANH SÁCH BẠN BÈ HIỆN TẠI 
     # =======================================================
     
     # Lấy tất cả mối quan hệ đã ACCEPTED

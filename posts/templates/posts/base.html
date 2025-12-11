@@ -1398,7 +1398,7 @@
             .then(data => {
                 reportModal.hide();
                 if (data.status === 'ok') {
-                    showToast(data.message); // Dùng hàm Toast có sẵn của bạn
+                    showToast(data.message); 
                 } else {
                     alert(data.message);
                 }
@@ -2106,7 +2106,7 @@
                     fetch(deleteUrl, {
                         method: 'POST',
                         headers: {
-                            'X-CSRFToken': csrftoken, // Biến csrftoken đã có sẵn trong file của bạn
+                            'X-CSRFToken': csrftoken, 
                             'Content-Type': 'application/json'
                         }
                     })

@@ -1258,7 +1258,7 @@ function scrollToBottom() {
                         const rowClass = msg.is_me ? 'sent' : 'received';
                         
                         // HTML hiển thị tin nhắn 
-                        // Chú ý: Phần avatar chỉ hiện nếu là 'received' và là nhóm (tùy logic của bạn)
+                        // Chú ý: Phần avatar chỉ hiện nếu là 'received' và là nhóm
                         let avatarHtml = '';
                         if (!msg.is_me && "{{ conversation.type }}" === "GROUP") {
                              avatarHtml = `<img src="${msg.sender_avatar}" class="msg-avatar-tiny" title="${msg.sender_username}">`;
