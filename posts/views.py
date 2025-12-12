@@ -641,7 +641,7 @@ def get_share_modal(request, post_id):
 def share_post(request, post_id):
     original_post = get_object_or_404(Post, id=post_id)
     
-    # 1. Logic kiểm tra quyền xem (Giả sử đã check quyền xem ở đây giống hàm trên)
+    # 1. Logic kiểm tra quyền xem 
     
     # 2. Lấy dữ liệu từ form
     content = request.POST.get('content', '')
@@ -721,7 +721,7 @@ def get_post_edit_form(request, pk):
 
 class PostByTagListView(ListView):
     model = Post
-    template_name = 'posts/tag_feed.html' # Tạo file này giống home.html
+    template_name = 'posts/tag_feed.html' 
     context_object_name = 'posts'
 
     def get_queryset(self):

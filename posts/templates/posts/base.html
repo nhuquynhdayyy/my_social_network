@@ -24,7 +24,7 @@
     position: fixed;
     top: 0;
     left: 244px; /* Bằng đúng chiều rộng của Sidebar */
-    width: 360px; /* Chiều rộng giống Facebook */
+    width: 360px; 
     height: 100vh;
     background-color: white;
     box-shadow: 4px 0 15px rgba(0,0,0,0.1);
@@ -391,7 +391,7 @@
           background-color: #e0e0e0;
       }
 
-      /* Bước 2: Vẽ đường kẻ "THÂN" dọc cho các bình luận con Ở GIỮA (không phải cái cuối) */
+      /* Bước 2: Vẽ đường kẻ "THÂN" dọc cho các bình luận con Ở GIỮA */
       .replies-container > div[id^="comment-"]:not(:last-child)::after {
           content: '';
           position: absolute;
@@ -435,7 +435,7 @@
       .privacy-icon svg {
           width: 12px;
           height: 12px;
-          fill: currentColor; /* Icon sẽ có màu xám giống chữ bên cạnh */
+          fill: currentColor; 
       }
 
       .carousel-counter {
@@ -1216,7 +1216,7 @@
             <div class="modal-footer border-top-0 justify-content-center p-2">
                 <!-- Nút Hủy -->
                 <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold" data-bs-dismiss="modal" style="font-size: 0.95rem;">Không</button>
-                <!-- Nút Xóa (Màu xanh giống Facebook) -->
+                <!-- Nút Xóa -->
                 <button type="button" class="btn btn-primary fw-bold px-4 rounded-pill" id="confirmDeleteCommentBtn">Xóa</button>
             </div>
             </div>
@@ -2041,7 +2041,6 @@
                         if (sidebarItem) {
                             sidebarItem.classList.add('bg-light'); // Thêm nền xám
                             // Tìm chỗ để nhét dấu chấm xanh vào
-                            // Giả sử cấu trúc HTML của bạn có thẻ <a> chứa nội dung
                             const linkContent = sidebarItem.querySelector('a');
                             if (linkContent && !linkContent.querySelector('.bg-primary')) {
                                 // Thêm chấm xanh nếu chưa có
@@ -2362,7 +2361,6 @@
 
                             // B. Xử lý hiển thị trên TRANG CHỦ (Home Feed) - Để đồng bộ dữ liệu
                             const homeSection = document.getElementById(`comments-section-${postId}`); 
-                            // Hoặc tìm theo cách cũ nếu bạn chưa đặt ID cho section trang chủ
                             const oldStyleList = form.closest('.comments-section')?.querySelector('.comment-list');
                             
                             if (homeSection) {

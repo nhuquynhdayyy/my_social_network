@@ -19,7 +19,7 @@
         background: none;
     }
     
-    /* CSS cho Lưới ảnh (Photo Grid) - Giống Instagram */
+    /* CSS cho Lưới ảnh (Photo Grid) */
     .photo-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr); /* 3 cột đều nhau */
@@ -308,7 +308,7 @@
         <!-- Nút Hủy (Màu xám) -->
         <button type="button" class="btn btn-link text-decoration-none text-secondary fw-bold" data-bs-dismiss="modal">Hủy</button>
         
-        <!-- Nút Xác nhận (Màu xanh - Giống Facebook) -->
+        <!-- Nút Xác nhận -->
         <a href="{% url 'accounts:unfriend' username=profile_user.username %}?next={{ request.path }}" class="btn btn-primary px-4 fw-bold rounded-pill">
             Xác nhận
         </a>

@@ -44,16 +44,12 @@ def admin_dashboard(request):
     # 4. Top 5 Bài viết nhiều cảm xúc nhất
     # Lưu ý: Để dòng này chạy, Model Post cần có GenericRelation hoặc related query phù hợp.
     # Nếu Reaction dùng GenericForeignKey, ta đếm thủ công hoặc dùng ContentType (phức tạp hơn).
-    # Ở đây mình giả định bạn chưa cài GenericRelation, nên dùng cách thủ công an toàn hơn:
     
     # Cách an toàn: Lấy top post và đếm (Chỉ hiệu quả với data nhỏ/trung bình)
     # Nếu data lớn, cần thêm trường 'reaction_count' vào model Post để tối ưu.
     top_posts_raw = Post.objects.all()
     # Sắp xếp thủ công bằng Python (chậm hơn DB nhưng chắc chắn chạy không lỗi logic GFK)
     top_posts = sorted(top_posts_raw, key=lambda p: p.reactions.count(), reverse=True)[:5]
-    
-    # Nếu bạn đã cấu hình Reverse Relation trong GenericRelation ở model Post, 
-    # bạn có thể dùng: Post.objects.annotate(total_reacts=Count('reactions')).order_by('-total_reacts')[:5]
 
     # Lấy danh sách báo cáo đang CHỜ XỬ LÝ (Mới nhất lên đầu)
     pending_reports = Report.objects.filter(status='PENDING').select_related('reporter', 'post').order_by('-created_at')
